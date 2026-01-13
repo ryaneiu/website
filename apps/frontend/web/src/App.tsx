@@ -1,3 +1,4 @@
+import { MainArea } from "./MainArea"
 import { Navbar } from "./navbar/Navbar"
 import { NavbarTab } from "./navbar/NavbarTab"
 import { SideNavigation } from "./navbar/sideNavigation"
@@ -12,8 +13,9 @@ function App() {
         </Navbar>
     </div>
 
-    <div className="flex-grow-1">
+    <div className="flex-grow-1 flex">
         <SideNavigation></SideNavigation>
+        <MainArea></MainArea>
     </div>
     
   </div>
