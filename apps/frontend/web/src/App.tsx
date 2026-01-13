@@ -1,6 +1,5 @@
 import { MainArea } from "./MainArea"
 import { Navbar } from "./navbar/Navbar"
-import { NavbarTab } from "./navbar/NavbarTab"
 import { SideNavigation } from "./navbar/sideNavigation"
 
 
