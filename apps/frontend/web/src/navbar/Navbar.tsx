@@ -1,3 +1,4 @@
+import { Button } from "../components/Button";
 import { NavbarTab } from "./NavbarTab";
 
 
@@ -11,5 +12,10 @@ export function Navbar() {
         <NavbarTab text="memes"></NavbarTab>
         <NavbarTab text="Videos"></NavbarTab>
         <NavbarTab text="AI slop"></NavbarTab>
+
+        <div className="flex-grow-1"></div>
+
+        <Button text="Login"></Button>
+        <Button text="Sign up" isPrimary={true}></Button>
     </div>
 }
