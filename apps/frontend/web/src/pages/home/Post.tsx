@@ -1,4 +1,4 @@
-import { ReactionButton } from "./components/ReactionButton";
+import { ReactionButton } from "../../components/ReactionButton";
 
 interface Props {
     title: string;
