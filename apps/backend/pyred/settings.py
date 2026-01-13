@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "pyred",
+    "pyreddit",
     "corsheaders",
     "rest_framework",
 ]
