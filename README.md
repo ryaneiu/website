@@ -1,5 +1,9 @@
 ## We are building a Reddit-inspired web application using a modern full-stack setup.
 
+# Setup
+
+Frontend: see `apps/frontend/web/README.md`
+
 # Tech Stack
 
 Backend: Django (Python)
