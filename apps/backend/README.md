@@ -13,7 +13,7 @@ cd apps/backend
 **WINDOWS**
 ```
 py -m venv .venv
-./venv/bin/activate.bat
+.venv\Scripts\activate
 py -m pip install -r requirements.txt
 cd apps/backend
 ```
