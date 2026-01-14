@@ -1,8 +1,13 @@
+
+# React-2-Pytailred monorepo
+
 ## We are building a Reddit-inspired web application using a modern full-stack setup.
 
 # Setup
 
 Frontend: see `apps/frontend/web/README.md`
+Backend: see `apps/backend/README.md`
+Login page: see `apps/frontend/web-login/README.md`
 
 # Tech Stack
 

@@ -9,6 +9,10 @@ cd apps/frontend/web
 npm install
 ```
 
+**config**
+ports, api endpoint, etc.
+in `apps/frontend/web/Config.ts`
+
 **Test (dev server)**
 ```
 cd apps/frontend/web
@@ -25,3 +29,4 @@ Copy files from `apps/frontend/web/dist` to the destination where you serve asse
 
 > **Important**
 > All files inside `apps/frontend/web/dist` must be served correctly by the frontend server.
+
