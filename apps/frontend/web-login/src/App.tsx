@@ -2,7 +2,11 @@ import { useState } from "react";
 import { Button } from "./components/Button";
 
 function signUp() {
-    
+    alert("Sign up not implemented");
+}
+
+function login() {
+    alert("Login not implemented");
 }
 
 function App() {
@@ -22,7 +26,9 @@ function App() {
                 placeholder="Password"
                 type="password"
             ></input>
-            <Button text="Login"></Button>
+            <Button text="Login" onClick={() => {
+                login();
+            }}></Button>
 
             <span
                 className="text-underline text-black text-md cursor-pointer"
@@ -49,7 +55,9 @@ function App() {
                 placeholder="Password"
                 type="password"
             ></input>
-            <Button text="Signup"></Button>
+            <Button text="Signup" onClick={() => {
+                signUp();
+            }}></Button>
 
             <span
                 className="text-underline text-black text-md cursor-pointer"
