@@ -2,6 +2,8 @@
 
 Login page
 
+# serve under the following URL: /auth
+
 # setup
 
 ```
