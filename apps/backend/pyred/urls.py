@@ -18,8 +18,6 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from pyreddit.views import PostViewSet, CommentViewSet
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
 router = DefaultRouter()
 router.register(r'posts', PostViewSet)
 router.register(r'comments', CommentViewSet)
@@ -27,11 +25,7 @@ router.register(r'comments', CommentViewSet)
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # JWT Auth at root
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-
-    # Include your posts/comments at root
+    
     path('', include(router.urls)),
 ]
 
