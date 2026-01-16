@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./components/Button";
 
 function signUp() {
@@ -10,7 +10,20 @@ function login() {
 }
 
 function App() {
+    
     const [isLogin, setIsLogin] = useState(true);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+
+        if (params.has("action")) {
+            if (params.get("action") == "login") {
+                setIsLogin(true);
+            } else if (params.get("action") == "signup") {
+                setIsLogin(false);
+            }
+        }
+    }, []);
 
     const loginUi = (
         <>
