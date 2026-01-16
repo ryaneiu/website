@@ -8,12 +8,11 @@ from .views import PostViewSet, CommentViewSet
 router = DefaultRouter()
 router.register(r'posts', PostViewSet)
 router.register(r'comments', CommentViewSet)
+from django.urls import path
+from pyreddit.views import SignupView, LoginView
 
 urlpatterns = [
-
-
-
-    
-
+    path("auth/signup/", SignupView.as_view()),
+    path("auth/login/", LoginView.as_view()),
     path('', include(router.urls)),  # router handles /posts/ and /comments/
 ]

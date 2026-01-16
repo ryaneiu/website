@@ -53,11 +53,23 @@ REST_FRAMEWORK = {
     ),
 }
 
+from datetime import timedelta
+
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'AUTH_HEADER_TYPES': ('Bearer',),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+
+    "AUTH_HEADER_TYPES": ("Bearer",),
+
+    # 👇 Important for cookies
+    "AUTH_COOKIE": "access_token",
+    "AUTH_COOKIE_REFRESH": "refresh_token",
+    "AUTH_COOKIE_SECURE": True,        # True in production (HTTPS)
+    "AUTH_COOKIE_HTTP_ONLY": True,     # JS can't access
+    "AUTH_COOKIE_SAMESITE": "Lax",     # Good default
 }
+AUTH_COOKIE_SECURE = False  # Set to True in production with HTTPS
+
 
 
 
@@ -122,7 +134,13 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",   
+]
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+]
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 

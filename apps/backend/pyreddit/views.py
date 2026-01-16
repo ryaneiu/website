@@ -16,37 +16,74 @@ from django.contrib.auth.models import User
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
-# -------------------------
-# REGISTER (SIGNUP)
-# -------------------------
-@api_view(['POST'])
-def signup(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
-
-    # Check fields
-    if not username or not password:
-        return Response({'error': 'Missing username or password'}, status=400)
-
-    # Check if user exists
-    if User.objects.filter(username=username).exists():
-        return Response({'error': 'User already exists'}, status=400)
-
-    # Create user (Django automatically hashes password with Argon2)
-    User.objects.create_user(username=username, password=password)
-
-    return Response({'message': 'User created successfully'}, status=201)
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+from rest_framework import status
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
-# -------------------------
-# PROTECTED ROUTE (AUTH TEST)
-# -------------------------
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def protected(request):
-    # This route only works if user sends valid access token
-    return Response({'message': f'Hello {request.user.username}, you are logged in!'})
+class SignupView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email")
+        username = request.data.get("username")
+        password = request.data.get("password")
+
+        if not email or not username or not password:
+            return Response({"detail": "Missing fields"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(username=username).exists():
+            return Response({"detail": "Username taken"}, status=status.HTTP_400_BAD_REQUEST)
+        if User.objects.filter(email=email).exists():
+            return Response({"detail": "Email already registered"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.create_user(username=username, email=email, password=password)
+
+        return Response({"detail": "Signup successful"}, status=status.HTTP_201_CREATED)
+
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        try:
+            user_obj = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user = authenticate(username=user_obj.username, password=password)
+        if user is None:
+            return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        refresh = RefreshToken.for_user(user)
+        response = Response({"detail": "Login successful"})
+
+        # Set cookies
+        response.set_cookie(
+            key="access_token",
+            value=str(refresh.access_token),
+            httponly=True,
+            secure=False,  # True in production
+            samesite="Lax",
+        )
+        response.set_cookie(
+            key="refresh_token",
+            value=str(refresh),
+            httponly=True,
+            secure=False,  # True in production
+            samesite="Lax",
+        )
+
+        return response
+
+
 
 
 
@@ -89,21 +126,3 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response({'id': comment.id, 'votes': comment.votes})
 
 
-@api_view(['POST'])
-def signup(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
-
-    if not username or not password:
-        return Response({'error': 'Missing fields'}, status=400)
-
-    if User.objects.filter(username=username).exists():
-        return Response({'error': 'User exists'}, status=400)
-
-    User.objects.create_user(username=username, password=password)
-    return Response({'message': 'User created'}, status=201)
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def secret(request):
-    return Response({'msg': 'You are logged in'})
