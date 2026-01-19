@@ -21,10 +21,10 @@ cd apps/backend
 # usage
 linux:
 ```
-python3 manage.py runserver 8000 #Or higher if needed)
+python3 manage.py runserver 8000 #Or higher if needed
 ```
 windows:
 ```
-py manage.py runserver 8000 #Or higher if needed)
+py manage.py runserver 8000 #Or higher if needed
 ```
 
