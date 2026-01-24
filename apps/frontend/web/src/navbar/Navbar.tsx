@@ -8,7 +8,11 @@ export function Navbar() {
         
         <input className="flex-grow-1 rounded-md border border-black/15 px-2 py-2" placeholder="Giant Search Bar... Search?"></input>
 
-        <Button text="Login"></Button>
-        <Button text="Sign up" isPrimary={true}></Button>
+        <Button text="Login" onClick={() => {
+            window.location.href = "/auth?action=login";
+        }}></Button>
+        <Button text="Sign up" isPrimary={true} onClick={() => {
+            window.location.href = "/auth?action=signup";
+        }}></Button>
     </div>
 }
