@@ -1,7 +1,7 @@
 
 # React-2-Pytailred monorepo
 
-## We are building a Reddit-inspired web application using a modern full-stack setup.
+## We are building a Reddit-inspired web application using a modern full-stack setup. (only 2 workers, Ryan (@ryaneiu), and Cari, (@CariLT01))
 
 # Setup
 
