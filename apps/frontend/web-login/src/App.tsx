@@ -1,12 +1,48 @@
 import { useEffect, useRef, useState, type Ref } from "react";
 import { Button } from "./components/Button";
+import { API_ENDPOINT } from "./Config";
 
-function signUp() {
-    alert("Sign up not implemented");
+async function signUp(username: string, password: string, email: string) {
+    const response = await fetch(`${API_ENDPOINT}/auth/signup/`, {
+        method: "POST",
+        body: JSON.stringify({
+            username: username,
+            password: password,
+            email: email,
+        }),
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (response.status != 201 && response.status != 200) {
+        alert(`Failed to sign up: ${response.status} ${response.statusText}`);
+        return;
+    }
+
+    alert("Sign up successfull, please login");
 }
 
-function login() {
-    alert("Login not implemented");
+async function login(email: string, password: string) {
+    const response = await fetch(`${API_ENDPOINT}/auth/login/`, {
+        method: "POST",
+        body: JSON.stringify({
+            email: email,
+            password: password,
+        }),
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (response.status != 200) {
+        alert(`Failed to login: ${response.status} ${response.statusText}`);
+        return;
+    }
+
+    alert(
+        "Login successfull. Cookies will not work unless this page is served on the actual backend server.",
+    );
 }
 
 type ValidityResult = {
@@ -17,27 +53,24 @@ type ValidityResult = {
 function areInputsValid(
     isLogin: boolean,
     inputEmail: HTMLInputElement,
-    inputPassword: HTMLInputElement
+    inputPassword: HTMLInputElement,
 ): ValidityResult {
     if (isLogin) {
-        const isValidSyntax = (
-            inputEmail.checkValidity() && inputPassword.checkValidity()
-        );
+        const isValidSyntax =
+            inputEmail.checkValidity() && inputPassword.checkValidity();
 
         return {
             isValid: isValidSyntax,
             message: !isValidSyntax ? "Email not valid" : "",
         };
     } else {
-        const isValidSyntax = (
-            inputEmail.checkValidity() && inputPassword.checkValidity()
-        );
-        
+        const isValidSyntax =
+            inputEmail.checkValidity() && inputPassword.checkValidity();
+
         const passwordLengthCheck = inputPassword.value.length >= 8;
 
         console.log("Valid: ", isValidSyntax);
         console.log("Password length: ", passwordLengthCheck);
-        
 
         const messagePasswordLength = !passwordLengthCheck
             ? "Password must be at least 8 characters long"
@@ -74,15 +107,20 @@ function App() {
         }
     }, []);
 
-    const loginEmailRef = useRef(null);
-    const loginPasswordRef = useRef(null);
-    const signUpEmailRef = useRef(null);
-    const signUpPasswordRef = useRef(null);
+    const loginEmailRef: React.RefObject<HTMLInputElement | null> =
+        useRef(null);
+    const loginPasswordRef: React.RefObject<HTMLInputElement | null> =
+        useRef(null);
+    const signUpUsernameRef: React.RefObject<HTMLInputElement | null> =
+        useRef(null);
+    const signUpEmailRef: React.RefObject<HTMLInputElement | null> =
+        useRef(null);
+    const signUpPasswordRef: React.RefObject<HTMLInputElement | null> =
+        useRef(null);
 
     const loginUi = (
         <>
             <h1 className="text-3xl font-bold text-black">Login</h1>
-            <div className="h-5"></div>
             <input
                 className="px-2 py-2 border border-black/15 rounded-md w-full"
                 placeholder="Email"
@@ -98,18 +136,21 @@ function App() {
             <Button
                 text="Login"
                 onClick={() => {
-                const validityResult = areInputsValid(
+                    const validityResult = areInputsValid(
                         isLogin,
                         loginEmailRef.current!,
-                        loginPasswordRef.current!
+                        loginPasswordRef.current!,
                     );
 
                     if (!validityResult.isValid) {
                         alert(`Invalid input: ${validityResult.message}`);
                         return;
                     }
-    
-                    login();
+
+                    login(
+                        loginEmailRef.current!.value,
+                        loginPasswordRef.current!.value,
+                    );
                 }}
             ></Button>
 
@@ -128,6 +169,13 @@ function App() {
         <>
             <h1 className="text-3xl font-bold text-black">Sign up</h1>
             <div className="h-5"></div>
+
+            <input
+                className="px-2 py-2 border border-black/15 rounded-md w-full"
+                placeholder="Username"
+                type="text"
+                ref={signUpUsernameRef}
+            ></input>
             <input
                 className="px-2 py-2 border border-black/15 rounded-md w-full"
                 placeholder="Email"
@@ -146,14 +194,18 @@ function App() {
                     const validityResult = areInputsValid(
                         isLogin,
                         signUpEmailRef.current!,
-                        signUpPasswordRef.current!
+                        signUpPasswordRef.current!,
                     );
 
                     if (!validityResult.isValid) {
                         alert(`Invalid input: ${validityResult.message}`);
                         return;
                     }
-                    signUp();
+                    signUp(
+                        signUpUsernameRef.current!.value,
+                        signUpPasswordRef.current!.value,
+                        signUpEmailRef.current!.value,
+                    );
                 }}
             ></Button>
 
