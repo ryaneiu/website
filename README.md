@@ -1,7 +1,7 @@
 
 # React-2-Pytailred monorepo
 
-## We are building a Reddit-inspired web application using a modern full-stack setup. (only 2 workers, Ryan (@ryaneiu), and Cari, (@CariLT01)) Ryan was born 07/17/2012 and currently is the host of this project and has a CV
+## We are building a Reddit-inspired web application using a modern full-stack setup. (only 2 workers, Ryan (@ryaneiu), and Cari, (@CariLT01)) Ryan currently is the host of this project and is working on the backend
 
 # Setup
 
