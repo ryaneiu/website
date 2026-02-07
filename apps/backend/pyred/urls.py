@@ -40,4 +40,8 @@ urlpatterns += [
     path("auth/login/", LoginView.as_view()),
     path('', include(router.urls)),
 ]
-
+urlpatterns += [
+    # Frontend SPAs (catch-all for routing)
+    re_path(r'^actual_website/.*$', ActualWebsiteView.as_view(), name='actual-website-spa'),
+    re_path(r'^login/.*$', LoginView.as_view(), name='login-spa'),
+]
