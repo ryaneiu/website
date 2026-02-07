@@ -124,5 +124,14 @@ class CommentViewSet(viewsets.ModelViewSet):
         comment.votes -= 1
         comment.save()
         return Response({'id': comment.id, 'votes': comment.votes})
+from django.views.generic import TemplateView
+from django.conf import settings
 
+# Main website frontend
+class ActualWebsiteView(TemplateView):
+    template_name = str(settings.ACTUAL_WEBSITE_DIST / "index.html")
+
+# Login SPA
+class LoginView(TemplateView):
+    template_name = str(settings.LOGIN_DIST / "index.html")
 

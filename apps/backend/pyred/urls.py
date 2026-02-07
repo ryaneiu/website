@@ -17,6 +17,8 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from django.views.static import serve
+from django.conf import settings
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -30,7 +32,7 @@ urlpatterns = [
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
-from django.urls import path
+from django.urls import path, re_path
 from pyreddit.views import SignupView, LoginView
 
 urlpatterns += [
@@ -38,4 +40,8 @@ urlpatterns += [
     path("auth/login/", LoginView.as_view()),
     path('', include(router.urls)),
 ]
-
+urlpatterns += [
+    # Frontend SPAs (catch-all for routing)
+    re_path(r'^actual_website/.*$', ActualWebsiteView.as_view(), name='actual-website-spa'),
+    re_path(r'^login/.*$', LoginView.as_view(), name='login-spa'),
+]
