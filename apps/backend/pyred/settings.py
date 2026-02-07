@@ -155,9 +155,21 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
+from pathlib import Path
 
-STATIC_URL = 'static/'
+# ROOT OF THE REPO (BASE_DIR)
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+# Frontend dist folders
+ACTUAL_WEBSITE_DIST = BASE_DIR / "apps/frontend/web/dist"
+LOGIN_DIST = BASE_DIR / "apps/frontend/web-login/dist"
+
+# Static files config
+STATICFILES_DIRS = [
+    ACTUAL_WEBSITE_DIST,  # actual website frontend
+    LOGIN_DIST,           # login SPA
+]
+STATIC_URL = "/static/"
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
