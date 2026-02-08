@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { SideNavigationButton } from "./SideNavigationButton";
-import { DisplayedTab, displayedTabStore } from "../stores/DisplayedTabStore";
+import { DisplayedTab } from "../stores/DisplayedTabStore";
 
 type TabInfo = {
     id: number;
