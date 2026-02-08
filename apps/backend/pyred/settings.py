@@ -157,20 +157,34 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 from pathlib import Path
 
-# ROOT OF THE REPO (BASE_DIR)
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
-# Frontend dist folders
-ACTUAL_WEBSITE_DIST = BASE_DIR / "apps/frontend/web/dist"
-LOGIN_DIST = BASE_DIR / "apps/frontend/web-login/dist"
-
-# Static files config
-STATICFILES_DIRS = [
-    ACTUAL_WEBSITE_DIST,  # actual website frontend
-    LOGIN_DIST,           # login SPA
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+# ^ adjust so BASE_DIR points to website/ (the root folder)
+ACTUAL_WEBSITE_DIR = BASE_DIR / "apps/frontend/web/dist"
+LOGIN_DIR = BASE_DIR / "apps/frontend/web-login/dist"
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [
+            BASE_DIR / "apps/frontend/web/dist",        # React SPA
+            BASE_DIR / "apps/frontend/web-login/dist",  # Login SPA
+        ],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
 ]
+# Static files (CSS, JS, images)
 STATIC_URL = "/static/"
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# Optional: tell Django where to look for static files
+STATICFILES_DIRS = [
+    ACTUAL_WEBSITE_DIR,  # your frontend build folder
+]
+
+# Optional: where collectstatic will collect files for production
+STATIC_ROOT = BASE_DIR / "staticfiles"

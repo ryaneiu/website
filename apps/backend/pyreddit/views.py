@@ -24,7 +24,10 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from django.views.generic import TemplateView
 
+class ActualWebsiteView(TemplateView):
+    template_name = "index.html"  # Django will now find it in DIRS
 class SignupView(APIView):
     permission_classes = [AllowAny]
 
@@ -46,7 +49,7 @@ class SignupView(APIView):
         return Response({"detail": "Signup successful"}, status=status.HTTP_201_CREATED)
 
 
-class LoginView(APIView):
+class LoginAPIView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -129,9 +132,8 @@ from django.conf import settings
 
 # Main website frontend
 class ActualWebsiteView(TemplateView):
-    template_name = str(settings.ACTUAL_WEBSITE_DIST / "index.html")
+    template_name = str(settings.ACTUAL_WEBSITE_DIR / "index.html")
 
 # Login SPA
 class LoginView(TemplateView):
-    template_name = str(settings.LOGIN_DIST / "index.html")
-
+    template_name = str(settings.LOGIN_DIR / "index.html")

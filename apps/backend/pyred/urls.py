@@ -21,7 +21,10 @@ from django.views.static import serve
 from django.conf import settings
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
+#import backend_views 
+import pyreddit 
+from pyreddit.views import ActualWebsiteView, LoginAPIView, LoginView
+from django.urls import path, re_path
 from pyreddit.views import PostViewSet, CommentViewSet
 router = DefaultRouter()
 router.register(r'posts', PostViewSet)
@@ -37,11 +40,8 @@ from pyreddit.views import SignupView, LoginView
 
 urlpatterns += [
     path("auth/signup/", SignupView.as_view()),
-    path("auth/login/", LoginView.as_view()),
+    path("auth/login/", LoginAPIView.as_view()),
     path('', include(router.urls)),
-]
-urlpatterns += [
-    # Frontend SPAs (catch-all for routing)
-    re_path(r'^actual_website/.*$', ActualWebsiteView.as_view(), name='actual-website-spa'),
-    re_path(r'^login/.*$', LoginView.as_view(), name='login-spa'),
+    re_path(r'^actual_website/.*$', ActualWebsiteView.as_view()),
+    re_path(r'^login/.*$', LoginView.as_view()),
 ]

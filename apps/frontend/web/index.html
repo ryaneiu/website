@@ -1,13 +1,24 @@
+
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>web</title>
+    <title>web-login</title>
+
+    <!-- Tailwind / Vite build CSS -->
+    <!-- Change the path if your STATIC_URL or Django settings are different -->
+    <link rel="stylesheet" href="{% static 'frontend/web/dist/assets/index-DH04yVJZ.css' %}" />
+    
+    <!-- Optional favicon -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'frontend/web/dist/assets/vite.svg' %}" />
   </head>
+
   <body>
+    <!-- React root -->
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+
+    <!-- JS bundle from Vite build -->
+    <script type="module" src="{% static 'frontend/web/dist/assets/index-PcJFdTbG.js' %}"></script>
   </body>
 </html>
