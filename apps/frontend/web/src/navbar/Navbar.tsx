@@ -34,6 +34,7 @@ export function Navbar() {
                     }
                     square={true}
                     onClick={onMenuBarClick}
+                    larger={true}
                 ></TransparentIconButton>
             )}
             <h1 className="font-bold text-2xl md:block hidden">
