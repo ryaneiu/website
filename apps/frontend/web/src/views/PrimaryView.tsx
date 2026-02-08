@@ -8,6 +8,7 @@ export function PrimaryView() {
 
     const navigate = useNavigate();
 
+    
     return (
         <div>
             <div className="w-[100vw] h-[100vh] fixed flex flex-col">
