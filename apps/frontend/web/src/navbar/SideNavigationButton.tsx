@@ -1,14 +1,16 @@
 import clsx from "clsx";
 import type { ReactNode } from "react"
+import { useNavigate } from "react-router-dom";
 
 interface Props {
     icon: ReactNode;
     text: string;
-    onClick?: () => void;
+    navigateTo: string;
     selected: boolean;
 }
 
 export function SideNavigationButton(props: Props) {
+    const navigate = useNavigate();
 
     const buttonClasses = clsx(
         "flex items-center gap-2 px-4 py-2 border-b border-b-black/15 cursor-pointer",
@@ -17,7 +19,9 @@ export function SideNavigationButton(props: Props) {
         "transition-colors"
     )
 
-    return <button className={buttonClasses} onClick={props.onClick}>
+    return <button className={buttonClasses} onClick={() => {
+        navigate(props.navigateTo);
+    }}>
         <span>
             {props.icon}
         </span>
