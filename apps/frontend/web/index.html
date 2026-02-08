@@ -1,24 +1,23 @@
 
+<!-- 
+**NOTE**: Please do not directly modify the template file under:
+web/index.html
+
+Use dist/index.html instead!
+-->
+
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>web-login</title>
+    <title>React-2-Pytailred</title>
 
-    <!-- Tailwind / Vite build CSS -->
-    <!-- Change the path if your STATIC_URL or Django settings are different -->
-    <link rel="stylesheet" href="{% static 'frontend/web/dist/assets/index-DH04yVJZ.css' %}" />
-    
-    <!-- Optional favicon -->
-    <link rel="icon" type="image/svg+xml" href="{% static 'frontend/web/dist/assets/vite.svg' %}" />
   </head>
 
   <body>
     <!-- React root -->
     <div id="root"></div>
-
-    <!-- JS bundle from Vite build -->
-    <script type="module" src="{% static 'frontend/web/dist/assets/index-PcJFdTbG.js' %}"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
