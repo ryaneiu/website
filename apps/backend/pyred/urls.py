@@ -38,10 +38,10 @@ urlpatterns = [
 from django.urls import path, re_path
 from pyreddit.views import SignupView, LoginView
 
+# urls.py
+from django.views.generic import TemplateView
+
 urlpatterns += [
-    path("auth/signup/", SignupView.as_view()),
-    path("auth/login/", LoginAPIView.as_view()),
-    path('', include(router.urls)),
-    re_path(r'^actual_website/.*$', ActualWebsiteView.as_view()),
-    re_path(r'^login/.*$', LoginView.as_view()),
+    path("", TemplateView.as_view(template_name="index.html")),
+    path("api/", include(router.urls)),
 ]

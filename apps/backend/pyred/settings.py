@@ -48,10 +48,18 @@ PASSWORD_HASHERS = [
 from datetime import timedelta
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    # How DRF authenticates users
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+
+    # Who is allowed by default
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAdminUser",
+    ],
 }
+
 
 from datetime import timedelta
 
@@ -136,10 +144,14 @@ AUTH_PASSWORD_VALIDATORS = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",   
+    
+    'http://localhost:8000',
 ]
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
+    
+    'http://localhost:8000',
 ]
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -157,7 +169,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
+FRONTEND_DIST = Path("C:/Users/ryanm/website/apps/frontend/web/dist")
+LOGIN_DIST = Path("C:/Users/ryanm/website/apps/frontend/web-login/dist")
+
 # ^ adjust so BASE_DIR points to website/ (the root folder)
 ACTUAL_WEBSITE_DIR = BASE_DIR / "apps/frontend/web/dist"
 LOGIN_DIR = BASE_DIR / "apps/frontend/web-login/dist"
@@ -165,8 +180,8 @@ TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [
-            BASE_DIR / "apps/frontend/web/dist",        # React SPA
-            BASE_DIR / "apps/frontend/web-login/dist",  # Login SPA
+            FRONTEND_DIST,  # React SPA
+            LOGIN_DIST,     # Login SPA
         ],
         "APP_DIRS": True,
         "OPTIONS": {
@@ -179,12 +194,12 @@ TEMPLATES = [
     },
 ]
 # Static files (CSS, JS, images)
-STATIC_URL = "/static/"
+
 
 # Optional: tell Django where to look for static files
-STATICFILES_DIRS = [
-    ACTUAL_WEBSITE_DIR,  # your frontend build folder
-]
+
 
 # Optional: where collectstatic will collect files for production
+STATICFILES_DIRS = [FRONTEND_DIST / "assets"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_URL = "/assets/"
