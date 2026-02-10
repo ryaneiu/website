@@ -1,4 +1,10 @@
+/*
+⚠️ WARNING — TEMPLATE FILE ⚠️
+
+This is a template file. Do NOT modify it directly.
+
+Modifying this template may break your styles or cause unexpected behavior.
+
+[This warning is present in both template and derived files — check the filepath!]
+*/
 @import "tailwindcss";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
