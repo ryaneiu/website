@@ -129,10 +129,4 @@ class ActualWebsiteView(TemplateView):
 # Login SPA
 class LoginView(TemplateView):
     template_name = str(settings.LOGIN_DIR / "index.html")
-from rest_framework.permissions import IsAdminUser
 
-class AdminOnlyView(APIView):
-    permission_classes = [IsAdminUser]
-
-    def get(self, request):
-        return Response({"ok": True})
