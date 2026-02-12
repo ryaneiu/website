@@ -5,6 +5,8 @@ import { API_ENDPOINT } from "../Config";
 import { useNavigate } from "react-router-dom";
 import { TransparentIconButton } from "../components/TransparentIconButton";
 import { storeAccessToken, storeRefreshToken } from "../auth/Authentication";
+import { AnimatePresence } from "framer-motion";
+import FadeUp from "../components/AnimatedPresenceDiv";
 
 async function signUp(username: string, password: string, email: string) {
     try {
@@ -50,7 +52,6 @@ async function login(username: string, password: string) {
         });
 
         if (response.status != 200) {
-
             // Attempt to get body
 
             try {
@@ -62,11 +63,12 @@ async function login(username: string, password: string) {
                     throw new Error("Parsing failed");
                 }
             } catch {
-                alert(`Failed to login: ${response.status} ${response.statusText}`);
+                alert(
+                    `Failed to login: ${response.status} ${response.statusText}`,
+                );
             } finally {
                 return false;
             }
-
         }
 
         try {
@@ -77,10 +79,15 @@ async function login(username: string, password: string) {
                 storeRefreshToken(refresh);
                 storeAccessToken(access);
             } else {
-                throw new Error("Parsing failed. Server did not return refresh & access tokens as readable JSON");
+                throw new Error(
+                    "Parsing failed. Server did not return refresh & access tokens as readable JSON",
+                );
             }
         } catch (e) {
-            console.error("Failed to parse returned JSON. May not be fatal if using cookies. Error: ", e);
+            console.error(
+                "Failed to parse returned JSON. May not be fatal if using cookies. Error: ",
+                e,
+            );
         }
 
         alert(
@@ -170,7 +177,7 @@ export function AuthView() {
         useRef(null);
 
     const loginUi = (
-        <>
+        <FadeUp className="flex flex-col gap-3 items-center" key="login">
             <h1 className="text-3xl font-bold text-black">Login</h1>
             <input
                 className="px-2 py-2 border border-black/15 rounded-md w-full"
@@ -218,11 +225,11 @@ export function AuthView() {
             >
                 No account? Sign up!
             </span>
-        </>
+        </FadeUp>
     );
 
     const signUpUi = (
-        <>
+        <FadeUp className="flex flex-col gap-3 items-center " key="signup">
             <h1 className="text-3xl font-bold text-black">Sign up</h1>
             <div className="h-5"></div>
 
@@ -276,32 +283,34 @@ export function AuthView() {
             >
                 Already have an account?
             </span>
-        </>
+        </FadeUp>
     );
 
     return (
         <div className="w-[100vw] h-[100vh] flex items-center justify-center relative">
             <span className="absolute top-2 left-2">
-                            <TransparentIconButton
-                icon={
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        height="24px"
-                        viewBox="0 -960 960 960"
-                        width="24px"
-                        fill="#1f1f1f"
-                    >
-                        <path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z" />
-                    </svg>
-                }
-                onClick={() => {
-                    navigate("/");
-                }}
-            ></TransparentIconButton>
+                <TransparentIconButton
+                    icon={
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            height="24px"
+                            viewBox="0 -960 960 960"
+                            width="24px"
+                            fill="#1f1f1f"
+                        >
+                            <path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z" />
+                        </svg>
+                    }
+                    onClick={() => {
+                        navigate("/");
+                    }}
+                ></TransparentIconButton>
             </span>
 
-            <div className="px-4 py-4 flex flex-col gap-3 items-center w-72">
-                {isLogin ? loginUi : signUpUi}
+            <div className="px-4 py-4 w-72">
+                <AnimatePresence mode="wait">
+                    {isLogin ? loginUi : signUpUi}
+                </AnimatePresence>
             </div>
         </div>
     );
