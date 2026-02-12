@@ -1,5 +1,7 @@
+import FadeUp from "../../components/AnimatedPresenceDiv";
+
 export function Trending() {
-    return <div>
+    return <FadeUp>
         <h1>TODO: Trending page</h1>
-    </div>
+    </FadeUp>
 }
