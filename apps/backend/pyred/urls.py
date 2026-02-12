@@ -44,4 +44,6 @@ from django.views.generic import TemplateView
 urlpatterns += [
     path("", TemplateView.as_view(template_name="index.html")),
     path("api/", include(router.urls)),
+    path("api/signup/", SignupView.as_view(), name="signup"),
+    path("api/login/", LoginView.as_view(), name="login"),
 ]
