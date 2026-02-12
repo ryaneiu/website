@@ -10,7 +10,7 @@ import FadeUp from "../components/AnimatedPresenceDiv";
 
 async function signUp(username: string, password: string, email: string) {
     try {
-        const response = await fetch(`${API_ENDPOINT}/auth/signup/`, {
+        const response = await fetch(`${API_ENDPOINT}/api/signup/`, {
             method: "POST",
             body: JSON.stringify({
                 username: username,
