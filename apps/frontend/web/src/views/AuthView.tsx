@@ -4,6 +4,7 @@ import { Button } from "../components/Button";
 import { API_ENDPOINT } from "../Config";
 import { useNavigate } from "react-router-dom";
 import { TransparentIconButton } from "../components/TransparentIconButton";
+import { storeAccessToken, storeRefreshToken } from "../auth/Authentication";
 
 async function signUp(username: string, password: string, email: string) {
     try {
@@ -35,12 +36,12 @@ async function signUp(username: string, password: string, email: string) {
     }
 }
 
-async function login(email: string, password: string) {
+async function login(username: string, password: string) {
     try {
-        const response = await fetch(`${API_ENDPOINT}/auth/login/`, {
+        const response = await fetch(`${API_ENDPOINT}/token/`, {
             method: "POST",
             body: JSON.stringify({
-                email: email,
+                username: username,
                 password: password,
             }),
             headers: {
@@ -49,8 +50,37 @@ async function login(email: string, password: string) {
         });
 
         if (response.status != 200) {
-            alert(`Failed to login: ${response.status} ${response.statusText}`);
-            return false;
+
+            // Attempt to get body
+
+            try {
+                const body = await response.json();
+                const detail = body.detail;
+                if (detail) {
+                    alert(`Failed to login: ${detail}`);
+                } else {
+                    throw new Error("Parsing failed");
+                }
+            } catch {
+                alert(`Failed to login: ${response.status} ${response.statusText}`);
+            } finally {
+                return false;
+            }
+
+        }
+
+        try {
+            const body = await response.json();
+            const refresh: string = body.refresh;
+            const access: string = body.access;
+            if (refresh && access) {
+                storeRefreshToken(refresh);
+                storeAccessToken(access);
+            } else {
+                throw new Error("Parsing failed. Server did not return refresh & access tokens as readable JSON");
+            }
+        } catch (e) {
+            console.error("Failed to parse returned JSON. May not be fatal if using cookies. Error: ", e);
         }
 
         alert(
@@ -159,7 +189,7 @@ export function AuthView() {
             <Button
                 text="Login"
                 onClick={async () => {
-                    const validityResult = areInputsValid(
+                    /* const validityResult = areInputsValid(
                         isLogin,
                         loginEmailRef.current!,
                         loginPasswordRef.current!,
@@ -168,7 +198,7 @@ export function AuthView() {
                     if (!validityResult.isValid) {
                         alert(`Invalid input: ${validityResult.message}`);
                         return;
-                    }
+                    } */
 
                     const success = await login(
                         loginEmailRef.current!.value,

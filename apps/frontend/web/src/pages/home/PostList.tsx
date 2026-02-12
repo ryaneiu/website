@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Post } from "./Post";
 import { postsStore } from "../../stores/PostsStore";
 import { API_ENDPOINT } from "../../Config";
+import { useNavigate } from "react-router-dom";
+import { getStoredAccessToken } from "../../auth/Authentication";
 
 export function PostList() {
     const posts = postsStore((state) => state.posts);
@@ -9,39 +11,66 @@ export function PostList() {
 
     const [errorOccurred, setErrorOccurred] = useState(false);
 
+    const navigate = useNavigate();
+
     useEffect(() => {
-        if (hasLoaded) {
-            return;
-        }
-        postsStore.setState({
-            posts: [],
-            hasLoaded: true
-        });
-
-
-        console.log("LOAD POSTS!");
-        // Load posts
-
-        fetch(`${API_ENDPOINT}/posts`, {
-            method: "GET",
-        })
-            .then((response) => {
-                if (response.status != 200) {
-                    throw new Error("Error while fetching posts:" +  response.statusText);
-                    
-                }
-                return response.json();
-            })
-            .then((response) => {
-                console.log("dbg: received response: ", response);
-                postsStore.setState({
-                    posts: response,
-                    hasLoaded: true,
-                });
-            }).catch(e => {
-                console.error("Error while trying to fetch posts: ", e);
-                setErrorOccurred(true);
+        const a = async () => {
+            if (hasLoaded) {
+                return;
+            }
+            postsStore.setState({
+                posts: [],
+                hasLoaded: true,
             });
+
+            console.log("LOAD POSTS!");
+            // Load posts
+
+            const token = await getStoredAccessToken();
+
+            fetch(`${API_ENDPOINT}/api/posts`, {
+                method: "GET",
+                credentials: "include",
+                headers:
+                    token != null
+                        ? {
+                              Authorization: `Bearer ${token}`,
+                          }
+                        : {},
+            })
+                .then((response) => {
+                    if (response.status != 200) {
+                        if (response.status == 401 || response.status == 403) {
+                            console.log(
+                                "dbg: received unauthorized; need to login. Redirecting",
+                            );
+                            postsStore.setState({
+                                posts: [],
+                                hasLoaded: true,
+                            });
+                            navigate("/auth?action=login");
+                            throw new Error("Unauthorized");
+                        }
+                        throw new Error(
+                            "Error while fetching posts:" + response.statusText,
+                        );
+                    }
+                    return response.json();
+                })
+                .then((response) => {
+                    console.log("dbg: received response: ", response);
+
+                    postsStore.setState({
+                        posts: response,
+                        hasLoaded: true,
+                    });
+                })
+                .catch((e) => {
+                    console.error("Error while trying to fetch posts: ", e);
+                    setErrorOccurred(true);
+                });
+        };
+        a();
     }, []);
 
     return (
@@ -59,18 +88,24 @@ export function PostList() {
                     );
                 })}
 
-                {posts.length == 0 ? <div className="w-full h-full flex items-center justify-center">
-                    <h1 className="font-bold text-3xl">No posts!</h1>
-                </div> : null}
-
-                {errorOccurred ? 
-                <div className="w-full h-full flex items-center justify-center">
-                    <div>
-                        <h1 className="font-bold text-3xl text-black">Error occurred!</h1>
-                        <p className="text-black">Check console for more info</p>
+                {posts.length == 0 ? (
+                    <div className="w-full h-full flex items-center justify-center">
+                        <h1 className="font-bold text-3xl">No posts!</h1>
                     </div>
-                    
-                </div> : null}
+                ) : null}
+
+                {errorOccurred ? (
+                    <div className="w-full h-full flex items-center justify-center">
+                        <div>
+                            <h1 className="font-bold text-3xl text-black">
+                                Error occurred!
+                            </h1>
+                            <p className="text-black">
+                                Check console for more info
+                            </p>
+                        </div>
+                    </div>
+                ) : null}
             </div>
         </>
     );
