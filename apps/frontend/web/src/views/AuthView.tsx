@@ -6,7 +6,12 @@ import { useNavigate } from "react-router-dom";
 import { TransparentIconButton } from "../components/TransparentIconButton";
 import { storeAccessToken, storeRefreshToken } from "../auth/Authentication";
 import { AnimatePresence } from "framer-motion";
-import FadeUp from "../components/AnimatedPresenceDiv";
+import {FadeUp} from "../components/AnimatedPresenceDiv";
+import { useAuthenticationStore } from "../stores/AuthenticationStore";
+import { LodableButton } from "../components/LoadableButton";
+import { FullWidthInput } from "../components/FullWidthInput";
+import clsx from "clsx";
+import { notify, notifyErrorDefault, notifySuccessDefault } from "../stores/NotificationsStore";
 
 async function signUp(username: string, password: string, email: string) {
     try {
@@ -23,17 +28,31 @@ async function signUp(username: string, password: string, email: string) {
         });
 
         if (response.status != 201 && response.status != 200) {
-            alert(
-                `Failed to sign up: ${response.status} ${response.statusText}`,
-            );
+            // Attempt to extract text
+
+            try {
+                const body = await response.json();
+                const detail = body.detail;
+                if (detail) {
+                    notify({title: `Failed to sign up: ${detail}`, type: "error", durationMs: 5000})
+                } else {
+                    throw new Error("Parsing failed");
+                }
+            } catch {
+                notifyErrorDefault(`Failed to sign up: ${response.status} ${response.statusText}`)
+                /* alert(
+                    `Failed to sign up: ${response.status} ${response.statusText}`,
+                ); */
+            }
+
             return false;
         }
 
-        alert("Sign up successfull, please login");
+        notifySuccessDefault("Sign up successfull, please login");
         return true;
     } catch (e) {
         console.error("Failed: ", e);
-        alert("Failed to sign up");
+        notifyErrorDefault("Failed to sign up");
         return false;
     }
 }
@@ -58,14 +77,12 @@ async function login(username: string, password: string) {
                 const body = await response.json();
                 const detail = body.detail;
                 if (detail) {
-                    alert(`Failed to login: ${detail}`);
+                    notifyErrorDefault(`Failed to login: ${detail}`)
                 } else {
                     throw new Error("Parsing failed");
                 }
             } catch {
-                alert(
-                    `Failed to login: ${response.status} ${response.statusText}`,
-                );
+                notifyErrorDefault(`Failed to login: ${response.status} ${response.statusText}`)
             } finally {
                 return false;
             }
@@ -90,13 +107,14 @@ async function login(username: string, password: string) {
             );
         }
 
-        alert(
+        /* alert(
             "Login successfull. Cookies will not work unless this page is served on the actual backend server.",
-        );
+        ); */
+        useAuthenticationStore.setState({ isLoggedIn: true });
         return true;
     } catch (e) {
         console.error("Failed: ", e);
-        alert("Failed to login");
+        notifyErrorDefault("Failed to login");
         return false;
     }
 }
@@ -152,6 +170,7 @@ export function AuthView() {
     const navigate = useNavigate();
 
     const [isLogin, setIsLogin] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -176,24 +195,29 @@ export function AuthView() {
     const signUpPasswordRef: React.RefObject<HTMLInputElement | null> =
         useRef(null);
 
+    const linkClass = clsx(
+        "text-underline text-black text-md",
+        isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
+    );
+
     const loginUi = (
         <FadeUp className="flex flex-col gap-3 items-center" key="login">
             <h1 className="text-3xl font-bold text-black">Login</h1>
-            <input
-                className="px-2 py-2 border border-black/15 rounded-md w-full"
-                placeholder="Email"
-                type="email"
-                name="email"
+            <FullWidthInput
+                placeholder="Username"
+                type="text"
+                name="username"
                 ref={loginEmailRef}
-            ></input>
-            <input
-                className="px-2 py-2 border border-black/15 rounded-md w-full"
+                disabled={isLoading}
+            ></FullWidthInput>
+            <FullWidthInput
                 placeholder="Password"
                 type="password"
                 name="password"
                 ref={loginPasswordRef}
-            ></input>
-            <Button
+                disabled={isLoading}
+            ></FullWidthInput>
+            <LodableButton
                 text="Login"
                 onClick={async () => {
                     /* const validityResult = areInputsValid(
@@ -207,18 +231,21 @@ export function AuthView() {
                         return;
                     } */
 
+                    setIsLoading(true);
                     const success = await login(
                         loginEmailRef.current!.value,
                         loginPasswordRef.current!.value,
                     );
+                    setIsLoading(false);
                     if (success) {
                         navigate("/");
                     }
                 }}
-            ></Button>
+                isLoading={isLoading}
+            ></LodableButton>
 
             <span
-                className="text-underline text-black text-md cursor-pointer"
+                className={linkClass}
                 onClick={() => {
                     setIsLogin(false);
                 }}
@@ -233,30 +260,30 @@ export function AuthView() {
             <h1 className="text-3xl font-bold text-black">Sign up</h1>
             <div className="h-5"></div>
 
-            <input
-                className="px-2 py-2 border border-black/15 rounded-md w-full"
+            <FullWidthInput
                 placeholder="Username"
                 type="text"
                 name="username"
                 ref={signUpUsernameRef}
-            ></input>
-            <input
-                className="px-2 py-2 border border-black/15 rounded-md w-full"
+                disabled={isLoading}
+            ></FullWidthInput>
+            <FullWidthInput
                 placeholder="Email"
                 type="email"
-                ref={signUpEmailRef}
                 name="email"
-            ></input>
-            <input
-                className="px-2 py-2 border border-black/15 rounded-md w-full"
+                ref={signUpEmailRef}
+                disabled={isLoading}
+            ></FullWidthInput>
+            <FullWidthInput
                 placeholder="Password"
                 type="password"
-                ref={signUpPasswordRef}
                 name="password"
-            ></input>
-            <Button
+                ref={signUpPasswordRef}
+                disabled={isLoading}
+            ></FullWidthInput>
+            <LodableButton
                 text="Signup"
-                onClick={() => {
+                onClick={async () => {
                     const validityResult = areInputsValid(
                         isLogin,
                         signUpEmailRef.current!,
@@ -264,19 +291,22 @@ export function AuthView() {
                     );
 
                     if (!validityResult.isValid) {
-                        alert(`Invalid input: ${validityResult.message}`);
+                        notifyErrorDefault(`Invalid input: ${validityResult.message}`);
                         return;
                     }
-                    signUp(
+                    setIsLoading(true);
+                    await signUp(
                         signUpUsernameRef.current!.value,
                         signUpPasswordRef.current!.value,
                         signUpEmailRef.current!.value,
                     );
+                    setIsLoading(false);
                 }}
-            ></Button>
+                isLoading={isLoading}
+            ></LodableButton>
 
             <span
-                className="text-underline text-black text-md cursor-pointer"
+                className={linkClass}
                 onClick={() => {
                     setIsLogin(true);
                 }}
@@ -307,11 +337,7 @@ export function AuthView() {
                 ></TransparentIconButton>
             </span>
 
-            <div className="px-4 py-4 w-72">
-                <AnimatePresence mode="wait">
-                    {isLogin ? loginUi : signUpUi}
-                </AnimatePresence>
-            </div>
+            <div className="px-4 py-4 w-72">{isLogin ? loginUi : signUpUi}</div>
         </div>
     );
 }

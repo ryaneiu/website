@@ -1,4 +1,4 @@
-import FadeUp from "../../components/AnimatedPresenceDiv";
+import {FadeUp} from "../../components/AnimatedPresenceDiv";
 
 export function Trending() {
     return <FadeUp>

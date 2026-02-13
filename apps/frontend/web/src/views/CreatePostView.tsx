@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/Button";
 import { TransparentIconButton } from "../components/TransparentIconButton";
+import {FadeUp} from "../components/AnimatedPresenceDiv";
 
 export function CreatePostView() {
 
@@ -11,7 +12,7 @@ export function CreatePostView() {
     }
 
     return (
-        <div className="w-full h-[100vh] flex justify-center items-center">
+        <FadeUp className="w-full h-[100vh] flex justify-center items-center">
             <div className="flex flex-col gap-3 border border-black/15 px-4 py-2 items-center relative rounded-md">
                 <div className="absolute top-0 right-0 m-1">
                     <TransparentIconButton onClick={onCloseView} icon={<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#1f1f1f"><path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/></svg>}></TransparentIconButton>
@@ -46,6 +47,6 @@ export function CreatePostView() {
                     ></Button>
                 </div>
             </div>
-        </div>
+        </FadeUp>
     );
 }

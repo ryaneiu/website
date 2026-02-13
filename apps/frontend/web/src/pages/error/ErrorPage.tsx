@@ -1,4 +1,4 @@
-import FadeUp from "../../components/AnimatedPresenceDiv";
+import {FadeUp} from "../../components/AnimatedPresenceDiv";
 
 export function ErrorPage() {
     return <FadeUp className="w-full h-full items-center justify-center flex">

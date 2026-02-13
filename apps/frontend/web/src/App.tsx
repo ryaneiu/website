@@ -5,6 +5,11 @@ import { AuthView } from "./views/AuthView";
 import { useEffect } from "react";
 import { useScreenSizeState } from "./stores/ScreenSizeState";
 import { isDevelopmentMode } from "./auth/Authentication";
+import {
+    useAuthenticationStore,
+    verifyIsLoggedIn,
+} from "./stores/AuthenticationStore";
+import { NotificationList } from "./components/Notify";
 
 function hasShownDebugTip() {
     if (!isDevelopmentMode()) return true;
@@ -28,23 +33,39 @@ function App() {
     }, []);
 
     useEffect(() => {
-        if (!hasShownDebugTip()) {
-            alert("To debug a UI issue, use F12 or Ctrl + Shift + I to open the development tools. Then, press the console tab to see debug logs.");
+        if (!hasShownDebugTip() && isDevelopmentMode()) {
+            alert(
+                "To debug an issue, use F12 or Ctrl + Shift + I to open the development tools.\nTo see issues with the API (login failed, request failed, etc.), use the network tab.\nFor other issues, try the Console tab.",
+            );
             localStorage.setItem("debugTipShown", "true");
         }
     }, []);
 
+    useEffect(() => {
+        const f = async () => {
+            const loggedIn = await verifyIsLoggedIn();
+            useAuthenticationStore.setState({ isLoggedIn: loggedIn });
+        };
+        f();
+    }, []);
+
     return (
-        <BrowserRouter>
-            <Routes>
-                <Route path="/*" element={<PrimaryView></PrimaryView>}></Route>
-                <Route
-                    path="/create"
-                    element={<CreatePostView></CreatePostView>}
-                ></Route>
-                <Route path="/auth" element={<AuthView></AuthView>}></Route>
-            </Routes>
-        </BrowserRouter>
+        <>
+            <NotificationList></NotificationList>
+            <BrowserRouter>
+                <Routes>
+                    <Route
+                        path="/*"
+                        element={<PrimaryView></PrimaryView>}
+                    ></Route>
+                    <Route
+                        path="/create"
+                        element={<CreatePostView></CreatePostView>}
+                    ></Route>
+                    <Route path="/auth" element={<AuthView></AuthView>}></Route>
+                </Routes>
+            </BrowserRouter>
+        </>
     );
 }
 

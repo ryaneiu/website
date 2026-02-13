@@ -3,6 +3,8 @@ import { SideNavigationButton } from "./SideNavigationButton";
 import { DisplayedTab } from "../stores/DisplayedTabStore";
 import { useSideNavigationVisibility } from "../stores/SideNavigationVisibilityStore";
 import { useScreenSizeState } from "../stores/ScreenSizeState";
+import { AnimatePresence } from "framer-motion";
+import { FadeInFromLeft } from "../components/AnimatedPresenceDiv";
 
 type TabInfo = {
     id: number;
@@ -101,22 +103,26 @@ export function SideNavigation() {
 
     const visible = useSideNavigationVisibility((state) => state.visible);
 
-    return visible || screenSize > 640 ? (
-            <div className="flex flex-col border-r border-r-black/15 h-full gap-1 px-2 py-2 lg:min-w-60 min-w-0 fixed sm:relative sm:w-fit w-75 bg-white">
-                {TABS.map((tab) => {
-                    return (
-                        <SideNavigationButton
-                            key={tab.id}
-                            icon={tab.icon}
-                            text={tab.text}
-                            selected={
-                                window.location.pathname == tab.navgiateTo
-                            }
-                            navigateTo={tab.navgiateTo}
-                            filledIcon={tab.filledIcon}
-                        ></SideNavigationButton>
-                    );
-                })}
-            </div>
-    ) : null;
+    return (
+        <AnimatePresence>
+            {visible || screenSize > 640 ? (
+                <FadeInFromLeft className="flex flex-col border-r border-r-black/15 h-full gap-1 px-2 z-97 py-2 lg:min-w-60 min-w-0 fixed sm:relative sm:w-fit w-75 bg-white">
+                    {TABS.map((tab) => {
+                        return (
+                            <SideNavigationButton
+                                key={tab.id}
+                                icon={tab.icon}
+                                text={tab.text}
+                                selected={
+                                    window.location.pathname == tab.navgiateTo
+                                }
+                                navigateTo={tab.navgiateTo}
+                                filledIcon={tab.filledIcon}
+                            ></SideNavigationButton>
+                        );
+                    })}
+                </FadeInFromLeft>
+            ) : null}
+        </AnimatePresence>
+    );
 }

@@ -1,4 +1,5 @@
 import { API_ENDPOINT } from "../Config";
+import { notify, notifyErrorDefault, notifyWarningDefault } from "../stores/NotificationsStore";
 
 let warnedAboutSecurity = false;
 
@@ -14,6 +15,7 @@ export function isDevelopmentMode() {
 
 function warnAboutSecurity() {
     alert("[ WARNING / SEVERE SECURITY VULNERABILITY ] :\nCookies are not used for storing refresh and access tokens! For production, you MUST make the backend use secure HTTP cookies to exchange tokens!\nThe current implementation without cookies is highly vulnerable to XSS & token stealing.");
+    notifyWarningDefault("Severe Security Vulnerability detected");
 }
 
 export function getStoredRefreshToken() {
@@ -88,7 +90,7 @@ function isJwtExpired(token: string): boolean {
 
         // exp is in seconds since epoch
         const now = Math.floor(Date.now() / 1000);
-        
+
         if (payload.exp > now) {
             console.log("time to expiry: ", payload.exp - now, "seconds");
         }
@@ -100,47 +102,56 @@ function isJwtExpired(token: string): boolean {
     }
 }
 
-export async function refreshTokenIfNeeded(accessToken: string) : Promise<string | undefined> {
-    if (isJwtExpired(accessToken)) {
-        console.log("token expired, refreshing");
-        const refreshToken = getStoredRefreshToken();
-        if (!refreshToken) {
-            console.warn("No refresh token stored, not a development environment");
-        }
+export async function refreshTokenIfNeeded(accessToken: string): Promise<string | undefined> {
 
-        const response = await fetch(`${API_ENDPOINT}/token/refresh/`, {
-            method: 'POST',
-            headers: refreshToken != null ? {
-                "Content-Type": "application/json"
-            } : {},
-            body: refreshToken != null ? JSON.stringify({ refresh: refreshToken}) : null
-        });
-        if (response.status != 200) {
+    try {
+        if (isJwtExpired(accessToken)) {
+            console.log("token expired, refreshing");
+            const refreshToken = getStoredRefreshToken();
+            if (!refreshToken) {
+                console.warn("No refresh token stored, not a development environment");
+            }
 
-            // Attempt to read the response body
-            try {
-                const text = await response.json();
-                const detail = text.detail;
+            const response = await fetch(`${API_ENDPOINT}/token/refresh/`, {
+                method: 'POST',
+                headers: refreshToken != null ? {
+                    "Content-Type": "application/json"
+                } : {},
+                body: refreshToken != null ? JSON.stringify({ refresh: refreshToken }) : null
+            });
+            if (response.status != 200) {
 
-                if (detail) {
-                    console.error("Failed to refresh token: ", detail);
-                } else {
-                    throw new Error("Failed to parse");
+                // Attempt to read the response body
+                try {
+                    const text = await response.json();
+                    const detail = text.detail;
+
+                    if (detail) {
+                        notifyErrorDefault("Failed to refresh token: " + detail);
+                        console.error("Failed to refresh token: ", detail);
+                    } else {
+                        throw new Error("Failed to parse");
+                    }
+                } catch {
+                    notifyErrorDefault("Failed to refresh token");
+                    console.error("Failed to refresh token");
                 }
-            } catch {
-                console.error("Failed to refresh token");
+            } else {
+                // Refresh token OK
+
+                const data = await response.json();
+                const newAccessToken = data.access;
+                storeAccessToken(newAccessToken);
+                console.log("Access token OK");
+                return newAccessToken;
             }
         } else {
-            // Refresh token OK
-
-            const data = await response.json();
-            const newAccessToken = data.access;
-            storeAccessToken(newAccessToken);
-            console.log("Access token OK");
-            return newAccessToken;
+            console.log("Access token not expired");
+            return;
         }
-    } else {
-        console.log("Access token not expired");
-        return;
+    } catch (e) {
+        console.error("Refresh token check failed: ", e);
+        notifyErrorDefault("Failed to refresh token: " + e);
     }
+
 }

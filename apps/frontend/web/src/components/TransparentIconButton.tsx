@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import type { ReactNode } from "react";
+import { forwardRef, type ReactNode } from "react";
 
 interface Props {
     icon: ReactNode;
@@ -8,7 +8,7 @@ interface Props {
     onClick?: () => void;
 }
 
-export function TransparentIconButton(props: Props) {
+export const  TransparentIconButton = forwardRef<HTMLButtonElement, Props>(function TransparentIconButton(props: Props, ref) {
 
     const classes = clsx(
         "border border-black/0 hover:border-black/15 transition-colors cursor-pointer",
@@ -16,7 +16,7 @@ export function TransparentIconButton(props: Props) {
         props.larger ? "px-1 py-1" : "px-0.5 py-0.5"
     );
 
-    return <button onClick={props.onClick} className={classes}>
+    return <button onClick={props.onClick} className={classes} ref={ref}>
         {props.icon}
     </button>
-}
+});

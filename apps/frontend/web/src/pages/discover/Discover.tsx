@@ -1,4 +1,5 @@
-import FadeUp from "../../components/AnimatedPresenceDiv";
+import { FadeUp } from "../../components/AnimatedPresenceDiv";
+
 
 export function Discover() {
     // TODO: Discover page

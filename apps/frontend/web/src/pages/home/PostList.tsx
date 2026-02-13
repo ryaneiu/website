@@ -4,6 +4,7 @@ import { postsStore } from "../../stores/PostsStore";
 import { API_ENDPOINT } from "../../Config";
 import { useNavigate } from "react-router-dom";
 import { getStoredAccessToken } from "../../auth/Authentication";
+import { notifyErrorDefault } from "../../stores/NotificationsStore";
 
 export function PostList() {
     const posts = postsStore((state) => state.posts);
@@ -51,6 +52,7 @@ export function PostList() {
                             navigate("/auth?action=login");
                             throw new Error("Unauthorized");
                         }
+                        notifyErrorDefault("Couldn't fetch posts: " + response.statusText);
                         throw new Error(
                             "Error while fetching posts:" + response.statusText,
                         );
@@ -67,11 +69,12 @@ export function PostList() {
                 })
                 .catch((e) => {
                     console.error("Error while trying to fetch posts: ", e);
+                    notifyErrorDefault("An error occurred and we couldn't fetch posts");
                     setErrorOccurred(true);
                 });
         };
         a();
-    }, []);
+    });
 
     return (
         <>
