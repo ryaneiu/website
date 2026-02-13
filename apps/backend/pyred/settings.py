@@ -202,7 +202,7 @@ TEMPLATES = [
 
 # Optional: where collectstatic will collect files for production
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [    FRONTEND_DIST / "static",  # React SPA static files
-                        LOGIN_DIST / "static",     # Login SPA static files
+STATICFILES_DIRS = [    FRONTEND_DIST / "assets/",  # React SPA static files
+                             # Login SPA static files
                         ]
 STATIC_ROOT = BASE_DIR / "staticfiles"  # For collectstatic in production
