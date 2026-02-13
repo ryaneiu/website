@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -48,7 +49,7 @@ INSTALLED_APPS += [
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher',
 ]
-from datetime import timedelta
+
 
 REST_FRAMEWORK = {
     # How DRF authenticates users
@@ -64,7 +65,7 @@ REST_FRAMEWORK = {
 }
 
 
-from datetime import timedelta
+
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
@@ -170,7 +171,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
-from pathlib import Path
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIST = Path("C:/Users/ryanm/website/apps/frontend/web/dist")

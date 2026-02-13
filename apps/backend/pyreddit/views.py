@@ -1,29 +1,38 @@
 
 
 # Create your views here
+from typing import cast
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Post, Comment
-from .serializers import PostSerializer, CommentSerializer
-from django.contrib.auth.models import User
-from rest_framework.response import Response
-from django.contrib.auth.models import User
-from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 from django.contrib.auth.models import User
+from django.views.generic import TemplateView
 from django.contrib.auth import authenticate
+from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from django.views.generic import TemplateView
+from .models import Post, Comment
+from .serializers import PostSerializer, CommentSerializer
+
+
+
 
 class SignupView(APIView):
+    """
+    Sign up view
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
+        """
+        Docstring for post
+        
+        :param self: Description
+        :param request: Description
+        """
         email = request.data.get("email")
         username = request.data.get("username")
         password = request.data.get("password")
@@ -36,21 +45,31 @@ class SignupView(APIView):
         if User.objects.filter(email=email).exists():
             return Response({"detail": "Email already registered"}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = User.objects.create_user(username=username, email=email, password=password)
+        User.objects.create_user(username=username, email=email, password=password)
 
         return Response({"detail": "Signup successful"}, status=status.HTTP_201_CREATED)
 
 
 class LoginAPIView(APIView):
+    """
+    Login API view
+    """
+    
     permission_classes = [AllowAny]
 
     def post(self, request):
-        email = request.data.get("email")
-        password = request.data.get("password")
+        """
+        Docstring for post
+        
+        :param self: Description
+        :param request: Description
+        """
+        email: str = cast(str, cast(dict, request.data).get("email"))
+        password: str = cast(str, cast(dict, request.data).get("password"))
 
         try:
             user_obj = User.objects.get(email=email)
-        except User.DoesNotExist:
+        except User.DoesNotExist: # type: ignore
             return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
         user = authenticate(username=user_obj.username, password=password)
@@ -83,12 +102,19 @@ class LoginAPIView(APIView):
 
 
 class PostViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.all().order_by('-created_at')
+    queryset = Post.objects.all().order_by('-created_at') # type: ignore
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=True, methods=['post'])
     def upvote(self, request, pk=None):
+        """
+        Docstring for upvote
+        
+        :param self: Description
+        :param request: Description
+        :param pk: Description
+        """
         post = self.get_object()
         post.votes += 1
         post.save()
@@ -96,18 +122,35 @@ class PostViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def downvote(self, request, pk=None):
+        """
+        Docstring for downvote
+        
+        :param self: Description
+        :param request: Description
+        :param pk: Description
+        """
         post = self.get_object()
         post.votes -= 1
         post.save()
         return Response({'id': post.id, 'votes': post.votes})
 
 class CommentViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.all().order_by('-created_at')
+    """
+    Comment view
+    """
+    queryset = Comment.objects.all().order_by('-created_at') # type: ignore
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=True, methods=['post'])
     def upvote(self, request, pk=None):
+        """
+        Docstring for upvote
+        
+        :param self: Description
+        :param request: Description
+        :param pk: Description
+        """
         comment = self.get_object()
         comment.votes += 1
         comment.save()
@@ -115,18 +158,30 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def downvote(self, request, pk=None):
+        """
+        Docstring for downvote
+        
+        :param self: Description
+        :param request: Description
+        :param pk: Description
+        """
         comment = self.get_object()
         comment.votes -= 1
         comment.save()
         return Response({'id': comment.id, 'votes': comment.votes})
-from django.views.generic import TemplateView
-from django.conf import settings
+
 
 # Main website frontend
 class ActualWebsiteView(TemplateView):
+    """
+    Docstring for ActualWebsiteView
+    """
     template_name = str(settings.ACTUAL_WEBSITE_DIR / "index.html")
 
 # Login SPA
 class LoginView(TemplateView):
+    """
+    Docstring for LoginView
+    """
     template_name = str(settings.LOGIN_DIR / "index.html")
 

@@ -17,15 +17,12 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
-from django.views.static import serve
-from django.conf import settings
+from django.views.generic import TemplateView
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-#import backend_views 
-import pyreddit 
-from pyreddit.views import ActualWebsiteView, LoginAPIView, LoginView
-from django.urls import path, re_path
+from pyreddit.views import LoginView, SignupView
 from pyreddit.views import PostViewSet, CommentViewSet
+
 router = DefaultRouter()
 router.register(r'posts', PostViewSet)
 router.register(r'comments', CommentViewSet)
@@ -35,11 +32,9 @@ urlpatterns = [
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
-from django.urls import path, re_path
-from pyreddit.views import SignupView, LoginView
 
-# urls.py
-from django.views.generic import TemplateView
+
+
 
 urlpatterns += [
     path("", TemplateView.as_view(template_name="index.html")),
@@ -47,8 +42,6 @@ urlpatterns += [
     path("api/signup/", SignupView.as_view(), name="signup"),
     path("api/login/", LoginView.as_view(), name="login"),
 ]
-
-from django.urls import path, include
 
 urlpatterns += [
     path('api/posts/', include('posts.urls')),

@@ -1,20 +1,16 @@
-from django.urls import path, include
+
+from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
+from rest_framework import routers
+from pyreddit.views import SignupView, LoginView
+from . import backend_views
+from .views import ActualWebsiteView, LoginView
 from .views import PostViewSet, CommentViewSet
-from django.urls import path
-from .views import signup, protected
-from rest_framework.routers import DefaultRouter
-from .views import PostViewSet, CommentViewSet
+from . import views
+
 router = DefaultRouter()
 router.register(r'posts', PostViewSet)
 router.register(r'comments', CommentViewSet)
-from django.urls import path
-from pyreddit.views import SignupView, LoginView
-from django.urls import path, re_path
-from .views import ActualWebsiteView, LoginView
-from . import backend_views  # your existing backend endpoint
-import pyreddit # Ensure this is imported to register the viewsets with the router
-    
 
 urlpatterns = [
     path("auth/signup/", SignupView.as_view()),
@@ -22,15 +18,12 @@ urlpatterns = [
     path('', include(router.urls)),
            # router handles /posts/ and /comments/
 ]
-from rest_framework import routers
-from . import views
 
 router = routers.DefaultRouter()
 router.register(r'posts', views.PostViewSet)
 router.register(r'comments', views.CommentViewSet)
 
-from django.urls import path, re_path
-from django.views.generic import TemplateView
+
 
 urlpatterns += [
     # API endpoints go here first
