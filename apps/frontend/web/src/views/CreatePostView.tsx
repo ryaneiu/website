@@ -1,8 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../components/Button";
 import { TransparentIconButton } from "../components/TransparentIconButton";
 import { FadeUp } from "../components/AnimatedPresenceDiv";
+import { notify, notifyErrorDefault, notifySuccessDefault } from "../stores/NotificationsStore";
+import { LoadableButton } from "../components/LoadableButton";
+import { TextAreaInput } from "../components/TextAreaInput";
+import { InputComponent } from "../components/InputComponent";
+import { getStoredAccessToken } from "../auth/Authentication";
+import { extractDetailFromErrorResponse } from "../Utils";
+import { API_ENDPOINT } from "../Config";
 
 export function CreatePostView() {
     const navigate = useNavigate();
@@ -24,27 +30,43 @@ export function CreatePostView() {
 
         setLoading(true);
         try {
-            const res = await fetch("http://127.0.0.1:8000/api/posts/", {
+
+            console.log("Title: ", title, " content: ", content);
+
+            const token = await getStoredAccessToken();
+            if (!token) {
+                throw new Error("No access token");
+            }
+
+            const res = await fetch(`${API_ENDPOINT}/api/posts/`, {
                 method: "POST",
-                credentials: "include", // if using session auth
                 headers: {
                     "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ title, content }),
+                body: JSON.stringify({ title: title, content: content }),
             });
 
-            if (!res.ok) throw new Error("Failed to create post");
+            if (!res.ok) {
+                // Try to extract detail field
+                const detail = await extractDetailFromErrorResponse(res);
+                if (detail) throw new Error(detail);
+                else throw new Error("Failed to create post: " + res.statusText);
+            }
 
             const data = await res.json();
             console.log("Post created:", data);
 
-            alert("Post created!");
+            /// alert("Post created!");
+            notifySuccessDefault("Post created!");
             setTitle("");
             setContent("");
             navigate("/"); // back to homepage or wherever
         } catch (err) {
             console.error(err);
-            alert("Error creating post");
+            // alert("Error creating post");
+            notifyErrorDefault("Error while creating post: " + err);
+            notifyErrorDefault("note: not implemented. Unable to create post from the client because no appropriate post creation & publish endpoints are exposed and usable.")
         } finally {
             setLoading(false);
         }
@@ -74,24 +96,26 @@ export function CreatePostView() {
                 <h1 className="text-3xl font-bold text-black">Create Post</h1>
 
                 {/* Title input */}
-                <input
-                    className="border p-2 w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] rounded-md focus:outline-none focus:border-black/35"
+                <InputComponent
+                    className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw]"
                     placeholder="Title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
+                    disabled={loading}
                 />
 
                 {/* Content textarea */}
-                <textarea
+                <TextAreaInput
                     className="px-2 py-2 w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] h-[60vh] rounded-md border border-black/15 focus:outline-none focus:border-black/35"
                     placeholder="Your random thoughts..."
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                ></textarea>
+                    disabled={loading}
+                ></TextAreaInput>
 
                 {/* Publish button */}
                 <div>
-                    <Button
+                    <LoadableButton
                         text={loading ? "Publishing..." : "Publish Post"}
                         isPrimary={true}
                         icon={
@@ -107,7 +131,8 @@ export function CreatePostView() {
                         }
                         iconAtRight={true}
                         onClick={onPublishPost}
-                        disabled={loading}
+                        isLoading={loading}
+                        isWhiteSpinner={true}
                     />
                 </div>
             </div>

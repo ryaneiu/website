@@ -6,7 +6,7 @@ import { TransparentIconButton } from "../components/TransparentIconButton";
 import { storeAccessToken, storeRefreshToken } from "../auth/Authentication";
 import { FadeUp } from "../components/AnimatedPresenceDiv";
 import { useAuthenticationStore } from "../stores/AuthenticationStore";
-import { LodableButton } from "../components/LoadableButton";
+import { LoadableButton } from "../components/LoadableButton";
 import { FullWidthInput } from "../components/FullWidthInput";
 import clsx from "clsx";
 import {
@@ -225,7 +225,7 @@ export function AuthView() {
                 ref={loginPasswordRef}
                 disabled={isLoading}
             ></FullWidthInput>
-            <LodableButton
+            <LoadableButton
                 text="Login"
                 onClick={async () => {
                     /* const validityResult = areInputsValid(
@@ -250,7 +250,7 @@ export function AuthView() {
                     }
                 }}
                 isLoading={isLoading}
-            ></LodableButton>
+            ></LoadableButton>
 
             <span
                 className={linkClass}
@@ -289,7 +289,7 @@ export function AuthView() {
                 ref={signUpPasswordRef}
                 disabled={isLoading}
             ></FullWidthInput>
-            <LodableButton
+            <LoadableButton
                 text="Signup"
                 onClick={async () => {
                     const validityResult = areInputsValid(
@@ -313,7 +313,7 @@ export function AuthView() {
                     setIsLoading(false);
                 }}
                 isLoading={isLoading}
-            ></LodableButton>
+            ></LoadableButton>
 
             <span
                 className={linkClass}

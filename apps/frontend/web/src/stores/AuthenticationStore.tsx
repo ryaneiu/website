@@ -26,7 +26,7 @@ export async function verifyIsLoggedIn() {
     }
 
 
-    const response = await fetch(`${API_ENDPOINT}/token/refresh`, {
+    const response = await fetch(`${API_ENDPOINT}/token/refresh/`, {
         method: 'POST',
         credentials: 'include',
         body: JSON.stringify({
