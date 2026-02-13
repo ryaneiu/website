@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TransparentIconButton } from "../components/TransparentIconButton";
 import { FadeUp } from "../components/AnimatedPresenceDiv";
-import { notify, notifyErrorDefault, notifySuccessDefault } from "../stores/NotificationsStore";
+import { notifyErrorDefault, notifySuccessDefault } from "../stores/NotificationsStore";
 import { LoadableButton } from "../components/LoadableButton";
 import { TextAreaInput } from "../components/TextAreaInput";
 import { InputComponent } from "../components/InputComponent";
