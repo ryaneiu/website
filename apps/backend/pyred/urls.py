@@ -47,3 +47,12 @@ urlpatterns += [
     path("api/signup/", SignupView.as_view(), name="signup"),
     path("api/login/", LoginView.as_view(), name="login"),
 ]
+
+from django.urls import path, include
+
+urlpatterns += [
+    path('api/posts/', include('posts.urls')),
+    
+]
+
+
