@@ -15,7 +15,7 @@ from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+FRONTEND_DIST = BASE_DIR / "../frontend/web/dist"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -27,7 +27,6 @@ SECRET_KEY = 'django-insecure-_3vxbtx+8s_=%xsj9rmv=y=1m-&ubrdi1+!vhtom1qu$@3jaxd
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -42,14 +41,12 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     'rest_framework_simplejwt.token_blacklist',
-]
-INSTALLED_APPS += [
     "posts",
 ]
+
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher',
 ]
-
 
 REST_FRAMEWORK = {
     # How DRF authenticates users
@@ -63,9 +60,6 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAdminUser",
     ],
 }
-
-
-
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
@@ -81,9 +75,6 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_SAMESITE": "Lax",     # Good default
 }
 AUTH_COOKIE_SECURE = False  # Set to True in production with HTTPS
-
-
-
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -101,7 +92,7 @@ ROOT_URLCONF = 'pyred.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [FRONTEND_DIST],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -144,16 +135,18 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     'http://localhost:8000',
+    'http://localhost:8001',
 ]
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     'http://localhost:8000',
+    'http://localhost:8001',
 ]
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
@@ -169,40 +162,12 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-FRONTEND_DIST = Path("C:/Users/ryanm/website/apps/frontend/web/dist")
-LOGIN_DIST = Path("C:/Users/ryanm/website/apps/frontend/web-login/dist")
-
-# ^ adjust so BASE_DIR points to website/ (the root folder)
-ACTUAL_WEBSITE_DIR = BASE_DIR / "apps/frontend/web/dist"
-LOGIN_DIR = BASE_DIR / "apps/frontend/web-login/dist"
-TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [
-            FRONTEND_DIST,  # React SPA
-            LOGIN_DIST,     # Login SPA
-        ],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-            ],
-        },
-    },
+# Serve Vite dist files as static files
+STATICFILES_DIRS = [
+    FRONTEND_DIST / 'assets',
 ]
-# Static files (CSS, JS, images)
 
-
-# Optional: tell Django where to look for static files
-
-
-# Optional: where collectstatic will collect files for production
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [    FRONTEND_DIST / "assets/",  # React SPA static files
-                             # Login SPA static files
-                        ]
-STATIC_ROOT = BASE_DIR / "staticfiles"  # For collectstatic in production
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

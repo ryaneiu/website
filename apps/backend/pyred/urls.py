@@ -16,16 +16,22 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.views.generic import TemplateView
+from django.views.static import serve
+from pathlib import Path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from pyreddit.views import LoginView, SignupView
+from pyreddit.views import LoginAPIView, SignupView
 from pyreddit.views import PostViewSet, CommentViewSet
 
 router = DefaultRouter()
 router.register(r'posts', PostViewSet)
 router.register(r'comments', CommentViewSet)
+
+# Get the frontend dist directory
+BASE_DIR = Path(__file__).resolve().parent.parent
+FRONTEND_DIST = BASE_DIR / "../frontend/web/dist"
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -33,16 +39,20 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
-
-
-
+# API endpoints
 urlpatterns += [
-    path("", TemplateView.as_view(template_name="index.html")),
     path("api/", include(router.urls)),
     path("api/signup/", SignupView.as_view(), name="signup"),
-    path("api/login/", LoginView.as_view(), name="login"),
+    path("api/login/", LoginAPIView.as_view(), name="login"),
+    path('api/posts/', include('posts.urls')),
 ]
 
+# Serve static files from dist
 urlpatterns += [
-    path('api/posts/', include('posts.urls')),
+    re_path(r'^static/(?P<path>.*)$', serve, {'document_root': FRONTEND_DIST / 'assets'}),
+]
+
+# Catch-all: serve index.html for all non-API routes (SPA)
+urlpatterns += [
+    re_path(r'^.*$', TemplateView.as_view(template_name="index.html"), name="spa"),
 ]

@@ -182,11 +182,11 @@ class ActualWebsiteView(TemplateView):
     """
     Docstring for ActualWebsiteView
     """
-    template_name = str(settings.ACTUAL_WEBSITE_DIR / "index.html")
+    template_name = "index.html"
 
 # Login SPA
 class LoginView(TemplateView):
     """
     Docstring for LoginView
     """
-    template_name = str(settings.LOGIN_DIR / "index.html")
+    template_name = "index.html"
