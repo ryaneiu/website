@@ -1,6 +1,8 @@
+"""
+Docstring for apps.backend.posts.urls
+"""
 
 #usual django paths
-from django.urls import path
 from django.urls import path, include
 from .views import CreatePostView, PublishPostView
 
