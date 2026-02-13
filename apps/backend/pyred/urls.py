@@ -48,11 +48,23 @@ urlpatterns += [
 ]
 
 # Serve static files from dist
-urlpatterns += [
-    re_path(r'^static/(?P<path>.*)$', serve, {'document_root': FRONTEND_DIST / 'assets'}),
-]
 
 # Catch-all: serve index.html for all non-API routes (SPA)
 urlpatterns += [
-    re_path(r'^.*$', TemplateView.as_view(template_name="index.html"), name="spa"),
+    re_path(
+    r'^(?!api/|admin/|token/).*$', 
+    TemplateView.as_view(template_name="index.html"), 
+    name="spa"
+    ),
+
+]
+# apps/backend/pyred/urls.py
+from django.urls import path
+from django.views.generic import TemplateView
+
+urlpatterns += [
+    # ... your admin/api routes ...
+    
+    # This serves the Vite index.html for the home page
+    path("", TemplateView.as_view(template_name="index.html"), name="index"),
 ]

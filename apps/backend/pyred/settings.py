@@ -14,8 +14,8 @@ from pathlib import Path
 from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-FRONTEND_DIST = BASE_DIR / "../frontend/web/dist"
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+FRONTEND_DIST = BASE_DIR / "apps/frontend/web/dist"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     "posts",
 ]
+INSTALLED_APPS += [
+    "django_vite",
+]
 
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher',
@@ -60,7 +63,19 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAdminUser",
     ],
 }
+# Tell Django where the manifest and dev server are
+# settings.py
 
+# In your settings.py
+
+DJANGO_VITE = {
+    "default": {
+        "dev_mode": True,  # Note: logic might require this to be 'True' (bool)
+        "dev_server_host": "localhost",
+        "dev_server_port": 5173,
+        # Add other config here if needed
+    }
+}
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
@@ -92,7 +107,12 @@ ROOT_URLCONF = 'pyred.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [FRONTEND_DIST],
+        'DIRS': [
+            BASE_DIR / "templates",
+            BASE_DIR.parent / "apps/frontend/web/dist", # Add this line
+        ],
+        
+ 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -162,12 +182,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = '/static/'
+
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Serve Vite dist files as static files
-STATICFILES_DIRS = [
-    FRONTEND_DIST / 'assets',
-]
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+STATIC_URL = "/static/"
+# Make sure Django knows where the build files live for production/dist mode
+STATICFILES_DIRS = [
+    BASE_DIR.parent / "apps/frontend/web/dist",
+]
