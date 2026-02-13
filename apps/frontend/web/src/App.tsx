@@ -31,7 +31,7 @@ function App() {
         handleResize();
 
         return () => window.removeEventListener("resize", handleResize);
-    }, []);
+    }, [setSize]);
 
     useEffect(() => {
         if (!hasShownDebugTip() && isDevelopmentMode()) {

@@ -1,15 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { API_ENDPOINT } from "../Config";
 import { useNavigate } from "react-router-dom";
 import { TransparentIconButton } from "../components/TransparentIconButton";
 import { storeAccessToken, storeRefreshToken } from "../auth/Authentication";
-import {FadeUp} from "../components/AnimatedPresenceDiv";
+import { FadeUp } from "../components/AnimatedPresenceDiv";
 import { useAuthenticationStore } from "../stores/AuthenticationStore";
 import { LodableButton } from "../components/LoadableButton";
 import { FullWidthInput } from "../components/FullWidthInput";
 import clsx from "clsx";
-import { notify, notifyErrorDefault, notifySuccessDefault } from "../stores/NotificationsStore";
+import {
+    notify,
+    notifyErrorDefault,
+    notifySuccessDefault,
+} from "../stores/NotificationsStore";
 
 async function signUp(username: string, password: string, email: string) {
     try {
@@ -32,12 +36,18 @@ async function signUp(username: string, password: string, email: string) {
                 const body = await response.json();
                 const detail = body.detail;
                 if (detail) {
-                    notify({title: `Failed to sign up: ${detail}`, type: "error", durationMs: 5000})
+                    notify({
+                        title: `Failed to sign up: ${detail}`,
+                        type: "error",
+                        durationMs: 5000,
+                    });
                 } else {
                     throw new Error("Parsing failed");
                 }
             } catch {
-                notifyErrorDefault(`Failed to sign up: ${response.status} ${response.statusText}`)
+                notifyErrorDefault(
+                    `Failed to sign up: ${response.status} ${response.statusText}`,
+                );
                 /* alert(
                     `Failed to sign up: ${response.status} ${response.statusText}`,
                 ); */
@@ -55,7 +65,7 @@ async function signUp(username: string, password: string, email: string) {
     }
 }
 
-async function login(username: string, password: string) {
+async function login(username: string, password: string): Promise<boolean> {
     try {
         const response = await fetch(`${API_ENDPOINT}/token/`, {
             method: "POST",
@@ -75,15 +85,16 @@ async function login(username: string, password: string) {
                 const body = await response.json();
                 const detail = body.detail;
                 if (detail) {
-                    notifyErrorDefault(`Failed to login: ${detail}`)
+                    notifyErrorDefault(`Failed to login: ${detail}`);
                 } else {
                     throw new Error("Parsing failed");
                 }
             } catch {
-                notifyErrorDefault(`Failed to login: ${response.status} ${response.statusText}`)
-            } finally {
-                return false;
+                notifyErrorDefault(
+                    `Failed to login: ${response.status} ${response.statusText}`,
+                );
             }
+            return false;
         }
 
         try {
@@ -167,20 +178,19 @@ function areInputsValid(
 export function AuthView() {
     const navigate = useNavigate();
 
-    const [isLogin, setIsLogin] = useState(true);
-    const [isLoading, setIsLoading] = useState(false);
+    const params = new URLSearchParams(window.location.search);
+    let isLoginInitial = false;
 
-    useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-
-        if (params.has("action")) {
-            if (params.get("action") == "login") {
-                setIsLogin(true);
-            } else if (params.get("action") == "signup") {
-                setIsLogin(false);
-            }
+    if (params.has("action")) {
+        if (params.get("action") == "login") {
+            isLoginInitial = true;
+        } else if (params.get("action") == "signup") {
+            isLoginInitial = false;
         }
-    }, []);
+    }
+
+    const [isLogin, setIsLogin] = useState(isLoginInitial);
+    const [isLoading, setIsLoading] = useState(false);
 
     const loginEmailRef: React.RefObject<HTMLInputElement | null> =
         useRef(null);
@@ -289,7 +299,9 @@ export function AuthView() {
                     );
 
                     if (!validityResult.isValid) {
-                        notifyErrorDefault(`Invalid input: ${validityResult.message}`);
+                        notifyErrorDefault(
+                            `Invalid input: ${validityResult.message}`,
+                        );
                         return;
                     }
                     setIsLoading(true);
