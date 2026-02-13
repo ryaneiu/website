@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "../components/Button";
 import { API_ENDPOINT } from "../Config";
 import { useNavigate } from "react-router-dom";
 import { TransparentIconButton } from "../components/TransparentIconButton";
 import { storeAccessToken, storeRefreshToken } from "../auth/Authentication";
-import { AnimatePresence } from "framer-motion";
 import {FadeUp} from "../components/AnimatedPresenceDiv";
 import { useAuthenticationStore } from "../stores/AuthenticationStore";
 import { LodableButton } from "../components/LoadableButton";

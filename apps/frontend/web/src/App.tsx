@@ -19,6 +19,7 @@ function hasShownDebugTip() {
 function App() {
     const setSize = useScreenSizeState((state) => state.setSize);
 
+
     useEffect(() => {
         const handleResize = () => {
             setSize(window.innerWidth, window.innerHeight);

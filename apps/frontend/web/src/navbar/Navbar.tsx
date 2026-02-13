@@ -4,7 +4,7 @@ import { TransparentIconButton } from "../components/TransparentIconButton";
 import { useScreenSizeState } from "../stores/ScreenSizeState";
 import { useSideNavigationVisibility } from "../stores/SideNavigationVisibilityStore";
 import { Dropdown } from "../components/Dropdown";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
     autoUpdate,
     flip,

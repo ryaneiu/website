@@ -1,5 +1,5 @@
 import { API_ENDPOINT } from "../Config";
-import { notify, notifyErrorDefault, notifyWarningDefault } from "../stores/NotificationsStore";
+import { notifyErrorDefault, notifyWarningDefault } from "../stores/NotificationsStore";
 
 let warnedAboutSecurity = false;
 

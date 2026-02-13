@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { useNotificationsStore } from "../stores/NotificationsStore";
-import { FadeUp, FadeUpLeaveUp } from "./AnimatedPresenceDiv";
+import { FadeUp } from "./AnimatedPresenceDiv";
 import { AnimatePresence } from "framer-motion";
 
 interface Props {
