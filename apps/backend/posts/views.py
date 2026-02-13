@@ -1,25 +1,28 @@
 """
-Docstring for apps.backend.posts.views
+Views for the posts app.
+
+Contains API views to list, create, and publish posts for the Reddit-like site.
 """
-# Create your views here.
 from rest_framework import generics, permissions
 from .models import Post
 from .serializers import PostSerializer
 
+# List all posts
+class PostListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [permissions.AllowAny]  # anyone can see posts
+
+# Create a post
 class CreatePostView(generics.CreateAPIView):
-    """
-    Docstring for CreatePostView
-    """
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, published=False)
 
+# Publish a post
 class PublishPostView(generics.UpdateAPIView):
-    """
-    Docstring for PublishPostView
-    """
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = Post.objects.all()

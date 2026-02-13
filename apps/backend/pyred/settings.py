@@ -159,7 +159,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Montreal'
 
 USE_I18N = True
 
@@ -201,6 +201,8 @@ TEMPLATES = [
 
 
 # Optional: where collectstatic will collect files for production
-STATICFILES_DIRS = [FRONTEND_DIST / "assets"]
-STATIC_ROOT = BASE_DIR / "staticfiles"
-STATIC_URL = "/assets/"
+STATIC_URL = 'static/'
+STATICFILES_DIRS = [    FRONTEND_DIST / "static",  # React SPA static files
+                        LOGIN_DIST / "static",     # Login SPA static files
+                        ]
+STATIC_ROOT = BASE_DIR / "staticfiles"  # For collectstatic in production
