@@ -44,7 +44,7 @@ export function CreatePostView() {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ title: title, content: content }),
+                body: JSON.stringify({ title, content }),
             });
 
             if (!res.ok) {
