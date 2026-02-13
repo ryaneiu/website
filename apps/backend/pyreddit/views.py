@@ -1,4 +1,6 @@
-
+"""
+Views
+"""
 
 # Create your views here
 from typing import cast
@@ -43,7 +45,7 @@ class SignupView(APIView):
         if User.objects.filter(username=username).exists():
             return Response({"detail": "Username taken"}, status=status.HTTP_400_BAD_REQUEST)
         if User.objects.filter(email=email).exists():
-            return Response({"detail": "Email already registered"}, 
+            return Response({"detail": "Email already registered"},
                             status=status.HTTP_400_BAD_REQUEST)
 
         User.objects.create_user(username=username, email=email, password=password)

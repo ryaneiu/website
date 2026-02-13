@@ -1,3 +1,6 @@
+"""
+Docstring for apps.backend.pyreddit.urls
+"""
 
 from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
@@ -30,8 +33,8 @@ urlpatterns += [
     # path("api/...", ...),
 
     # React SPA
-    path("actual_website/", 
-         ActualWebsiteView.as_view(template_name="index.html"), 
+    path("actual_website/",
+         ActualWebsiteView.as_view(template_name="index.html"),
          name="actual-website"),
 
     # Login SPA

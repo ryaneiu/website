@@ -45,7 +45,4 @@ urlpatterns += [
 
 urlpatterns += [
     path('api/posts/', include('posts.urls')),
-    
 ]
-
-

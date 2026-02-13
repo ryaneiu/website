@@ -9,8 +9,8 @@ class Post(models.Model):
     """
     Docstring for Post
     """
-    author = models.ForeignKey(User, 
-                               on_delete=models.CASCADE, 
+    author = models.ForeignKey(User,
+                               on_delete=models.CASCADE,
                                related_name="posts_posts")  # <--- add related_name
     title = models.CharField(max_length=255)
     content = models.TextField()
