@@ -3,7 +3,7 @@ Docstring for apps.backend.posts.urls
 """
 
 #usual django paths
-from django.urls import path, include
+from django.urls import path
 from .views import CreatePostView, PublishPostView
 
 urlpatterns = [

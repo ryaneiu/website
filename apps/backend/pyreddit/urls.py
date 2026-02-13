@@ -30,7 +30,9 @@ urlpatterns += [
     # path("api/...", ...),
 
     # React SPA
-    path("actual_website/", ActualWebsiteView.as_view(template_name="index.html"), name="actual-website"),
+    path("actual_website/", 
+         ActualWebsiteView.as_view(template_name="index.html"), 
+         name="actual-website"),
 
     # Login SPA
     path("auth?action=login/", LoginView.as_view(template_name="index.html"), name="login-spa"),

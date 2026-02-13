@@ -43,7 +43,8 @@ class SignupView(APIView):
         if User.objects.filter(username=username).exists():
             return Response({"detail": "Username taken"}, status=status.HTTP_400_BAD_REQUEST)
         if User.objects.filter(email=email).exists():
-            return Response({"detail": "Email already registered"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Email already registered"}, 
+                            status=status.HTTP_400_BAD_REQUEST)
 
         User.objects.create_user(username=username, email=email, password=password)
 
@@ -54,7 +55,7 @@ class LoginAPIView(APIView):
     """
     Login API view
     """
-    
+
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -102,12 +103,15 @@ class LoginAPIView(APIView):
 
 
 class PostViewSet(viewsets.ModelViewSet):
+    """
+    Post view set
+    """
     queryset = Post.objects.all().order_by('-created_at') # type: ignore
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=True, methods=['post'])
-    def upvote(self, request, pk=None):
+    def upvote(self, _request, _pk=None):
         """
         Docstring for upvote
         
@@ -121,7 +125,7 @@ class PostViewSet(viewsets.ModelViewSet):
         return Response({'id': post.id, 'votes': post.votes})
 
     @action(detail=True, methods=['post'])
-    def downvote(self, request, pk=None):
+    def downvote(self, _request, _pk=None):
         """
         Docstring for downvote
         
@@ -143,7 +147,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=True, methods=['post'])
-    def upvote(self, request, pk=None):
+    def upvote(self, _request, _pk=None):
         """
         Docstring for upvote
         
@@ -157,7 +161,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response({'id': comment.id, 'votes': comment.votes})
 
     @action(detail=True, methods=['post'])
-    def downvote(self, request, pk=None):
+    def downvote(self, _request, _pk=None):
         """
         Docstring for downvote
         
@@ -184,4 +188,3 @@ class LoginView(TemplateView):
     Docstring for LoginView
     """
     template_name = str(settings.LOGIN_DIR / "index.html")
-
