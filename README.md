@@ -1,7 +1,7 @@
 
 # React-2-Pytailred monorepo
 
-## We are building a Reddit-inspired web application using a modern full-stack setup. This website will later have more functionality than its counterpart. The objective of this website is to make some kind of Reddit at school [lucille-teasdale.ecoles.csmv.gouv ](https://lucille-teasdale.ecoles.csmv.qc.ca/) since reddit is blocked at school. This is a DRF backend with argon2 hashing with JWT cookies and a React + Tailwind + Vite frontend. Our website is fully SPA and currently not deployed. (only 2 developers, Ryan (@ryaneiu), and Cari, (@CariLT01)) Ryan currently is the host of this project and is working on the backend
+## We are building a Reddit-inspired web application using a modern full-stack setup. This website will later have more functionality than its counterpart. The objective of this website is to make some kind of Reddit at school [lucille-teasdale.ecoles.csmv.gouv ](https://lucille-teasdale.ecoles.csmv.qc.ca/) since reddit is blocked at school. This is a DRF backend with argon2 hashing with JWT cookies (Soon™) and a React + Tailwind + Vite frontend. Our website is fully SPA and currently not deployed. (only 2 developers, Ryan (@ryaneiu), and Cari, (@CariLT01)) Ryan currently is the host of this project and is working on the backend
 
 # Setup
 
