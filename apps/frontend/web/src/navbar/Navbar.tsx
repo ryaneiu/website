@@ -13,6 +13,7 @@ import {
     useFloating,
 } from "@floating-ui/react-dom";
 import { useAuthenticationStore } from "../stores/AuthenticationStore";
+import { storeAccessToken, storeRefreshToken } from "../auth/Authentication";
 
 function SignedOutButtons() {
     const navigate = useNavigate();
@@ -43,6 +44,8 @@ function SignedInProfile() {
 
     const referenceRef = useRef<HTMLButtonElement>(null);
 
+    const navigate = useNavigate();
+
     const { refs, x, y, strategy } = useFloating({
         middleware: [offset(6), flip(), shift({ padding: 8 })],
         whileElementsMounted: autoUpdate,
@@ -54,10 +57,24 @@ function SignedInProfile() {
         }
     }, [refs]);
 
-    const onOptionClicked = () => {
+    /* const onOptionClicked = () => {
         setDropdownVisible(false);
         alert("Not implemented");
-    };
+    }; */
+
+    const onLogoutClicked = () => {
+        setDropdownVisible(false);
+        alert("Note: this will only delete the refresh token on your browser. It will not be revoked and an attacker can still use the current refresh token to access your account even after logging out.");
+        storeAccessToken("");
+        storeRefreshToken("");
+        useAuthenticationStore.setState({isLoggedIn: false});
+        navigate("/auth?action=login");
+    }
+
+    const onEditProfileClicked = () => {
+        setDropdownVisible(false);
+        navigate("/profile");
+    }
 
     return (
         <div>
@@ -93,7 +110,7 @@ function SignedInProfile() {
                             </svg>
                         ),
                         text: "Edit Profile",
-                        onClick: onOptionClicked,
+                        onClick: onEditProfileClicked,
                     },
                     {
                         icon: (
@@ -108,7 +125,7 @@ function SignedInProfile() {
                             </svg>
                         ),
                         text: "Logout",
-                        onClick: onOptionClicked,
+                        onClick: onLogoutClicked,
                     },
                 ]}
                 floatingRef={refs.setFloating}

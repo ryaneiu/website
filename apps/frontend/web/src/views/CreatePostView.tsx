@@ -74,7 +74,7 @@ export function CreatePostView() {
 
     return (
         <FadeUp className="w-full h-[100vh] flex justify-center items-center">
-            <div className="flex flex-col gap-3 border border-black/15 px-4 py-2 items-center relative rounded-md bg-white">
+            <div className="flex flex-col gap-3 border border-black/15 px-4 py-2 items-center relative rounded-md bg-white shadow-lg">
                 {/* Close button */}
                 <div className="absolute top-0 right-0 m-1">
                     <TransparentIconButton

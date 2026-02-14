@@ -106,7 +106,7 @@ export function SideNavigation() {
     return (
         <AnimatePresence>
             {visible || screenSize > 640 ? (
-                <FadeInFromLeft className="flex flex-col border-r border-r-black/15 h-full gap-1 px-2 z-97 py-2 lg:min-w-60 min-w-0 fixed sm:relative sm:w-fit w-75 bg-white">
+                <FadeInFromLeft className="flex flex-col border-r border-r-black/15 h-full gap-1 px-2 z-97 py-2 lg:min-w-60 sm:min-w-fit min-w-75 fixed sm:relative sm:w-fit w-75 bg-white">
                     {TABS.map((tab) => {
                         return (
                             <SideNavigationButton

@@ -40,6 +40,7 @@ export function PrimaryView() {
                     onClick={() => {
                         navigate("/create");
                     }}
+                    additionalClasses="shadow-lg/20"
                 ></Button>
             </div>
         </div>

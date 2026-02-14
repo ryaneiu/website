@@ -6,6 +6,7 @@ import { useSideNavigationVisibility } from "./stores/SideNavigationVisibilitySt
 import { AnimatePresence } from "framer-motion";
 import { Fade } from "./components/AnimatedPresenceDiv";
 import { useScreenSizeState } from "./stores/ScreenSizeState";
+import { Profile } from "./pages/editProfile/Profile";
 
 export function MainArea() {
 
@@ -22,6 +23,7 @@ export function MainArea() {
             <Route index element={<Home></Home>}></Route>
             <Route path="discover" element={<Discover></Discover>}></Route>
             <Route path="trending" element={<Trending></Trending>}></Route>
+            <Route path="profile" element={<Profile></Profile>}></Route>
         </Routes>
     </div>;
 }

@@ -11,7 +11,6 @@ export function TextAreaInput({disabled = false, className, ...props}: Props) {
         disabled ? "cursor-not-allowed opacity-50" : "",
         className
     );
-
     
 
     return <textarea disabled={disabled} className={classes} {...props}></textarea>;
