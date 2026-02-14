@@ -1,7 +1,7 @@
 import {FadeUp} from "../../components/AnimatedPresenceDiv";
 import { PostList } from "./PostList";
 
-export function Home() {
+export default function Home() {
 
     return <FadeUp>
         <PostList></PostList>

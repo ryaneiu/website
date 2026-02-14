@@ -10,7 +10,7 @@ import { getStoredAccessToken } from "../auth/Authentication";
 import { extractDetailFromErrorResponse } from "../Utils";
 import { API_ENDPOINT } from "../Config";
 
-export function CreatePostView() {
+export default function CreatePostView() {
     const navigate = useNavigate();
 
     // Post state

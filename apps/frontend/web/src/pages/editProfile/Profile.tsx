@@ -6,7 +6,7 @@ import { SectionSeparator } from "../../components/SectionSeparator";
 import { Label } from "../../components/Label";
 import { Button } from "../../components/Button";
 
-export function Profile() {
+export default function Profile() {
     const [isProfilePicHovered, sethovered] = useState(false);
 
     return (

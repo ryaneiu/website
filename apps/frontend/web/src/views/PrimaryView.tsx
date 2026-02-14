@@ -4,7 +4,7 @@ import { MainArea } from "../MainArea";
 import { Navbar } from "../navbar/Navbar";
 import { SideNavigation } from "../navbar/sideNavigation";
 
-export function PrimaryView() {
+export default function PrimaryView() {
 
     const navigate = useNavigate();
 
