@@ -39,7 +39,7 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
-# API endpoints
+# API endpointsx
 urlpatterns += [
     path("api/", include(router.urls)),
     path("api/signup/", SignupView.as_view(), name="signup"),
