@@ -50,21 +50,9 @@ urlpatterns += [
 # Serve static files from dist
 
 # Catch-all: serve index.html for all non-API routes (SPA)
-urlpatterns += [
-    re_path(
-    r'^(?!api/|admin/|token/).*$', 
-    TemplateView.as_view(template_name="index.html"), 
-    name="spa"
-    ),
+from django.urls import re_path
+from pyreddit.views import spa
 
-]
-# apps/backend/pyred/urls.py
-from django.urls import path
-from django.views.generic import TemplateView
-
-urlpatterns += [
-    # ... your admin/api routes ...
-    
-    # This serves the Vite index.html for the home page
-    path("", TemplateView.as_view(template_name="index.html"), name="index"),
+urlpatterns = [
+    re_path(r"^.*$", spa),  # all URLs go to React
 ]
