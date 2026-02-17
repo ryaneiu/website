@@ -20,10 +20,7 @@ from .models import Post, Comment
 from .serializers import PostSerializer, CommentSerializer
 
 
-from django.shortcuts import render
 
-def spa(request):
-    return render(request, "index.html")
 
 class SignupView(APIView):
     """
