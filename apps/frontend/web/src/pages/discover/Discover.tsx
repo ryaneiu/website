@@ -1,7 +1,7 @@
 import { FadeUp } from "../../components/AnimatedPresenceDiv";
 
 
-export function Discover() {
+export default function Discover() {
     // TODO: Discover page
     return <FadeUp>
         <h1>TODO: Discover page</h1>

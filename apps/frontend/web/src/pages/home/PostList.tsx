@@ -5,10 +5,10 @@ import { API_ENDPOINT } from "../../Config";
 import { useNavigate } from "react-router-dom";
 import { getStoredAccessToken } from "../../auth/Authentication";
 import { notifyErrorDefault } from "../../stores/NotificationsStore";
+import { useAuthenticationStore } from "../../stores/AuthenticationStore";
 
 export function PostList() {
     const posts = postsStore((state) => state.posts);
-    const hasLoaded = postsStore((state) => state.hasLoaded);
 
     const [errorOccurred, setErrorOccurred] = useState(false);
 
@@ -16,13 +16,6 @@ export function PostList() {
 
     useEffect(() => {
         const a = async () => {
-            if (hasLoaded) {
-                return;
-            }
-            postsStore.setState({
-                posts: [],
-                hasLoaded: true,
-            });
 
             console.log("LOAD POSTS!");
             // Load posts
@@ -45,14 +38,23 @@ export function PostList() {
                             console.log(
                                 "dbg: received unauthorized; need to login. Redirecting",
                             );
+                            notifyErrorDefault(
+                                "You need to login before you can view the posts",
+                            );
                             postsStore.setState({
                                 posts: [],
                                 hasLoaded: true,
                             });
+                            useAuthenticationStore.setState({
+                                isLoggedIn: false,
+                            });
                             navigate("/auth?action=login");
-                            throw new Error("Unauthorized");
+                            // throw new Error("Unauthorized");
+                            return;
                         }
-                        notifyErrorDefault("Couldn't fetch posts: " + response.statusText);
+                        notifyErrorDefault(
+                            "Couldn't fetch posts: " + response.statusText,
+                        );
                         throw new Error(
                             "Error while fetching posts:" + response.statusText,
                         );
@@ -69,29 +71,32 @@ export function PostList() {
                 })
                 .catch((e) => {
                     console.error("Error while trying to fetch posts: ", e);
-                    notifyErrorDefault("An error occurred and we couldn't fetch posts");
+                    notifyErrorDefault(
+                        "An error occurred and we couldn't fetch posts",
+                    );
                     setErrorOccurred(true);
-                });
+                })
         };
         a();
-    });
+    }, [navigate]);
 
     return (
         <>
             <div className="flex flex-col gap-4 items-center w-full">
-                {posts.map((post, index) => {
-                    return (
-                        <Post
-                            title={post.title}
-                            description={post.body}
-                            timePublished={post.createdAt}
-                            key={index}
-                            upVotes={post.votes}
-                        ></Post>
-                    );
-                })}
+                {posts &&
+                    posts.map((post, index) => {
+                        return (
+                            <Post
+                                title={post.title}
+                                description={post.body}
+                                timePublished={post.createdAt}
+                                key={index}
+                                upVotes={post.votes}
+                            ></Post>
+                        );
+                    })}
 
-                {posts.length == 0 ? (
+                {posts == null || posts.length == 0 ? (
                     <div className="w-full h-full flex items-center justify-center">
                         <h1 className="font-bold text-3xl">No posts!</h1>
                     </div>

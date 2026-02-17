@@ -8,6 +8,7 @@ export interface ButtonProps {
     icon?: ReactNode;
     iconAtRight?: boolean;
     disabled?: boolean;
+    additionalClasses?: string;
 }
 
 export function Button(props: ButtonProps) {
@@ -17,7 +18,8 @@ export function Button(props: ButtonProps) {
         props.isPrimary
             ? "border-black bg-black text-white hover:bg-black/80"
             : "border-black/15 text-black bg-transparent hover:bg-black/15",
-        props.disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+        props.disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+        props.additionalClasses
     );
 
     return (

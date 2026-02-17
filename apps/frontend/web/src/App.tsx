@@ -1,8 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { CreatePostView } from "./views/CreatePostView";
-import { PrimaryView } from "./views/PrimaryView";
-import { AuthView } from "./views/AuthView";
-import { useEffect } from "react";
+import React, { Suspense, useEffect } from "react";
 import { useScreenSizeState } from "./stores/ScreenSizeState";
 import { isDevelopmentMode } from "./auth/Authentication";
 import {
@@ -10,15 +7,19 @@ import {
     verifyIsLoggedIn,
 } from "./stores/AuthenticationStore";
 import { NotificationList } from "./components/Notify";
+import { LoadingPageFallbackFS } from "./components/LoadingPageFallback";
 
 function hasShownDebugTip() {
     if (!isDevelopmentMode()) return true;
     return localStorage.getItem("debugTipShown") != null;
 }
 
+const PrimaryView = React.lazy(() => import("./views/PrimaryView"));
+const CreatePostView = React.lazy(() => import("./views/CreatePostView"));
+const AuthView = React.lazy(() => import("./views/AuthView"));
+
 function App() {
     const setSize = useScreenSizeState((state) => state.setSize);
-
 
     useEffect(() => {
         const handleResize = () => {
@@ -50,21 +51,29 @@ function App() {
         f();
     }, []);
 
+
     return (
         <>
             <NotificationList></NotificationList>
             <BrowserRouter>
-                <Routes>
-                    <Route
-                        path="/*"
-                        element={<PrimaryView></PrimaryView>}
-                    ></Route>
-                    <Route
-                        path="/create"
-                        element={<CreatePostView></CreatePostView>}
-                    ></Route>
-                    <Route path="/auth" element={<AuthView></AuthView>}></Route>
-                </Routes>
+                <Suspense
+                    fallback={<LoadingPageFallbackFS></LoadingPageFallbackFS>}
+                >
+                    <Routes>
+                        <Route
+                            path="/*"
+                            element={<PrimaryView></PrimaryView>}
+                        ></Route>
+                        <Route
+                            path="/create"
+                            element={<CreatePostView></CreatePostView>}
+                        ></Route>
+                        <Route
+                            path="/auth"
+                            element={<AuthView></AuthView>}
+                        ></Route>
+                    </Routes>
+                </Suspense>
             </BrowserRouter>
         </>
     );

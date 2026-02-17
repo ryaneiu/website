@@ -175,7 +175,7 @@ function areInputsValid(
     }
 }
 
-export function AuthView() {
+export default function AuthView() {
     const navigate = useNavigate();
 
     const params = new URLSearchParams(window.location.search);
