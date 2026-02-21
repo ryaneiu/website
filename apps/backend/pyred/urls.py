@@ -19,6 +19,8 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.views.generic import TemplateView
 from django.views.static import serve
+from django.conf import settings
+from django.conf.urls.static import static
 from pathlib import Path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -68,3 +70,7 @@ urlpatterns += [
     # This serves the Vite index.html for the home page
     path("", TemplateView.as_view(template_name="index.html"), name="index"),
 ]
+
+# Serve static files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])

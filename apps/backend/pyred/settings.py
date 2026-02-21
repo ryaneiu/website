@@ -191,8 +191,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-STATIC_URL = "/static/"
+STATIC_URL = "/assets/"
 # Make sure Django knows where the build files live for production/dist mode
-STATICFILES_DIR = [
-    BASE_DIR.parent / "apps/frontend/web/dist",
+STATICFILES_DIRS = [
+    BASE_DIR.parent / "apps/frontend/web/dist/assets",
 ]

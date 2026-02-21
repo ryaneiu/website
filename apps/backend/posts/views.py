@@ -11,7 +11,14 @@ from .serializers import PostSerializer
 class PostListCreateAPIView(generics.ListCreateAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    permission_classes = [permissions.AllowAny]  # anyone can see posts
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
 # Create a post
 class CreatePostView(generics.CreateAPIView):
