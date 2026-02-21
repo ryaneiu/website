@@ -1,0 +1,1 @@
+import{j as t,S as a,B as e}from"./index-Dxn2WRx0.js";function s(i){const n=i.isLoading?t.jsx(a,{isWhite:i.isWhiteSpinner}):i.icon;return t.jsx(e,{icon:n,iconAtRight:i.iconAtRight,isPrimary:i.isPrimary,onClick:i.onClick,text:i.text,disabled:i.isLoading||i.disabled})}export{s as L};
