@@ -66,7 +66,6 @@ export default function CreatePostView() {
             console.error(err);
             // alert("Error creating post");
             notifyErrorDefault("Error while creating post: " + err);
-            notifyErrorDefault("note: not implemented. Unable to create post from the client because no appropriate post creation & publish endpoints are exposed and usable.")
         } finally {
             setLoading(false);
         }

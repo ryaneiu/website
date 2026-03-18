@@ -9,12 +9,17 @@ class PostSerializer(serializers.ModelSerializer):
     """
     Docstring for PostSerializer
     """
+    content = serializers.CharField(source='body')
+
     class Meta:
         """
         Docstring for Meta
         """
         model = Post
-        fields = ['id', 'title', 'body', 'votes', 'created_at']
+        fields = ['id', 'title', 'body', 'content', 'votes', 'created_at']
+        extra_kwargs = {
+            'body': {'required': False},
+        }
 
 class CommentSerializer(serializers.ModelSerializer):
     """

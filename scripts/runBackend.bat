@@ -10,4 +10,4 @@ echo Starting Server
 
 rem Run Server
 cd apps/backend
-py manage.py runserver 8000 
+py manage.py runserver 8001 
