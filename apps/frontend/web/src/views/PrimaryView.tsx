@@ -16,7 +16,7 @@ export default function PrimaryView() {
                     <Navbar></Navbar>
                 </div>
 
-                <div className="flex-grow-1 flex">
+                <div className="flex-grow-1 flex h-full">
                     <SideNavigation></SideNavigation>
                     <MainArea></MainArea>
                 </div>

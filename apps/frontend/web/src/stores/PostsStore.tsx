@@ -4,7 +4,7 @@ type Post = {
     title: string;
     body: string;
     author: string;
-    createdAt: string;
+    created_at: string;
     votes: number;
 }
 

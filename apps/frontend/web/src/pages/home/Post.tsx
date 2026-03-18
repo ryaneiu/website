@@ -3,15 +3,15 @@ import { ReactionButton } from "../../components/ReactionButton";
 interface Props {
     title: string;
     description: string;
-    timePublished: string;
-    upVotes: number;
+    created_at: string;
+    votes: number;
 }
 
 export function Post(props: Props) {
     return (
         <div className="flex flex-col gap-2 bg-white border border-black/15 p-4 rounded-md w-full">
-            <h1 className="text-xl font-bold">{props.title}</h1>
-            <p>{props.description}</p>
+            <h1 className="text-xl font-bold whitespace-pre-wrap break-all">{props.title}</h1>
+            <p className="whitespace-pre-wrap break-all">{props.description}</p>
 
             <div className="flex gap-2">
                 <ReactionButton
@@ -26,7 +26,7 @@ export function Post(props: Props) {
                             <path d="m480-120-58-52q-101-91-167-157T150-447.5Q111-500 95.5-544T80-634q0-94 63-157t157-63q52 0 99 22t81 62q34-40 81-62t99-22q94 0 157 63t63 157q0 46-15.5 90T810-447.5Q771-395 705-329T538-172l-58 52Zm0-108q96-86 158-147.5t98-107q36-45.5 50-81t14-70.5q0-60-40-100t-100-40q-47 0-87 26.5T518-680h-76q-15-41-55-67.5T300-774q-60 0-100 40t-40 100q0 35 14 70.5t50 81q36 45.5 98 107T480-228Zm0-273Z" />
                         </svg>
                     }
-                    count={props.upVotes}
+                    count={props.votes}
                 ></ReactionButton>
                 <ReactionButton
                     icon={
@@ -44,7 +44,7 @@ export function Post(props: Props) {
                 ></ReactionButton>
             </div>
             <span className="text-black/50 text-sm">
-                Posted: {props.timePublished}
+                Posted: {props.created_at}
             </span>
         </div>
     );

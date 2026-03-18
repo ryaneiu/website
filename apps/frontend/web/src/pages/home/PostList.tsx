@@ -89,9 +89,9 @@ export function PostList() {
                             <Post
                                 title={post.title}
                                 description={post.body}
-                                timePublished={post.createdAt}
+                                created_at={post.created_at}
                                 key={index}
-                                upVotes={post.votes}
+                                votes={post.votes}
                             ></Post>
                         );
                     })}

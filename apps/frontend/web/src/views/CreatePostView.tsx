@@ -11,6 +11,7 @@ import { extractDetailFromErrorResponse } from "../Utils";
 import { API_ENDPOINT } from "../Config";
 
 export default function CreatePostView() {
+
     const navigate = useNavigate();
 
     // Post state
