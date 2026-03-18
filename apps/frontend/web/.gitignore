@@ -21,3 +21,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# DO NOT REMOVE
+# Not ignoring dist/* creates very complex merge conflicts
+# that are very hard to fix
+dist/*
