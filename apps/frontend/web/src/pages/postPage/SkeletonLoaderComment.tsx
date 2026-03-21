@@ -22,9 +22,15 @@ export function SkeletonLoaderComment(props: Props) {
                             <span className="w-full skeleton-loader h-4 rounded-md"></span>
                             <span className="w-[35%] skeleton-loader h-4 rounded-md"></span>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-3">
+                            <div className="flex gap-1 items-center">
                             <span className="w-6 h-6 rounded-full skeleton-loader rounded-full"></span>
-                            <span className="w-12 h-3 rounded-md skeleton-loader rounded-md"></span>
+                            <span className="w-9 h-3 rounded-md skeleton-loader rounded-md"></span>
+                            </div>
+                            <div className="flex gap-1 items-center">
+                            <span className="w-6 h-6 rounded-full skeleton-loader rounded-full"></span>
+                            <span className="w-16 h-3 rounded-md skeleton-loader rounded-md"></span>
+                            </div>
                         </div>
 
                         <div className="flex flex-col gap-2">
