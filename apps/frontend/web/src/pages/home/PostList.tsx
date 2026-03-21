@@ -21,6 +21,10 @@ export function PostList() {
             console.log("LOAD POSTS!");
             // Load posts
 
+            postsStore.setState({
+                hasLoaded: false
+            });
+
             const token = await getStoredAccessToken();
 
             fetch(`${API_ENDPOINT}/api/posts`, {
