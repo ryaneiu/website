@@ -1,10 +1,11 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import { useSideNavigationVisibility } from "./stores/SideNavigationVisibilityStore";
 import { AnimatePresence } from "framer-motion";
 import { Fade } from "./components/AnimatedPresenceDiv";
 import { useScreenSizeState } from "./stores/ScreenSizeState";
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect, useRef } from "react";
 import { LoadingPageFallback } from "./components/LoadingPageFallback";
+import { PostPage } from "./pages/postPage/PostPage";
 
 const Home = React.lazy(() => import("./pages/home/Home"));
 const Discover = React.lazy(() => import("./pages/discover/Discover"));
@@ -17,8 +18,17 @@ export function MainArea() {
     );
     const screenSize = useScreenSizeState((state) => state.width);
 
+    const mainContainer = useRef<HTMLDivElement>(null);
+    const location = useLocation();
+
+    useEffect(() => {
+        if (mainContainer.current) {
+            mainContainer.current.scrollTop = 0;
+        }
+    }, [location]);
+
     return (
-        <div className="flex-grow-1 h-full p-16 relative overflow-y-auto">
+        <div className="flex-grow-1 h-full p-16 relative overflow-y-auto" ref={mainContainer}>
             <AnimatePresence>
                 {sideNavigationOpen && screenSize < 640 && (
                     <Fade
@@ -63,6 +73,14 @@ export function MainArea() {
                         </Suspense>
                     }
                 />
+                <Route
+                    path="post/:id"
+                    element={
+                        <Suspense fallback={<LoadingPageFallback/>}>
+                            <PostPage></PostPage>
+                        </Suspense>
+                    }
+                ></Route>
             </Routes>
         </div>
     );

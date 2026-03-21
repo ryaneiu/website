@@ -173,7 +173,7 @@ export function Navbar() {
                 ></TransparentIconButton>
             )}
             <h1 className="font-bold text-2xl md:block hidden">
-                React-2-Pytailred
+                LT-Forum
             </h1>
 
             <input

@@ -103,6 +103,8 @@ export function PostList() {
                                 created_at={post.created_at}
                                 key={index}
                                 votes={post.votes}
+                                id={post.id}
+                                isInPostList={true}
                             ></Post>
                         );
                     })}

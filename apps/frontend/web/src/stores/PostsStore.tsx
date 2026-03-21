@@ -6,6 +6,7 @@ type Post = {
     author: string;
     created_at: string;
     votes: number;
+    id: number;
 }
 
 interface PostsStore {
