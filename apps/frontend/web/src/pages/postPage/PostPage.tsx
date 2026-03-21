@@ -25,7 +25,7 @@ export default function PostPage() {
     useEffect(() => {
         setTimeout(() => {
             setLoaded(true);
-        }, 500);
+        }, 1500);
     }, []);
 
     useEffect(() => {
@@ -55,12 +55,7 @@ export default function PostPage() {
                     subcomments: [],
                 },
             ],
-        },
-        {
-            author: "",
-            description: "",
-            subcomments: [],
-        },
+        }
     ];
 
     /* sample comments list */
