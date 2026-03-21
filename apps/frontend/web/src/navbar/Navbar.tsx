@@ -172,7 +172,7 @@ export function Navbar() {
                     larger={true}
                 ></TransparentIconButton>
             )}
-            <h1 className="font-bold text-2xl md:block hidden">
+            <h1 className="font-bold text-2xl md:block hidden ml-4">
                 LT-Forum
             </h1>
 
