@@ -6,7 +6,7 @@ import type { CommentType } from "./CommentType";
 import { SkeletonLoaderComment } from "./SkeletonLoaderComment";
 import { useEffect, useState } from "react";
 
-export function PostPage() {
+export default function PostPage() {
     /* temporary until API exposes an individual post query point */
 
     const { id } = useParams<{ id: string }>();

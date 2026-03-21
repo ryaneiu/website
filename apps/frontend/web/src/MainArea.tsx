@@ -5,12 +5,11 @@ import { Fade } from "./components/AnimatedPresenceDiv";
 import { useScreenSizeState } from "./stores/ScreenSizeState";
 import React, { Suspense, useEffect, useRef } from "react";
 import { LoadingPageFallback } from "./components/LoadingPageFallback";
-import { PostPage } from "./pages/postPage/PostPage";
-
 const Home = React.lazy(() => import("./pages/home/Home"));
 const Discover = React.lazy(() => import("./pages/discover/Discover"));
 const Trending = React.lazy(() => import("./pages/trending/Trending"));
 const Profile = React.lazy(() => import("./pages/editProfile/Profile"));
+const PostPage = React.lazy(() => import("./pages/postPage/PostPage"));
 
 export function MainArea() {
     const sideNavigationOpen = useSideNavigationVisibility(
