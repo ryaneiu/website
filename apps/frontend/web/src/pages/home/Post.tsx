@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { ReactionButton } from "../../components/ReactionButton";
+import ReactMarkdown from "react-markdown";
+import { timeAgo } from "../../Utils";
 
 interface Props {
     title: string;
@@ -7,11 +10,44 @@ interface Props {
     votes: number;
 }
 
+const MarkdownComponents: React.ComponentProps<typeof ReactMarkdown>["components"] = {
+  h1: ({ children }) => <span className="whitespace-pre-wrap break-all">{children}</span>,
+  h2: ({ children }) => <span className="whitespace-pre-wrap break-all">{children}</span>,
+  h3: ({ children }) => <span className="whitespace-pre-wrap break-all">{children}</span>,
+  p: ({ children }) => <p className="text-base text-black my-2 whitespace-pre-wrap break-all">{children}</p>,
+  code: ({children}) => <code className="rounded-md bg-black/5 p-0.5 m-0.5 whitespace-pre-wrap break-all">{children}</code>,
+  a: ({children}) => <span className="whitespace-pre-wrap break-all">{children}</span>
+  // You can add more elements like a, ul, li, img, etc.
+};
+
+
 export function Post(props: Props) {
+    const [expanded, setExpanded] = useState(false);
+    const truncatedText = props.description.slice(0, 500) + "...";
+    const truncatedTitle = props.title.slice(0, 100) + "...";
+    const needsExpandButton = props.description.length > 500;
+    const needsTruncatedTitle = props.title.length > 100;
+
+    
+
     return (
-        <div className="flex flex-col gap-2 bg-white border border-black/15 p-4 rounded-md w-full">
-            <h1 className="text-xl font-bold whitespace-pre-wrap break-all">{props.title}</h1>
-            <p className="whitespace-pre-wrap break-all">{props.description}</p>
+        <article className="flex flex-col gap-2 bg-white border border-black/15 p-4 rounded-md w-full shadow-md">
+            <h1 className="text-3xl font-bold whitespace-pre-wrap break-all">
+                {(needsTruncatedTitle && !expanded) ? truncatedTitle : props.title}
+            </h1>
+            <div>
+                <ReactMarkdown components={MarkdownComponents}>{expanded ? props.description : truncatedText}</ReactMarkdown>
+                {needsExpandButton && (
+                    <button
+                        className="text-blue-600 hover:underline focus:outline-none cursor-pointer"
+                        onClick={() => {
+                            setExpanded(!expanded);
+                        }}
+                    >
+                        {expanded ? "Show less" : "Show more"}
+                    </button>
+                )}
+            </div>
 
             <div className="flex gap-2">
                 <ReactionButton
@@ -44,8 +80,8 @@ export function Post(props: Props) {
                 ></ReactionButton>
             </div>
             <span className="text-black/50 text-sm">
-                Posted: {props.created_at}
+                Posted {timeAgo(props.created_at)}
             </span>
-        </div>
+        </article>
     );
 }

@@ -17,7 +17,6 @@ export function MainArea() {
     );
     const screenSize = useScreenSizeState((state) => state.width);
 
-
     return (
         <div className="flex-grow-1 h-full p-16 relative overflow-y-auto">
             <AnimatePresence>
@@ -31,20 +30,40 @@ export function MainArea() {
                 )}
             </AnimatePresence>
 
-            <Suspense fallback={<LoadingPageFallback></LoadingPageFallback>}>
-                <Routes>
-                    <Route index element={<Home></Home>}></Route>
-                    <Route
-                        path="discover"
-                        element={<Discover></Discover>}
-                    ></Route>
-                    <Route
-                        path="trending"
-                        element={<Trending></Trending>}
-                    ></Route>
-                    <Route path="profile" element={<Profile></Profile>}></Route>
-                </Routes>
-            </Suspense>
+            <Routes>
+                <Route
+                    index
+                    element={
+                        <Suspense fallback={<LoadingPageFallback />}>
+                            <Home />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="discover"
+                    element={
+                        <Suspense fallback={<LoadingPageFallback />}>
+                            <Discover />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="trending"
+                    element={
+                        <Suspense fallback={<LoadingPageFallback />}>
+                            <Trending />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="profile"
+                    element={
+                        <Suspense fallback={<LoadingPageFallback />}>
+                            <Profile />
+                        </Suspense>
+                    }
+                />
+            </Routes>
         </div>
     );
 }

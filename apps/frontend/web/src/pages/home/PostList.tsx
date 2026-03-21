@@ -6,9 +6,11 @@ import { useNavigate } from "react-router-dom";
 import { getStoredAccessToken } from "../../auth/Authentication";
 import { notifyErrorDefault } from "../../stores/NotificationsStore";
 import { useAuthenticationStore } from "../../stores/AuthenticationStore";
+import { PostSkeletonLoader } from "./PostSkeletonLoader";
 
 export function PostList() {
     const posts = postsStore((state) => state.posts);
+    const hasLoaded = postsStore((state) => state.hasLoaded);
 
     const [errorOccurred, setErrorOccurred] = useState(false);
 
@@ -16,7 +18,6 @@ export function PostList() {
 
     useEffect(() => {
         const a = async () => {
-
             console.log("LOAD POSTS!");
             // Load posts
 
@@ -75,7 +76,7 @@ export function PostList() {
                         "An error occurred and we couldn't fetch posts",
                     );
                     setErrorOccurred(true);
-                })
+                });
         };
         a();
     }, [navigate]);
@@ -83,6 +84,16 @@ export function PostList() {
     return (
         <>
             <div className="flex flex-col gap-4 items-center w-full">
+                {(!hasLoaded && !errorOccurred) && (
+                    <>
+                        <PostSkeletonLoader></PostSkeletonLoader>
+                        <PostSkeletonLoader></PostSkeletonLoader>
+                        <PostSkeletonLoader></PostSkeletonLoader>
+                        <PostSkeletonLoader></PostSkeletonLoader>
+                        <PostSkeletonLoader></PostSkeletonLoader>
+                    </>
+                )}
+
                 {posts &&
                     posts.map((post, index) => {
                         return (
@@ -96,7 +107,7 @@ export function PostList() {
                         );
                     })}
 
-                {posts == null || posts.length == 0 ? (
+                {(posts == null || posts.length == 0) && hasLoaded ? (
                     <div className="w-full h-full flex items-center justify-center">
                         <h1 className="font-bold text-3xl">No posts!</h1>
                     </div>

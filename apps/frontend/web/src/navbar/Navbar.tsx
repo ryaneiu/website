@@ -153,7 +153,7 @@ export function Navbar() {
     const isLoggedIn = useAuthenticationStore((state) => state.isLoggedIn);
 
     return (
-        <div className="gap-4 w-[100vw] h-16 bg-white border-b border-b-black/15 flex items-center px-2 py-2">
+        <header className="gap-4 w-[100vw] h-16 bg-white border-b border-b-black/15 flex items-center px-2 py-2">
             {screenSize < 640 && (
                 <TransparentIconButton
                     icon={
@@ -185,6 +185,6 @@ export function Navbar() {
             ) : (
                 <SignedOutButtons></SignedOutButtons>
             )}
-        </div>
+        </header>
     );
 }

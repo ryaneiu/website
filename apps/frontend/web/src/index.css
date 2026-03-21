@@ -8,3 +8,125 @@ Modifying this template may break your styles or cause unexpected behavior.
 [This warning is present in both template and derived files — check the filepath!]
 */
 @import "tailwindcss";
+
+@theme {
+    --animate-fade-in: fadeIn 0.3s ease-out forwards;
+    --animate-blur-in: blurIn 0.3s ease-out forwards;
+    --animate-fade-in-no-slide: fadeInNoSlide 0.3s ease-out forwards;
+    --animate-shimmer: shimmer 2s infinite;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes fadeIn {
+    0% {
+        transform: translateY(15px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0px);
+        opacity: 1;
+    }
+}
+
+@keyframes blurIn {
+    0% {
+        filter: blur(4px);
+    }
+
+    100% {
+        filter: blur(0);
+    }
+}
+
+@keyframes fadeInNoSlide {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% center;
+    }
+
+    100% {
+        background-position: 0% center;
+    }
+}
+
+.shimmer-text {
+    /* 1. The Color Setup */
+    /* We use a gradient: Base Color -> Shine Color -> Base Color */
+    background: linear-gradient(to right,
+            #b6b6b6 0%,
+            #b6b6b6 30%,
+            #424242 50%,
+            #b6b6b6 70%,
+            #b6b6b6 100%);
+
+    /* 2. The Magic Size */
+    /* The background must be larger than the text so we can animate it moving */
+    background-size: 200% auto;
+
+    /* 3. The Text Clip */
+    /* This clips the background to the shape of the letters */
+    color: transparent;
+    background-clip: text;
+    -webkit-background-clip: text;
+
+    /* 4. The Animation */
+    animation: shimmer 2s linear infinite;
+}
+
+.shimmer-div {
+    /* 1. The Color Setup */
+    /* We use a gradient: Base Color -> Shine Color -> Base Color */
+    background: linear-gradient(to right,
+            #ffffff 0%,
+            #ffffff 30%,
+            #9c9c9c 50%,
+            #ffffff 70%,
+            #ffffff 100%);
+
+    /* 2. The Magic Size */
+    /* The background must be larger than the text so we can animate it moving */
+    background-size: 200% auto;
+
+    /* 4. The Animation */
+    animation: shimmer 2s linear infinite;
+}
+
+.skeleton-loader {
+    /* 1. The Color Setup */
+    /* We use a gradient: Base Color -> Shine Color -> Base Color */
+    background: linear-gradient(to right,
+            rgba(200, 200, 200, 0.4) 0%,
+            /* base gray */
+            rgba(188, 206, 255, 0.7) 30%,
+            /* bright shimmer */
+            rgba(200, 200, 200, 0.6) 50%,
+            /* middle shimmer */
+            rgba(159, 193, 255, 0.7) 70%,
+            /* bright shimmer again */
+            rgba(200, 200, 200, 0.4) 100%);
+    /* base gray */
+
+    /* 2. The Magic Size */
+    /* The background must be larger than the text so we can animate it moving */
+    background-size: 200% auto;
+
+    /* 4. The Animation */
+    animation: shimmer 2s linear infinite;
+}
+
+.skeleton-loader-no-anim {
+    background-color: rgba(255, 255, 255, 0.1);
+}

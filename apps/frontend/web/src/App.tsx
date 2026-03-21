@@ -51,29 +51,36 @@ function App() {
         f();
     }, []);
 
-
     return (
         <>
             <NotificationList></NotificationList>
             <BrowserRouter>
-                <Suspense
-                    fallback={<LoadingPageFallbackFS></LoadingPageFallbackFS>}
-                >
-                    <Routes>
-                        <Route
-                            path="/*"
-                            element={<PrimaryView></PrimaryView>}
-                        ></Route>
-                        <Route
-                            path="/create"
-                            element={<CreatePostView></CreatePostView>}
-                        ></Route>
-                        <Route
-                            path="/auth"
-                            element={<AuthView></AuthView>}
-                        ></Route>
-                    </Routes>
-                </Suspense>
+                <Routes>
+                    <Route
+                        path="/*"
+                        element={
+                            <Suspense fallback={<LoadingPageFallbackFS />}>
+                                <PrimaryView />
+                            </Suspense>
+                        }
+                    />
+                    <Route
+                        path="/create"
+                        element={
+                            <Suspense fallback={<LoadingPageFallbackFS />}>
+                                <CreatePostView />
+                            </Suspense>
+                        }
+                    />
+                    <Route
+                        path="/auth"
+                        element={
+                            <Suspense fallback={<LoadingPageFallbackFS />}>
+                                <AuthView />
+                            </Suspense>
+                        }
+                    />
+                </Routes>
             </BrowserRouter>
         </>
     );
