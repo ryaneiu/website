@@ -1,4 +1,10 @@
 
-// Set to "" if these files are hosted on the same domain as the backend
+// Use same-origin in production, and backend :8000 while running Vite dev server
 
-export const API_ENDPOINT = "http://127.0.0.1:8001" // CHANGE IF NEEDED
+const hostname = window.location.hostname;
+const port = window.location.port;
+const isViteDevServer =
+    (hostname === "localhost" || hostname === "127.0.0.1") &&
+    (port === "5173" || port === "4173");
+
+export const API_ENDPOINT = isViteDevServer ? "http://127.0.0.1:8000" : "";

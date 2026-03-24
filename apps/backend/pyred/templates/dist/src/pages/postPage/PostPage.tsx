@@ -10,6 +10,7 @@ import { getStoredAccessToken } from "../../auth/Authentication";
 import { notifyErrorDefault } from "../../stores/NotificationsStore";
 import { CommentReplySection } from "./CommentReplySection";
 import { extractDetailFromErrorResponse } from "../../Utils";
+import { Button } from "../../components/Button";
 
 type PostResponse = {
     id: number;
@@ -43,43 +44,49 @@ export default function PostPage() {
     const postId = id != null ? Number.parseInt(id) : selectedPostId;
     const canDisplay = Number.isFinite(postId) && postId > 0;
 
-    const buildCommentTree = useCallback((replies: ReplyResponse[]): CommentType[] => {
-        const map = new Map<number, CommentType>();
+    const buildCommentTree = useCallback(
+        (replies: ReplyResponse[]): CommentType[] => {
+            const map = new Map<number, CommentType>();
 
-        replies.forEach((reply) => {
-            map.set(reply.id, {
-                id: reply.id,
-                postId: reply.post,
-                parentReplyId: reply.parent_reply,
-                author: reply.author_username,
-                description: reply.content_markdown || reply.content,
-                subcomments: [],
+            replies.forEach((reply) => {
+                map.set(reply.id, {
+                    id: reply.id,
+                    postId: reply.post,
+                    parentReplyId: reply.parent_reply,
+                    author: reply.author_username,
+                    description: reply.content_markdown || reply.content,
+                    subcomments: [],
+                });
             });
-        });
 
-        const roots: CommentType[] = [];
-        map.forEach((comment) => {
-            if (comment.parentReplyId == null) {
-                roots.push(comment);
-                return;
-            }
-            const parent = map.get(comment.parentReplyId);
-            if (parent) {
-                parent.subcomments.push(comment);
-            } else {
-                roots.push(comment);
-            }
-        });
+            const roots: CommentType[] = [];
+            map.forEach((comment) => {
+                if (comment.parentReplyId == null) {
+                    roots.push(comment);
+                    return;
+                }
+                const parent = map.get(comment.parentReplyId);
+                if (parent) {
+                    parent.subcomments.push(comment);
+                } else {
+                    roots.push(comment);
+                }
+            });
 
-        return roots;
-    }, []);
+            return roots;
+        },
+        [],
+    );
 
     const fetchReplies = useCallback(async () => {
         if (!canDisplay) return;
 
-        const response = await fetch(`${API_ENDPOINT}/api/posts/${postId}/replies/`, {
-            method: "GET",
-        });
+        const response = await fetch(
+            `${API_ENDPOINT}/api/posts/${postId}/replies/`,
+            {
+                method: "GET",
+            },
+        );
 
         if (!response.ok) {
             throw new Error("Failed to fetch replies");
@@ -95,7 +102,9 @@ export default function PostPage() {
 
             try {
                 const [postResponse] = await Promise.all([
-                    fetch(`${API_ENDPOINT}/api/posts/${postId}/`, { method: "GET" }),
+                    fetch(`${API_ENDPOINT}/api/posts/${postId}/`, {
+                        method: "GET",
+                    }),
                     fetchReplies(),
                 ]);
 
@@ -108,7 +117,8 @@ export default function PostPage() {
 
                 useSelectedPostStore.setState({
                     title: postPayload.title,
-                    description: postPayload.content_markdown || postPayload.content,
+                    description:
+                        postPayload.content_markdown || postPayload.content,
                     publishedTime: postPayload.created_at,
                     likes: postPayload.likes_count ?? postPayload.votes ?? 0,
                     comments: postPayload.replies_count ?? 0,
@@ -116,7 +126,11 @@ export default function PostPage() {
                     selectedAny: true,
                 });
             } catch (error) {
-                notifyErrorDefault(error instanceof Error ? error.message : "Failed to load post page");
+                notifyErrorDefault(
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to load post page",
+                );
             } finally {
                 setLoaded(true);
             }
@@ -163,10 +177,13 @@ export default function PostPage() {
                     subcomments: [],
                 },
             ],
-        }
+        },
     ];
 
-    const onCreateReply = async (parentReplyId: number | null, textContent: string) => {
+    const onCreateReply = async (
+        parentReplyId: number | null,
+        textContent: string,
+    ) => {
         if (!canDisplay || textContent.trim().length === 0) {
             return;
         }
@@ -177,18 +194,21 @@ export default function PostPage() {
             return;
         }
 
-        const response = await fetch(`${API_ENDPOINT}/api/posts/${postId}/replies/`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
+        const response = await fetch(
+            `${API_ENDPOINT}/api/posts/${postId}/replies/`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    content: textContent,
+                    content_markdown: textContent,
+                    parent_reply: parentReplyId,
+                }),
             },
-            body: JSON.stringify({
-                content: textContent,
-                content_markdown: textContent,
-                parent_reply: parentReplyId,
-            }),
-        });
+        );
 
         if (!response.ok) {
             const detail = await extractDetailFromErrorResponse(response);
@@ -216,12 +236,15 @@ export default function PostPage() {
             return;
         }
 
-        const response = await fetch(`${API_ENDPOINT}/api/posts/${postId}/like/`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${token}`,
+        const response = await fetch(
+            `${API_ENDPOINT}/api/posts/${postId}/like/`,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
             },
-        });
+        );
 
         if (!response.ok) {
             notifyErrorDefault("Failed to update like");
@@ -247,14 +270,14 @@ export default function PostPage() {
         <div className="flex flex-col items-center px-2 py-2">
             <div className="flex flex-col gap-2 w-full">
                 {!canDisplay && (
-                    <span className="text-black/50">
-                        Invalid post id.
-                    </span>
+                    <span className="text-black/50">Invalid post id.</span>
                 )}
                 {canDisplay && postData && (
                     <Post
                         title={postData.title}
-                        description={postData.content_markdown || postData.content}
+                        description={
+                            postData.content_markdown || postData.content
+                        }
                         created_at={postData.created_at}
                         votes={postData.likes_count ?? postData.votes ?? 0}
                         commentsCount={postData.replies_count ?? 0}
@@ -276,21 +299,41 @@ export default function PostPage() {
                     <div className="flex flex-col gap-2">
                         {!replyingToPost && (
                             <div className="w-full">
-                                <button
-                                    className="px-3 py-1 border border-black/20 rounded-md cursor-pointer"
+                                <Button
+                                    icon={
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            height="24px"
+                                            viewBox="0 -960 960 960"
+                                            width="24px"
+                                            fill="#fff"
+                                        >
+                                            <path d="M440-400h80v-120h120v-80H520v-120h-80v120H320v80h120v120ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z" />
+                                        </svg>
+                                    }
+                                    text="Reply"
                                     onClick={() => setReplyingToPost(true)}
-                                >
-                                    Add reply
-                                </button>
+                                    isPrimary={true}
+                                ></Button>
                             </div>
                         )}
 
                         {comments.map((v) => {
-                            return <Comment key={v.id} comment={v} onReplyCreate={(parentId, text) => onCreateReply(parentId, text)}></Comment>;
+                            return (
+                                <Comment
+                                    key={v.id}
+                                    comment={v}
+                                    onReplyCreate={(parentId, text) =>
+                                        onCreateReply(parentId, text)
+                                    }
+                                ></Comment>
+                            );
                         })}
 
                         {comments.length === 0 && (
-                            <span className="text-black/50">No replies yet.</span>
+                            <span className="text-black/50">
+                                No replies yet.
+                            </span>
                         )}
                     </div>
                 )}

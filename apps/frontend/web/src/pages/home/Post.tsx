@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ReactionButton } from "../../components/ReactionButton";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { timeAgo } from "../../Utils";
 import { useSelectedPostStore } from "../../stores/CurrentSelectedPostStore";
 import { useNavigate } from "react-router-dom";
@@ -56,7 +57,10 @@ export function Post(props: Props) {
                     : props.title}
             </h1>
             <div>
-                <ReactMarkdown components={MarkdownComponents}>
+                <ReactMarkdown
+                    components={MarkdownComponents}
+                    remarkPlugins={[remarkGfm]}
+                >
                     {expanded ? props.description : truncatedText}
                 </ReactMarkdown>
                 {needsExpandButton && props.isInPostList && (

@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { MarkdownComponents } from "../../MarkdownComponents";
 import { ReactionButton } from "../../components/ReactionButton";
 import type { CommentType } from "./CommentType";
@@ -45,7 +46,10 @@ export function Comment(props: Props) {
                         className="flex flex-col gap-2"
                         ref={commentContentRef}
                     >
-                        <ReactMarkdown components={MarkdownComponents}>
+                        <ReactMarkdown
+                            components={MarkdownComponents}
+                            remarkPlugins={[remarkGfm]}
+                        >
                             {props.comment.description}
                         </ReactMarkdown>
                         <div className="flex items-center gap-3">

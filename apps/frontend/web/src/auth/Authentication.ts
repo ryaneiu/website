@@ -141,7 +141,7 @@ export async function refreshTokenIfNeeded(accessToken: string): Promise<string 
     } catch (e) {
         console.error("Refresh token check failed: ", e);
         if (e instanceof TypeError) {
-            notifyErrorDefault("Couldn't contact auth server. Is backend running on port 8001?");
+            notifyErrorDefault("Couldn't contact auth server. Is backend running?");
         } else {
             notifyErrorDefault("Failed to refresh token: " + e);
         }
