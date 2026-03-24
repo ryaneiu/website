@@ -12,6 +12,13 @@ from rest_framework.views import APIView
 from .models import Post, Like, Reply, Subforum
 from .serializers import PostSerializer, ReplySerializer, SubforumSerializer
 
+
+class IsAuthorOrReadOnly(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return obj.author_id == request.user.id
+
 # List all posts
 class PostListCreateAPIView(generics.ListCreateAPIView):
     queryset = Post.objects.annotate(
@@ -35,13 +42,13 @@ class PostListCreateAPIView(generics.ListCreateAPIView):
         )
 
 
-class PostRetrieveAPIView(generics.RetrieveAPIView):
+class PostRetrieveAPIView(generics.RetrieveDestroyAPIView):
     queryset = Post.objects.annotate(
         likes_count=Count("likes", distinct=True),
         replies_count=Count("replies", distinct=True),
     )
     serializer_class = PostSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
     lookup_field = "id"
 
 # Create a post

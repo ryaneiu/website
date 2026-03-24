@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useSelectedPostStore } from "../../stores/CurrentSelectedPostStore";
 import { Post } from "../home/Post";
 import { Comment } from "./Comment";
@@ -11,16 +11,19 @@ import { notifyErrorDefault } from "../../stores/NotificationsStore";
 import { CommentReplySection } from "./CommentReplySection";
 import { extractDetailFromErrorResponse } from "../../Utils";
 import { Button } from "../../components/Button";
+import { postsStore } from "../../stores/PostsStore";
 
 type PostResponse = {
     id: number;
     title: string;
     content: string;
     content_markdown?: string;
+    author: number;
     likes_count?: number;
     votes?: number;
     replies_count?: number;
     created_at: string;
+    can_delete?: boolean;
 };
 
 type ReplyResponse = {
@@ -34,15 +37,18 @@ type ReplyResponse = {
 
 export default function PostPage() {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const selectedPostId = useSelectedPostStore((state) => state.postId);
 
     const [loaded, setLoaded] = useState<boolean>(false);
     const [replyingToPost, setReplyingToPost] = useState(false);
     const [comments, setComments] = useState<CommentType[]>([]);
     const [postData, setPostData] = useState<PostResponse | null>(null);
+    const [isDeletingPost, setIsDeletingPost] = useState(false);
 
     const postId = id != null ? Number.parseInt(id) : selectedPostId;
     const canDisplay = Number.isFinite(postId) && postId > 0;
+    const canDeletePost = postData?.can_delete === true;
 
     const buildCommentTree = useCallback(
         (replies: ReplyResponse[]): CommentType[] => {
@@ -266,6 +272,45 @@ export default function PostPage() {
         useSelectedPostStore.setState({ likes: likesCount });
     };
 
+    const onDeletePostClicked = async () => {
+        if (!canDisplay || !canDeletePost || isDeletingPost) return;
+
+        const shouldDelete = window.confirm(
+            "Delete this post permanently? This cannot be undone.",
+        );
+        if (!shouldDelete) return;
+
+        const token = await getStoredAccessToken();
+        if (!token) {
+            notifyErrorDefault("You need to be logged in to delete");
+            return;
+        }
+
+        setIsDeletingPost(true);
+        try {
+            const response = await fetch(`${API_ENDPOINT}/api/posts/${postId}/`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                const detail = await extractDetailFromErrorResponse(response);
+                notifyErrorDefault(detail ?? "Failed to delete post");
+                return;
+            }
+
+            postsStore.setState((prev) => ({
+                ...prev,
+                posts: prev.posts.filter((post) => post.id !== postId),
+            }));
+            navigate("/");
+        } finally {
+            setIsDeletingPost(false);
+        }
+    };
+
     return (
         <div className="flex flex-col items-center px-2 py-2">
             <div className="flex flex-col gap-2 w-full">
@@ -273,18 +318,40 @@ export default function PostPage() {
                     <span className="text-black/50">Invalid post id.</span>
                 )}
                 {canDisplay && postData && (
-                    <Post
-                        title={postData.title}
-                        description={
-                            postData.content_markdown || postData.content
-                        }
-                        created_at={postData.created_at}
-                        votes={postData.likes_count ?? postData.votes ?? 0}
-                        commentsCount={postData.replies_count ?? 0}
-                        id={postData.id}
-                        onLikeClick={onPostLikeClick}
-                        isInPostList={false}
-                    ></Post>
+                    <>
+                        <Post
+                            title={postData.title}
+                            description={
+                                postData.content_markdown || postData.content
+                            }
+                            created_at={postData.created_at}
+                            votes={postData.likes_count ?? postData.votes ?? 0}
+                            commentsCount={postData.replies_count ?? 0}
+                            id={postData.id}
+                            onLikeClick={onPostLikeClick}
+                            isInPostList={false}
+                        ></Post>
+                        {canDeletePost && (
+                            <div className="w-full">
+                                <Button
+                                    icon={
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            height="24px"
+                                            viewBox="0 -960 960 960"
+                                            width="24px"
+                                            fill="#1f1f1f"
+                                        >
+                                            <path d="M280-120q-33 0-56.5-23.5T200-200v-560h-40v-80h200v-40h240v40h200v80h-40v560q0 33-23.5 56.5T680-120H280Zm400-640H280v560h400v-560ZM360-280h80v-400h-80v400Zm160 0h80v-400h-80v400ZM280-760v560-560Z" />
+                                        </svg>
+                                    }
+                                    text={isDeletingPost ? "Deleting..." : "Delete Post"}
+                                    onClick={onDeletePostClicked}
+                                    disabled={isDeletingPost}
+                                ></Button>
+                            </div>
+                        )}
+                    </>
                 )}
 
                 {canDisplay && replyingToPost && (

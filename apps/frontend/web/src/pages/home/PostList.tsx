@@ -7,14 +7,54 @@ import { getStoredAccessToken } from "../../auth/Authentication";
 import { notifyErrorDefault } from "../../stores/NotificationsStore";
 import { useAuthenticationStore } from "../../stores/AuthenticationStore";
 import { PostSkeletonLoader } from "./PostSkeletonLoader";
+import { extractDetailFromErrorResponse } from "../../Utils";
 
 export function PostList() {
     const posts = postsStore((state) => state.posts);
     const hasLoaded = postsStore((state) => state.hasLoaded);
 
     const [errorOccurred, setErrorOccurred] = useState(false);
+    const [deletingPostId, setDeletingPostId] = useState<number | null>(null);
 
     const navigate = useNavigate();
+
+    const onDeletePost = async (postId: number) => {
+        if (deletingPostId != null) return;
+
+        const shouldDelete = window.confirm(
+            "Delete this post permanently? This cannot be undone.",
+        );
+        if (!shouldDelete) return;
+
+        const token = await getStoredAccessToken();
+        if (!token) {
+            notifyErrorDefault("You need to be logged in to delete");
+            return;
+        }
+
+        setDeletingPostId(postId);
+        try {
+            const response = await fetch(`${API_ENDPOINT}/api/posts/${postId}/`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                const detail = await extractDetailFromErrorResponse(response);
+                notifyErrorDefault(detail ?? "Failed to delete post");
+                return;
+            }
+
+            postsStore.setState((prev) => ({
+                ...prev,
+                posts: prev.posts.filter((post) => post.id !== postId),
+            }));
+        } finally {
+            setDeletingPostId(null);
+        }
+    };
 
     useEffect(() => {
         const a = async () => {
@@ -113,6 +153,9 @@ export function PostList() {
                                 commentsCount={post.replies_count ?? 0}
                                 id={post.id}
                                 isInPostList={true}
+                                canDelete={post.can_delete === true}
+                                isDeleting={deletingPostId === post.id}
+                                onDeleteClick={() => onDeletePost(post.id)}
                             ></Post>
                         );
                     })}

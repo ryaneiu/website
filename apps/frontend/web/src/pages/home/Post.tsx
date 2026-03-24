@@ -7,6 +7,7 @@ import { useSelectedPostStore } from "../../stores/CurrentSelectedPostStore";
 import { useNavigate } from "react-router-dom";
 import { MarkdownComponents } from "../../MarkdownComponents";
 import clsx from "clsx";
+import { Button } from "../../components/Button";
 
 interface Props {
     title: string;
@@ -16,6 +17,9 @@ interface Props {
     commentsCount?: number;
     id: number;
     onLikeClick?: () => void;
+    onDeleteClick?: () => void;
+    canDelete?: boolean;
+    isDeleting?: boolean;
 
     isInPostList: boolean;
 }
@@ -46,11 +50,40 @@ export function Post(props: Props) {
 
     const postClasses = clsx(
         "flex flex-col gap-2 bg-white border border-black/15 p-4 rounded-md w-full shadow-md",
+        props.isInPostList && props.canDelete ? "relative pr-44" : "",
         props.isInPostList ? "cursor-pointer hover:bg-black/3" : "",
     );
 
+    const deleteButtons = props.isInPostList && props.canDelete ? [0] : [];
+
     return (
         <article className={postClasses} onClick={onPostClicked}>
+            {deleteButtons.map((deleteButtonIndex) => (
+                <div
+                    key={deleteButtonIndex}
+                    className="absolute top-4 right-4"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <Button
+                        icon={
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                height="24px"
+                                viewBox="0 -960 960 960"
+                                width="24px"
+                                fill="#fff"
+                            >
+                                <path d="M280-120q-33 0-56.5-23.5T200-200v-560h-40v-80h200v-40h240v40h200v80h-40v560q0 33-23.5 56.5T680-120H280Zm400-640H280v560h400v-560ZM360-280h80v-400h-80v400Zm160 0h80v-400h-80v400ZM280-760v560-560Z" />
+                            </svg>
+                        }
+                        text={props.isDeleting ? "Deleting..." : "delete post"}
+                        onClick={() => props.onDeleteClick?.()}
+                        isPrimary={true}
+                        disabled={props.isDeleting}
+                        additionalClasses="w-fit shadow-lg/20"
+                    ></Button>
+                </div>
+            ))}
             <h1 className="text-3xl font-bold whitespace-pre-wrap break-all">
                 {needsTruncatedTitle && !expanded
                     ? truncatedTitle

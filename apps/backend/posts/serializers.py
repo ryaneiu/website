@@ -38,6 +38,7 @@ class PostSerializer(serializers.ModelSerializer):
     replies_count = serializers.SerializerMethodField()
     body = serializers.SerializerMethodField()
     votes = serializers.SerializerMethodField()
+    can_delete = serializers.SerializerMethodField()
 
     def get_likes_count(self, obj):
         return getattr(obj, "likes_count", obj.likes.count())
@@ -50,6 +51,12 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_votes(self, obj):
         return self.get_likes_count(obj)
+
+    def get_can_delete(self, obj):
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return False
+        return obj.author_id == request.user.id
 
     class Meta:
         model = Post
@@ -66,5 +73,6 @@ class PostSerializer(serializers.ModelSerializer):
             "votes",
             "likes_count",
             "replies_count",
+            "can_delete",
         ]
         read_only_fields = ["author", "published", "created_at"]

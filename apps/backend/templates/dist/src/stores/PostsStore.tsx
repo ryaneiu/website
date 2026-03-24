@@ -6,11 +6,12 @@ type Post = {
     body?: string;
     content: string;
     content_markdown?: string;
-    author: string;
+    author: number;
     created_at: string;
     votes?: number;
     likes_count?: number;
     replies_count?: number;
+    can_delete?: boolean;
     subforum?: number | null;
 }
 
