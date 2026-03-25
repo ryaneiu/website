@@ -4,6 +4,7 @@ import { TextAreaInput } from "../TextAreaInput";
 import { createPortal } from "react-dom";
 import { TransparentIconButton } from "../TransparentIconButton";
 import { LoadableButton } from "../LoadableButton";
+import { Fade, FadeUp } from "../AnimatedPresenceDiv";
 
 export type SubforumDto = {
     id: number;
@@ -24,7 +25,6 @@ interface Props {
     titlePlaceholder: string;
     descriptionPlaceholder: string;
 }
-
 
 export function PostCreationModal(props: Props) {
     // const [title, setTitle] = useState("");
@@ -89,11 +89,11 @@ export function PostCreationModal(props: Props) {
         setLoading(true);
         await props.onClickCreate();
         setLoading(false);
-    }
+    };
 
     return createPortal(
-        <div className="fixed top-0 left-0 z-99 bg-black/50 w-full h-full">
-            <div
+        <Fade className="fixed top-0 left-0 z-99 bg-black/50 w-full h-full">
+            <FadeUp
                 className="border border-black/15 rounded-md bg-white fixed top-0 left-0 z-99 bg-white w-[90vw] max-w-[600px] 
   h-fit fixed top-1/2 left-1/2 z-50
   -translate-x-1/2 -translate-y-1/2 shadow-lg"
@@ -122,7 +122,9 @@ export function PostCreationModal(props: Props) {
                         <InputComponent
                             placeholder={props.titlePlaceholder}
                             defaultValue=""
-                            onChange={(event) => props.onTitleChanged(event.target.value)}
+                            onChange={(event) =>
+                                props.onTitleChanged(event.target.value)
+                            }
                             disabled={loading}
                             className="w-full"
                         />
@@ -148,8 +150,9 @@ export function PostCreationModal(props: Props) {
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>,
+            </FadeUp>
+        </Fade>,
+
         document.body,
     );
 }
