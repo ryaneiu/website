@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TransparentIconButton } from "../components/TransparentIconButton";
 import { FadeUp } from "../components/AnimatedPresenceDiv";
@@ -18,6 +18,31 @@ export default function CreatePostView() {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [loading, setLoading] = useState(false);
+    const [subforums, setSubforums] = useState<{ title: string; slug: string }[]>([]);
+    const [selectedSubforum, setSelectedSubforum] = useState("general");
+
+    useEffect(() => {
+        fetch(`${API_ENDPOINT}/api/posts/subforums/`, { method: "GET" })
+            .then(async (res) => {
+                if (!res.ok) {
+                    throw new Error("Failed to load subforums");
+                }
+                return res.json();
+            })
+            .then((data) => {
+                const parsed = Array.isArray(data)
+                    ? data.map((v) => ({ title: v.title, slug: v.slug }))
+                    : [];
+                const hasGeneral = parsed.some((v) => v.slug === "general");
+                const merged = hasGeneral
+                    ? parsed
+                    : [{ title: "General", slug: "general" }, ...parsed];
+                setSubforums(merged);
+            })
+            .catch(() => {
+                setSubforums([{ title: "General", slug: "general" }]);
+            });
+    }, []);
 
     const onCloseView = () => {
         navigate("/");
@@ -45,7 +70,12 @@ export default function CreatePostView() {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ title, content, content_markdown: content }),
+                body: JSON.stringify({
+                    title,
+                    content,
+                    content_markdown: content,
+                    subforum: selectedSubforum,
+                }),
             });
 
             if (!res.ok) {
@@ -72,9 +102,46 @@ export default function CreatePostView() {
         }
     };
 
+    const onCreateSubforum = async () => {
+        const title = window.prompt("Subforum title")?.trim() ?? "";
+        if (!title) return;
+        const description =
+            window.prompt("Subforum description (optional)")?.trim() ?? "";
+
+        const token = await getStoredAccessToken();
+        if (!token) {
+            notifyErrorDefault("You need to be logged in to create a subforum");
+            return;
+        }
+
+        const res = await fetch(`${API_ENDPOINT}/api/posts/subforums/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ title, description }),
+        });
+
+        if (!res.ok) {
+            const detail = await extractDetailFromErrorResponse(res);
+            notifyErrorDefault(detail ?? "Failed to create subforum");
+            return;
+        }
+
+        const created = await res.json();
+        const next = [
+            ...subforums.filter((v) => v.slug !== created.slug),
+            { title: created.title, slug: created.slug },
+        ];
+        setSubforums(next);
+        setSelectedSubforum(created.slug);
+        notifySuccessDefault("Subforum created!");
+    };
+
     return (
         <FadeUp className="w-full h-[100vh] flex justify-center items-center">
-            <div className="flex flex-col gap-3 border border-black/15 px-4 py-2 items-center relative rounded-md bg-white shadow-lg">
+            <div className="flex flex-col gap-3 border border-black/15 px-4 pt-2 pb-18 items-center relative rounded-md bg-white shadow-lg max-h-[95vh] overflow-auto">
                 {/* Close button */}
                 <div className="absolute top-0 right-0 m-1">
                     <TransparentIconButton
@@ -95,6 +162,21 @@ export default function CreatePostView() {
 
                 <h1 className="text-3xl font-bold text-black">Create Post</h1>
 
+                <div className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] flex justify-between items-center gap-2">
+                    <select
+                        className="px-2 py-2 border border-black/15 rounded-md w-full"
+                        value={selectedSubforum}
+                        onChange={(e) => setSelectedSubforum(e.target.value)}
+                        disabled={loading}
+                    >
+                        {subforums.map((subforum) => (
+                            <option key={subforum.slug} value={subforum.slug}>
+                                {subforum.title}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
                 {/* Title input */}
                 <InputComponent
                     className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw]"
@@ -113,8 +195,17 @@ export default function CreatePostView() {
                     disabled={loading}
                 ></TextAreaInput>
 
-                {/* Publish button */}
-                <div>
+                <div className="absolute bottom-3 left-4 z-10">
+                    <button
+                        className="px-3 py-2 rounded-md border border-black/15 hover:bg-black/5 cursor-pointer"
+                        onClick={onCreateSubforum}
+                        disabled={loading}
+                    >
+                        Create Subforum
+                    </button>
+                </div>
+
+                <div className="absolute bottom-3 right-4 z-10">
                     <LoadableButton
                         text={loading ? "Publishing..." : "Publish Post"}
                         isPrimary={true}

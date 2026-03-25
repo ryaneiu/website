@@ -19,6 +19,21 @@ class IsAuthorOrReadOnly(permissions.BasePermission):
             return True
         return obj.author_id == request.user.id
 
+
+class IsSubforumCreatorOrAdmin(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return request.user.is_staff or obj.creator_id == request.user.id
+
+
+def get_general_subforum():
+    subforum, _ = Subforum.objects.get_or_create(
+        slug="general",
+        defaults={"title": "General", "description": "Default subforum"},
+    )
+    return subforum
+
 # List all posts
 class PostListCreateAPIView(generics.ListCreateAPIView):
     queryset = Post.objects.annotate(
@@ -35,8 +50,10 @@ class PostListCreateAPIView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         markdown = serializer.validated_data.get("content_markdown", "")
         plain = serializer.validated_data.get("content", "")
+        subforum = serializer.validated_data.get("subforum") or get_general_subforum()
         serializer.save(
             author=self.request.user,
+            subforum=subforum,
             content_markdown=markdown or plain,
             content=plain or markdown,
         )
@@ -59,9 +76,11 @@ class CreatePostView(generics.CreateAPIView):
     def perform_create(self, serializer):
         markdown = serializer.validated_data.get("content_markdown", "")
         plain = serializer.validated_data.get("content", "")
+        subforum = serializer.validated_data.get("subforum") or get_general_subforum()
         serializer.save(
             author=self.request.user,
             published=False,
+            subforum=subforum,
             content_markdown=markdown or plain,
             content=plain or markdown,
         )
@@ -126,10 +145,71 @@ class ReplyListCreateAPIView(generics.ListCreateAPIView):
 
 
 class SubforumListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Subforum.objects.all().order_by("name")
+    queryset = Subforum.objects.prefetch_related("posts").all().order_by("title")
     serializer_class = SubforumSerializer
 
     def get_permissions(self):
         if self.request.method == 'POST':
             return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
+
+
+class SubforumRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Subforum.objects.prefetch_related("posts").all()
+    serializer_class = SubforumSerializer
+    lookup_field = "slug"
+
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated(), IsSubforumCreatorOrAdmin()]
+
+    def destroy(self, request, *args, **kwargs):
+        subforum = self.get_object()
+        self.check_object_permissions(request, subforum)
+        subforum.delete()
+        return Response({"detail": "Subforum deleted."}, status=status.HTTP_200_OK)
+
+
+class SubforumPostCreateAPIView(generics.CreateAPIView):
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        subforum = get_object_or_404(Subforum, slug=self.kwargs["slug"])
+        markdown = serializer.validated_data.get("content_markdown", "")
+        plain = serializer.validated_data.get("content", "")
+        serializer.save(
+            author=self.request.user,
+            subforum=subforum,
+            content_markdown=markdown or plain,
+            content=plain or markdown,
+        )
+
+
+class PostSubforumUpdateAPIView(generics.UpdateAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAuthorOrReadOnly]
+    lookup_field = "id"
+
+    def patch(self, request, *args, **kwargs):
+        post = self.get_object()
+        self.check_object_permissions(request, post)
+
+        subforum_slug = request.data.get("subforum")
+        if not isinstance(subforum_slug, str) or not subforum_slug.strip():
+            return Response(
+                {"detail": "subforum slug is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        subforum = get_object_or_404(Subforum, slug=subforum_slug.strip())
+        post.subforum = subforum
+        post.save(update_fields=["subforum"])
+
+        serializer = self.get_serializer(post)
+        return Response(serializer.data, status=status.HTTP_200_OK)

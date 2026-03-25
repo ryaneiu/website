@@ -24,6 +24,7 @@ type PostResponse = {
     replies_count?: number;
     created_at: string;
     can_delete?: boolean;
+    subforum?: string | null;
 };
 
 type ReplyResponse = {
@@ -45,6 +46,9 @@ export default function PostPage() {
     const [comments, setComments] = useState<CommentType[]>([]);
     const [postData, setPostData] = useState<PostResponse | null>(null);
     const [isDeletingPost, setIsDeletingPost] = useState(false);
+    const [subforums, setSubforums] = useState<{ title: string; slug: string }[]>([]);
+    const [subforumToAssign, setSubforumToAssign] = useState("general");
+    const [isAssigningSubforum, setIsAssigningSubforum] = useState(false);
 
     const postId = id != null ? Number.parseInt(id) : selectedPostId;
     const canDisplay = Number.isFinite(postId) && postId > 0;
@@ -148,6 +152,35 @@ export default function PostPage() {
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
+
+    useEffect(() => {
+        fetch(`${API_ENDPOINT}/api/posts/subforums/`, { method: "GET" })
+            .then(async (res) => {
+                if (!res.ok) {
+                    throw new Error("Failed to load subforums");
+                }
+                return res.json();
+            })
+            .then((data) => {
+                const parsed = Array.isArray(data)
+                    ? data.map((v) => ({ title: v.title, slug: v.slug }))
+                    : [];
+                const hasGeneral = parsed.some((v) => v.slug === "general");
+                const merged = hasGeneral
+                    ? parsed
+                    : [{ title: "General", slug: "general" }, ...parsed];
+                setSubforums(merged);
+            })
+            .catch(() => {
+                setSubforums([{ title: "General", slug: "general" }]);
+            });
+    }, []);
+
+    useEffect(() => {
+        if (postData?.subforum) {
+            setSubforumToAssign(postData.subforum);
+        }
+    }, [postData?.subforum]);
 
     const skeletonLoaderComments: CommentType[] = [
         {
@@ -311,6 +344,48 @@ export default function PostPage() {
         }
     };
 
+    const onAssignSubforumClicked = async () => {
+        if (!canDisplay || !canDeletePost || isAssigningSubforum) return;
+
+        const token = await getStoredAccessToken();
+        if (!token) {
+            notifyErrorDefault("You need to be logged in to update subforum");
+            return;
+        }
+
+        setIsAssigningSubforum(true);
+        try {
+            const response = await fetch(
+                `${API_ENDPOINT}/api/posts/${postId}/subforum/`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ subforum: subforumToAssign }),
+                },
+            );
+
+            if (!response.ok) {
+                const detail = await extractDetailFromErrorResponse(response);
+                notifyErrorDefault(detail ?? "Failed to update subforum");
+                return;
+            }
+
+            const updated: PostResponse = await response.json();
+            setPostData(updated);
+            postsStore.setState((prev) => ({
+                ...prev,
+                posts: prev.posts.map((p) =>
+                    p.id === updated.id ? { ...p, subforum: updated.subforum } : p,
+                ),
+            }));
+        } finally {
+            setIsAssigningSubforum(false);
+        }
+    };
+
     return (
         <div className="flex flex-col items-center px-2 py-2">
             <div className="flex flex-col gap-2 w-full">
@@ -329,6 +404,38 @@ export default function PostPage() {
                             commentsCount={postData.replies_count ?? 0}
                             id={postData.id}
                             onLikeClick={onPostLikeClick}
+                            subforumText={`Subforum: ${postData.subforum || "general"}`}
+                            subforumControl={
+                                <div className="flex gap-2 items-center">
+                                    <select
+                                        className="px-2 py-2 border border-black/15 rounded-md"
+                                        value={subforumToAssign}
+                                        onChange={(e) =>
+                                            setSubforumToAssign(e.target.value)
+                                        }
+                                        disabled={!canDeletePost || isAssigningSubforum}
+                                    >
+                                        {subforums.map((subforum) => (
+                                            <option
+                                                key={subforum.slug}
+                                                value={subforum.slug}
+                                            >
+                                                {subforum.title}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <Button
+                                        text={
+                                            isAssigningSubforum
+                                                ? "Updating..."
+                                                : "Add to Subforum"
+                                        }
+                                        onClick={onAssignSubforumClicked}
+                                        disabled={!canDeletePost || isAssigningSubforum}
+                                        isPrimary={true}
+                                    ></Button>
+                                </div>
+                            }
                             isInPostList={false}
                         ></Post>
                         {canDeletePost && (

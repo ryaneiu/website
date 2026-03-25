@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { ReactionButton } from "../../components/ReactionButton";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -20,6 +20,8 @@ interface Props {
     onDeleteClick?: () => void;
     canDelete?: boolean;
     isDeleting?: boolean;
+    subforumText?: string;
+    subforumControl?: ReactNode;
 
     isInPostList: boolean;
 }
@@ -107,6 +109,17 @@ export function Post(props: Props) {
                     </button>
                 )}
             </div>
+
+            {!props.isInPostList && (props.subforumText || props.subforumControl) && (
+                <div className="flex flex-wrap items-center gap-2">
+                    {props.subforumText && (
+                        <span className="text-black/60 text-sm">
+                            {props.subforumText}
+                        </span>
+                    )}
+                    {props.subforumControl}
+                </div>
+            )}
 
             <div className="flex gap-2">
                 <ReactionButton

@@ -12,6 +12,9 @@ from .views import (
     ToggleLikeAPIView,
     ReplyListCreateAPIView,
     SubforumListCreateAPIView,
+    SubforumRetrieveUpdateDestroyAPIView,
+    SubforumPostCreateAPIView,
+    PostSubforumUpdateAPIView,
 )
 
 urlpatterns = [
@@ -20,7 +23,10 @@ urlpatterns = [
     path('<int:id>/', PostRetrieveAPIView.as_view(), name='retrieve-post'),
     path('<int:id>/like/', ToggleLikeAPIView.as_view(), name='toggle-like'),
     path('<int:id>/replies/', ReplyListCreateAPIView.as_view(), name='post-replies'),
+    path('<int:id>/subforum/', PostSubforumUpdateAPIView.as_view(), name='post-subforum-update'),
     path('subforums/', SubforumListCreateAPIView.as_view(), name='subforums'),
+    path('subforums/<slug:slug>/', SubforumRetrieveUpdateDestroyAPIView.as_view(), name='subforum-detail'),
+    path('subforums/<slug:slug>/posts/', SubforumPostCreateAPIView.as_view(), name='subforum-post-create'),
 ]
 
 urlpatterns += [

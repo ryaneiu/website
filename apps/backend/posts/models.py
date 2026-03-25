@@ -4,15 +4,54 @@ Docstring for apps.backend.posts.models
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.utils.text import slugify
 
 
 class Subforum(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+    title = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=120, unique=True, blank=True)
     description = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
+    creator = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_subforums",
+    )
+
+    def clean(self):
+        title = (self.title or "").strip()
+        if not title:
+            raise ValidationError({"title": "Subforum title cannot be empty."})
+
+        prohibited_chars = {"/", "\\", "<", ">", "{" , "}", "[", "]", "|"}
+        if any(char in title for char in prohibited_chars):
+            raise ValidationError(
+                {"title": "Subforum title contains prohibited characters."}
+            )
+
+        self.title = title
+
+        if self.description is None:
+            self.description = ""
+        self.description = self.description.strip()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        if not self.slug:
+            base_slug = slugify(self.title) or "general"
+            slug = base_slug
+            idx = 2
+            while Subforum.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{idx}"
+                idx += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
-        return self.name
+        return self.title
 
 class Post(models.Model):
     """
@@ -33,6 +72,33 @@ class Post(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     published = models.BooleanField(default=False)
+
+    def clean(self):
+        title = (self.title or "").strip()
+        content = (self.content or "").strip()
+        markdown = (self.content_markdown or "").strip()
+
+        if not title:
+            raise ValidationError({"title": "Post title cannot be empty."})
+        if len(title) > 255:
+            raise ValidationError({"title": "Post title cannot exceed 255 characters."})
+
+        if not content and not markdown:
+            raise ValidationError(
+                {"content": "Post content cannot be empty."}
+            )
+        if len(content) > 10000 or len(markdown) > 10000:
+            raise ValidationError(
+                {"content": "Post content cannot exceed 10000 characters."}
+            )
+
+        self.title = title
+        self.content = content or markdown
+        self.content_markdown = markdown or content
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return self.title

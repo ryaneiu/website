@@ -12,7 +12,7 @@ type Post = {
     likes_count?: number;
     replies_count?: number;
     can_delete?: boolean;
-    subforum?: number | null;
+    subforum?: string | null;
 }
 
 interface PostsStore {

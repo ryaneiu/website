@@ -10,6 +10,8 @@ const Discover = React.lazy(() => import("./pages/discover/Discover"));
 const Trending = React.lazy(() => import("./pages/trending/Trending"));
 const Profile = React.lazy(() => import("./pages/editProfile/Profile"));
 const PostPage = React.lazy(() => import("./pages/postPage/PostPage"));
+const SubforumList = React.lazy(() => import("./pages/subforums/SubforumList"));
+const SubforumDetail = React.lazy(() => import("./pages/subforums/SubforumDetail"));
 
 export function MainArea() {
     const sideNavigationOpen = useSideNavigationVisibility(
@@ -77,6 +79,22 @@ export function MainArea() {
                     element={
                         <Suspense fallback={<LoadingPageFallback/>}>
                             <PostPage></PostPage>
+                        </Suspense>
+                    }
+                ></Route>
+                <Route
+                    path="subforums"
+                    element={
+                        <Suspense fallback={<LoadingPageFallback/>}>
+                            <SubforumList></SubforumList>
+                        </Suspense>
+                    }
+                ></Route>
+                <Route
+                    path="subforums/:slug"
+                    element={
+                        <Suspense fallback={<LoadingPageFallback/>}>
+                            <SubforumDetail></SubforumDetail>
                         </Suspense>
                     }
                 ></Route>
