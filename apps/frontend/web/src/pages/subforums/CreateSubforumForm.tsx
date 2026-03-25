@@ -9,7 +9,7 @@ import { extractDetailFromErrorResponse } from "../../Utils";
 import {
     PostCreationModal,
     type SubforumDto,
-} from "../../components/subforums/PostCreationModal";
+} from "../../components/subforums/CreationModal";
 
 interface Props {
     onCreated: (s: SubforumDto) => void;

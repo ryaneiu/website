@@ -10,7 +10,7 @@ import { notifyErrorDefault } from "../../stores/NotificationsStore";
 import { Button } from "../../components/Button";
 import {
     type SubforumDto,
-} from "../../components/subforums/PostCreationModal";
+} from "../../components/subforums/CreationModal";
 import { UpdateSubforumForm } from "../../components/subforums/UpdateSubforumForm";
 import { CreateSubforumForm } from "./CreateSubforumForm";
 

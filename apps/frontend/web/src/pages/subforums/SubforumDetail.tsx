@@ -14,7 +14,7 @@ import {
     type SubforumPostDto,
 } from "../../components/subforums/AddPostForm";
 import { UpdateSubforumForm } from "../../components/subforums/UpdateSubforumForm";
-import type { SubforumDto } from "../../components/subforums/PostCreationModal";
+import type { SubforumDto } from "../../components/subforums/CreationModal";
 
 type SubforumDetailDto = SubforumDto & {
     posts: SubforumPostDto[];

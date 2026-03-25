@@ -6,7 +6,7 @@ import {
     notifyErrorDefault,
     notifySuccessDefault,
 } from "../../stores/NotificationsStore";
-import { PostCreationModal } from "./PostCreationModal";
+import { PostCreationModal } from "./CreationModal";
 
 export type SubforumPostDto = {
     id: number;
