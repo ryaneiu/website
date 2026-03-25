@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_ENDPOINT } from "../../Config";
-import { getStoredAccessToken, getUserIdFromJwt } from "../../auth/Authentication";
+import {
+    getStoredAccessToken,
+    getUserIdFromJwt,
+} from "../../auth/Authentication";
 import { extractDetailFromErrorResponse } from "../../Utils";
 import { notifyErrorDefault } from "../../stores/NotificationsStore";
 import { Button } from "../../components/Button";
 import {
-    CreateSubforumForm,
     type SubforumDto,
-} from "../../components/subforums/CreateSubforumForm";
+} from "../../components/subforums/PostCreationModal";
 import { UpdateSubforumForm } from "../../components/subforums/UpdateSubforumForm";
+import { CreateSubforumForm } from "./CreateSubforumForm";
 
 type SubforumWithPosts = SubforumDto & {
     posts: {
@@ -26,6 +29,8 @@ export default function SubforumList() {
     const [updatingSlug, setUpdatingSlug] = useState<string | null>(null);
     const [deletingSlug, setDeletingSlug] = useState<string | null>(null);
     const [token, setToken] = useState<string | null>(null);
+    
+    const [modalVisible, setModalVisible] = useState<boolean>(false);
 
     const currentUserId = useMemo(
         () => (token ? getUserIdFromJwt(token) : null),
@@ -38,13 +43,16 @@ export default function SubforumList() {
             const tokenValue = await getStoredAccessToken();
             setToken(tokenValue);
 
-            const response = await fetch(`${API_ENDPOINT}/api/posts/subforums/`, {
-                method: "GET",
-                headers:
-                    tokenValue != null
-                        ? { Authorization: `Bearer ${tokenValue}` }
-                        : {},
-            });
+            const response = await fetch(
+                `${API_ENDPOINT}/api/posts/subforums/`,
+                {
+                    method: "GET",
+                    headers:
+                        tokenValue != null
+                            ? { Authorization: `Bearer ${tokenValue}` }
+                            : {},
+                },
+            );
             if (!response.ok) {
                 throw new Error("Failed to load subforums");
             }
@@ -52,7 +60,9 @@ export default function SubforumList() {
             setSubforums(data);
         } catch (error) {
             notifyErrorDefault(
-                error instanceof Error ? error.message : "Failed to load subforums",
+                error instanceof Error
+                    ? error.message
+                    : "Failed to load subforums",
             );
         } finally {
             setLoading(false);
@@ -95,7 +105,9 @@ export default function SubforumList() {
                 return;
             }
 
-            setSubforums((prev) => prev.filter((subforum) => subforum.slug !== slug));
+            setSubforums((prev) =>
+                prev.filter((subforum) => subforum.slug !== slug),
+            );
         } finally {
             setDeletingSlug(null);
         }
@@ -105,16 +117,38 @@ export default function SubforumList() {
         <main className="flex flex-col gap-4 w-full">
             <h1 className="text-2xl font-bold">Subforums</h1>
 
-            <CreateSubforumForm
-                onCreated={(created) => {
+            <Button
+                icon={
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        height="24px"
+                        viewBox="0 -960 960 960"
+                        width="24px"
+                        fill="#1f1f1f"
+                    >
+                        <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z" />
+                    </svg>
+                }
+                text="Create"
+                onClick={() => setModalVisible(true)}
+            ></Button>
+
+            {modalVisible && <CreateSubforumForm
+                onCreated={(created: SubforumDto) => {
                     setSubforums((prev) => [
                         { ...created, posts: [] },
-                        ...prev.filter((subforum) => subforum.slug !== created.slug),
+                        ...prev.filter(
+                            (subforum) => subforum.slug !== created.slug,
+                        ),
                     ]);
                 }}
-            />
+                onHide={() => setModalVisible(false)}
+            />}
+            
 
-            {loading && <span className="text-black/50">Loading subforums...</span>}
+            {loading && (
+                <span className="text-black/50">Loading subforums...</span>
+            )}
 
             {!loading && subforums.length === 0 && (
                 <span className="text-black/50">No subforums yet.</span>
@@ -127,26 +161,35 @@ export default function SubforumList() {
                 return (
                     <article
                         key={subforum.slug}
-                        className="border border-black/15 rounded-md p-3 bg-white flex flex-col gap-2"
+                        className="border border-black/15 rounded-md p-3 bg-white flex flex-col gap-2 hover:bg-black/5 cursor-pointer"
+                        onClick={() => navigate(`/subforums/${subforum.slug}`)}
                     >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div>
-                                <h2 className="text-lg font-semibold">{subforum.title}</h2>
-                                <p className="text-black/70">{subforum.description || "No description"}</p>
+                                <h2 className="text-lg font-semibold">
+                                    {subforum.title}
+                                </h2>
+                                <p className="text-black/70">
+                                    {subforum.description || "No description"}
+                                </p>
                                 <span className="text-xs text-black/50">
                                     {subforum.posts.length} posts
                                 </span>
                             </div>
                             <div className="flex gap-2">
-                                <Button
-                                    text="Open"
-                                    onClick={() => navigate(`/subforums/${subforum.slug}`)}
-                                />
                                 {canManage && (
                                     <Button
-                                        text={deletingSlug === subforum.slug ? "Deleting..." : "Delete"}
-                                        onClick={() => onDeleteSubforum(subforum.slug)}
-                                        disabled={deletingSlug === subforum.slug}
+                                        text={
+                                            deletingSlug === subforum.slug
+                                                ? "Deleting..."
+                                                : "Delete"
+                                        }
+                                        onClick={() =>
+                                            onDeleteSubforum(subforum.slug)
+                                        }
+                                        disabled={
+                                            deletingSlug === subforum.slug
+                                        }
                                         isPrimary={true}
                                     />
                                 )}
@@ -157,10 +200,16 @@ export default function SubforumList() {
                             <>
                                 <div className="w-fit">
                                     <Button
-                                        text={updatingSlug === subforum.slug ? "Cancel Update" : "Update"}
+                                        text={
+                                            updatingSlug === subforum.slug
+                                                ? "Cancel Update"
+                                                : "Update"
+                                        }
                                         onClick={() =>
                                             setUpdatingSlug((prev) =>
-                                                prev === subforum.slug ? null : subforum.slug,
+                                                prev === subforum.slug
+                                                    ? null
+                                                    : subforum.slug,
                                             )
                                         }
                                     />
