@@ -24,6 +24,7 @@ interface Props {
     buttonLoadingText: string;
     titlePlaceholder: string;
     descriptionPlaceholder: string;
+    modalTitle: string;
 }
 
 export function PostCreationModal(props: Props) {
@@ -117,7 +118,7 @@ export function PostCreationModal(props: Props) {
                     </div>
                     <div className="flex flex-col gap-2 items-center p-3">
                         <h2 className="font-semibold text-lg">
-                            Create Subforum
+                            {props.modalTitle}
                         </h2>
                         <InputComponent
                             placeholder={props.titlePlaceholder}
@@ -140,7 +141,7 @@ export function PostCreationModal(props: Props) {
                         <div className="w-fit">
                             <LoadableButton
                                 text={
-                                    loading ? "Creating..." : "Create Subforum"
+                                    loading ? props.buttonLoadingText : props.buttonCreateText
                                 }
                                 onClick={onCreateClicked}
                                 isPrimary={true}

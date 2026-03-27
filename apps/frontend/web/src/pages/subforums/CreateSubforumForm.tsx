@@ -85,5 +85,6 @@ export function CreateSubforumForm(props: Props) {
         buttonLoadingText="Creating..."
         titlePlaceholder="Subforum Name"
         descriptionPlaceholder="Let people know what this subforum is about!"
+        modalTitle="Create a Subforum"
     ></PostCreationModal>;
 }

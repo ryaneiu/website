@@ -87,6 +87,7 @@ export function AddPostForm({ subforumSlug, onPostAdded, onHide }: Props) {
             buttonLoadingText="Adding..."
             titlePlaceholder="Post Title"
             descriptionPlaceholder="Post Content..."
+            modalTitle="Add Post"
         ></PostCreationModal>
     );
 }
