@@ -41,7 +41,7 @@ export async function verifyIsLoggedIn() {
     } catch (e) {
         console.error("Failed to check session status: ", e);
         if (e instanceof TypeError) {
-            notifyErrorDefault("Couldn't contact auth server. Is backend running on port 8001?");
+            notifyErrorDefault("Couldn't contact auth server. Is backend running?");
             return false;
         }
         notifyErrorDefault("Couldn't contact server to check session status: " + e);

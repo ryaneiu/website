@@ -116,7 +116,7 @@ export function PostList() {
                 .catch((e) => {
                     console.error("Error while trying to fetch posts: ", e);
                     if (e instanceof TypeError) {
-                        notifyErrorDefault("Couldn't contact posts server. Is backend running on port 8001?");
+                        notifyErrorDefault("Couldn't contact posts server. Is backend running?");
                     } else {
                         notifyErrorDefault(
                             "An error occurred and we couldn't fetch posts",

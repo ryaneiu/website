@@ -12,6 +12,7 @@ import { CommentReplySection } from "./CommentReplySection";
 import { extractDetailFromErrorResponse } from "../../Utils";
 import { Button } from "../../components/Button";
 import { postsStore } from "../../stores/PostsStore";
+import { FadeUp } from "../../components/AnimatedPresenceDiv";
 
 type PostResponse = {
     id: number;
@@ -46,7 +47,9 @@ export default function PostPage() {
     const [comments, setComments] = useState<CommentType[]>([]);
     const [postData, setPostData] = useState<PostResponse | null>(null);
     const [isDeletingPost, setIsDeletingPost] = useState(false);
-    const [subforums, setSubforums] = useState<{ title: string; slug: string }[]>([]);
+    const [subforums, setSubforums] = useState<
+        { title: string; slug: string }[]
+    >([]);
     const [subforumToAssign, setSubforumToAssign] = useState("general");
     const [isAssigningSubforum, setIsAssigningSubforum] = useState(false);
 
@@ -321,12 +324,15 @@ export default function PostPage() {
 
         setIsDeletingPost(true);
         try {
-            const response = await fetch(`${API_ENDPOINT}/api/posts/${postId}/`, {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${token}`,
+            const response = await fetch(
+                `${API_ENDPOINT}/api/posts/${postId}/`,
+                {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 },
-            });
+            );
 
             if (!response.ok) {
                 const detail = await extractDetailFromErrorResponse(response);
@@ -378,7 +384,9 @@ export default function PostPage() {
             postsStore.setState((prev) => ({
                 ...prev,
                 posts: prev.posts.map((p) =>
-                    p.id === updated.id ? { ...p, subforum: updated.subforum } : p,
+                    p.id === updated.id
+                        ? { ...p, subforum: updated.subforum }
+                        : p,
                 ),
             }));
         } finally {
@@ -387,143 +395,160 @@ export default function PostPage() {
     };
 
     return (
-        <div className="flex flex-col items-center px-2 py-2">
-            <div className="flex flex-col gap-2 w-full">
-                {!canDisplay && (
-                    <span className="text-black/50">Invalid post id.</span>
-                )}
-                {canDisplay && postData && (
-                    <>
-                        <Post
-                            title={postData.title}
-                            description={
-                                postData.content_markdown || postData.content
-                            }
-                            created_at={postData.created_at}
-                            votes={postData.likes_count ?? postData.votes ?? 0}
-                            commentsCount={postData.replies_count ?? 0}
-                            id={postData.id}
-                            onLikeClick={onPostLikeClick}
-                            subforumText={`Subforum: ${postData.subforum || "general"}`}
-                            subforumControl={
-                                <div className="flex gap-2 items-center">
-                                    <select
-                                        className="px-2 py-2 border border-black/15 rounded-md"
-                                        value={subforumToAssign}
-                                        onChange={(e) =>
-                                            setSubforumToAssign(e.target.value)
-                                        }
-                                        disabled={!canDeletePost || isAssigningSubforum}
-                                    >
-                                        {subforums.map((subforum) => (
-                                            <option
-                                                key={subforum.slug}
-                                                value={subforum.slug}
-                                            >
-                                                {subforum.title}
-                                            </option>
-                                        ))}
-                                    </select>
+        <FadeUp>
+            <div className="flex flex-col items-center px-2 py-2">
+                <div className="flex flex-col gap-2 w-full">
+                    {!canDisplay && (
+                        <span className="text-black/50">Invalid post id.</span>
+                    )}
+                    {canDisplay && postData && (
+                        <>
+                            <Post
+                                title={postData.title}
+                                description={
+                                    postData.content_markdown ||
+                                    postData.content
+                                }
+                                created_at={postData.created_at}
+                                votes={
+                                    postData.likes_count ?? postData.votes ?? 0
+                                }
+                                commentsCount={postData.replies_count ?? 0}
+                                id={postData.id}
+                                onLikeClick={onPostLikeClick}
+                                subforumText={`Subforum: ${postData.subforum || "general"}`}
+                                subforumControl={
+                                    <div className="flex gap-2 items-center">
+                                        <select
+                                            className="px-2 py-2 border border-black/15 rounded-md"
+                                            value={subforumToAssign}
+                                            onChange={(e) =>
+                                                setSubforumToAssign(
+                                                    e.target.value,
+                                                )
+                                            }
+                                            disabled={
+                                                !canDeletePost ||
+                                                isAssigningSubforum
+                                            }
+                                        >
+                                            {subforums.map((subforum) => (
+                                                <option
+                                                    key={subforum.slug}
+                                                    value={subforum.slug}
+                                                >
+                                                    {subforum.title}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <Button
+                                            text={
+                                                isAssigningSubforum
+                                                    ? "Updating..."
+                                                    : "Add to Subforum"
+                                            }
+                                            onClick={onAssignSubforumClicked}
+                                            disabled={
+                                                !canDeletePost ||
+                                                isAssigningSubforum
+                                            }
+                                            isPrimary={true}
+                                        ></Button>
+                                    </div>
+                                }
+                                isInPostList={false}
+                            ></Post>
+                            {canDeletePost && (
+                                <div className="w-full">
                                     <Button
-                                        text={
-                                            isAssigningSubforum
-                                                ? "Updating..."
-                                                : "Add to Subforum"
+                                        icon={
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                height="24px"
+                                                viewBox="0 -960 960 960"
+                                                width="24px"
+                                                fill="#1f1f1f"
+                                            >
+                                                <path d="M280-120q-33 0-56.5-23.5T200-200v-560h-40v-80h200v-40h240v40h200v80h-40v560q0 33-23.5 56.5T680-120H280Zm400-640H280v560h400v-560ZM360-280h80v-400h-80v400Zm160 0h80v-400h-80v400ZM280-760v560-560Z" />
+                                            </svg>
                                         }
-                                        onClick={onAssignSubforumClicked}
-                                        disabled={!canDeletePost || isAssigningSubforum}
+                                        text={
+                                            isDeletingPost
+                                                ? "Deleting..."
+                                                : "Delete Post"
+                                        }
+                                        onClick={onDeletePostClicked}
+                                        disabled={isDeletingPost}
+                                    ></Button>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {canDisplay && replyingToPost && (
+                        <CommentReplySection
+                            placeholder="Reply to post"
+                            onReplyClicked={(text) => onCreateReply(null, text)}
+                            setVisible={setReplyingToPost}
+                        ></CommentReplySection>
+                    )}
+
+                    {loaded && (
+                        <div className="flex flex-col gap-2">
+                            {!replyingToPost && (
+                                <div className="w-full">
+                                    <Button
+                                        icon={
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                height="24px"
+                                                viewBox="0 -960 960 960"
+                                                width="24px"
+                                                fill="#fff"
+                                            >
+                                                <path d="M440-400h80v-120h120v-80H520v-120h-80v120H320v80h120v120ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z" />
+                                            </svg>
+                                        }
+                                        text="Reply"
+                                        onClick={() => setReplyingToPost(true)}
                                         isPrimary={true}
                                     ></Button>
                                 </div>
-                            }
-                            isInPostList={false}
-                        ></Post>
-                        {canDeletePost && (
-                            <div className="w-full">
-                                <Button
-                                    icon={
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            height="24px"
-                                            viewBox="0 -960 960 960"
-                                            width="24px"
-                                            fill="#1f1f1f"
-                                        >
-                                            <path d="M280-120q-33 0-56.5-23.5T200-200v-560h-40v-80h200v-40h240v40h200v80h-40v560q0 33-23.5 56.5T680-120H280Zm400-640H280v560h400v-560ZM360-280h80v-400h-80v400Zm160 0h80v-400h-80v400ZM280-760v560-560Z" />
-                                        </svg>
-                                    }
-                                    text={isDeletingPost ? "Deleting..." : "Delete Post"}
-                                    onClick={onDeletePostClicked}
-                                    disabled={isDeletingPost}
-                                ></Button>
-                            </div>
-                        )}
-                    </>
-                )}
+                            )}
 
-                {canDisplay && replyingToPost && (
-                    <CommentReplySection
-                        placeholder="Reply to post"
-                        onReplyClicked={(text) => onCreateReply(null, text)}
-                        setVisible={setReplyingToPost}
-                    ></CommentReplySection>
-                )}
+                            {comments.map((v) => {
+                                return (
+                                    <Comment
+                                        key={v.id}
+                                        comment={v}
+                                        onReplyCreate={(parentId, text) =>
+                                            onCreateReply(parentId, text)
+                                        }
+                                    ></Comment>
+                                );
+                            })}
 
-                {loaded && (
-                    <div className="flex flex-col gap-2">
-                        {!replyingToPost && (
-                            <div className="w-full">
-                                <Button
-                                    icon={
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            height="24px"
-                                            viewBox="0 -960 960 960"
-                                            width="24px"
-                                            fill="#fff"
-                                        >
-                                            <path d="M440-400h80v-120h120v-80H520v-120h-80v120H320v80h120v120ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z" />
-                                        </svg>
-                                    }
-                                    text="Reply"
-                                    onClick={() => setReplyingToPost(true)}
-                                    isPrimary={true}
-                                ></Button>
-                            </div>
-                        )}
+                            {comments.length === 0 && (
+                                <span className="text-black/50">
+                                    No replies yet.
+                                </span>
+                            )}
+                        </div>
+                    )}
 
-                        {comments.map((v) => {
-                            return (
-                                <Comment
-                                    key={v.id}
-                                    comment={v}
-                                    onReplyCreate={(parentId, text) =>
-                                        onCreateReply(parentId, text)
-                                    }
-                                ></Comment>
-                            );
-                        })}
-
-                        {comments.length === 0 && (
-                            <span className="text-black/50">
-                                No replies yet.
-                            </span>
-                        )}
-                    </div>
-                )}
-
-                {!loaded && (
-                    <div className="flex flex-col gap-2">
-                        {skeletonLoaderComments.map((v) => {
-                            return (
-                                <SkeletonLoaderComment
-                                    comment={v}
-                                ></SkeletonLoaderComment>
-                            );
-                        })}
-                    </div>
-                )}
+                    {!loaded && (
+                        <div className="flex flex-col gap-2">
+                            {skeletonLoaderComments.map((v) => {
+                                return (
+                                    <SkeletonLoaderComment
+                                        comment={v}
+                                    ></SkeletonLoaderComment>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
+        </FadeUp>
     );
 }

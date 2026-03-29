@@ -7,7 +7,7 @@ import { useSelectedPostStore } from "../../stores/CurrentSelectedPostStore";
 import { useNavigate } from "react-router-dom";
 import { MarkdownComponents } from "../../MarkdownComponents";
 import clsx from "clsx";
-import { Button } from "../../components/Button";
+import { LoadableButton } from "../../components/LoadableButton";
 
 interface Props {
     title: string;
@@ -66,7 +66,7 @@ export function Post(props: Props) {
                     className="absolute top-4 right-4"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <Button
+                    <LoadableButton
                         icon={
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -78,12 +78,13 @@ export function Post(props: Props) {
                                 <path d="M280-120q-33 0-56.5-23.5T200-200v-560h-40v-80h200v-40h240v40h200v80h-40v560q0 33-23.5 56.5T680-120H280Zm400-640H280v560h400v-560ZM360-280h80v-400h-80v400Zm160 0h80v-400h-80v400ZM280-760v560-560Z" />
                             </svg>
                         }
-                        text={props.isDeleting ? "Deleting..." : "delete post"}
+                        text={props.isDeleting ? "Deleting..." : "Delete"}
                         onClick={() => props.onDeleteClick?.()}
                         isPrimary={true}
                         disabled={props.isDeleting}
                         additionalClasses="w-fit shadow-lg/20"
-                    ></Button>
+                        isLoading={props.isDeleting == true}
+                    ></LoadableButton>
                 </div>
             ))}
             <h1 className="text-3xl font-bold whitespace-pre-wrap break-all">
@@ -110,16 +111,17 @@ export function Post(props: Props) {
                 )}
             </div>
 
-            {!props.isInPostList && (props.subforumText || props.subforumControl) && (
-                <div className="flex flex-wrap items-center gap-2">
-                    {props.subforumText && (
-                        <span className="text-black/60 text-sm">
-                            {props.subforumText}
-                        </span>
-                    )}
-                    {props.subforumControl}
-                </div>
-            )}
+            {!props.isInPostList &&
+                (props.subforumText || props.subforumControl) && (
+                    <div className="flex flex-wrap items-center gap-2">
+                        {props.subforumText && (
+                            <span className="text-black/60 text-sm">
+                                {props.subforumText}
+                            </span>
+                        )}
+                        {props.subforumControl}
+                    </div>
+                )}
 
             <div className="flex gap-2">
                 <ReactionButton

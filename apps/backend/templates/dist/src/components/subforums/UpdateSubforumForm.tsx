@@ -6,7 +6,7 @@ import { notifyErrorDefault, notifySuccessDefault } from "../../stores/Notificat
 import { Button } from "../Button";
 import { InputComponent } from "../InputComponent";
 import { TextAreaInput } from "../TextAreaInput";
-import type { SubforumDto } from "./CreateSubforumForm";
+import type { SubforumDto } from "./CreationModal";
 
 interface Props {
     subforum: SubforumDto;

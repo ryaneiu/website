@@ -3,7 +3,8 @@ import { create } from "zustand";
 export const DisplayedTab = {
     Home: 0,
     Discover: 1,
-    Trending: 2
+    Trending: 2,
+    Subforums: 3
 }
 
 interface DisplayedTabStore {
