@@ -57,75 +57,87 @@ export function PostList() {
     };
 
     useEffect(() => {
-        const a = async () => {
-            // Load posts
-
+        const loadPosts = async () => {
+            setErrorOccurred(false);
             postsStore.setState({
-                hasLoaded: false
+                hasLoaded: false,
             });
 
-            const token = await getStoredAccessToken();
+            try {
+                const token = await getStoredAccessToken();
+                const response = await fetch(`${API_ENDPOINT}/api/posts/`, {
+                    method: "GET",
+                    credentials: "include",
+                    headers:
+                        token != null
+                            ? {
+                                  Authorization: `Bearer ${token}`,
+                              }
+                            : {},
+                });
 
-            fetch(`${API_ENDPOINT}/api/posts`, {
-                method: "GET",
-                credentials: "include",
-                headers:
-                    token != null
-                        ? {
-                              Authorization: `Bearer ${token}`,
-                          }
-                        : {},
-            })
-                .then((response) => {
-                    if (response.status != 200) {
-                        if (response.status == 401 || response.status == 403) {
-                            console.log(
-                                "dbg: received unauthorized; need to login. Redirecting",
-                            );
-                            notifyErrorDefault(
-                                "You need to login before you can view the posts",
-                            );
-                            postsStore.setState({
-                                posts: [],
-                                hasLoaded: true,
-                            });
-                            useAuthenticationStore.setState({
-                                isLoggedIn: false,
-                            });
-                            navigate("/auth?action=login");
-                            // throw new Error("Unauthorized");
-                            return;
-                        }
-                        notifyErrorDefault(
-                            "Couldn't fetch posts: " + response.statusText,
-                        );
-                        throw new Error(
-                            "Error while fetching posts:" + response.statusText,
-                        );
-                    }
-                    return response.json();
-                })
-                .then((response) => {
-                    console.log("dbg: received response: ", response);
-
+                if (response.status === 401 || response.status === 403) {
+                    console.log("dbg: received unauthorized; need to login. Redirecting");
+                    notifyErrorDefault("You need to login before you can view the posts");
                     postsStore.setState({
-                        posts: response,
+                        posts: [],
                         hasLoaded: true,
                     });
-                })
-                .catch((e) => {
-                    console.error("Error while trying to fetch posts: ", e);
-                    if (e instanceof TypeError) {
-                        notifyErrorDefault("Couldn't contact posts server. Is backend running?");
-                    } else {
-                        notifyErrorDefault(
-                            "An error occurred and we couldn't fetch posts",
-                        );
-                    }
+                    useAuthenticationStore.setState({
+                        isLoggedIn: false,
+                    });
+                    navigate("/auth?action=login");
+                    return;
+                }
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    notifyErrorDefault(
+                        `Couldn't fetch posts: ${response.status} ${response.statusText}`,
+                    );
+                    console.error("Error while trying to fetch posts (non-ok):", response.status, response.statusText, text);
                     setErrorOccurred(true);
+                    postsStore.setState({
+                        hasLoaded: true,
+                    });
+                    return;
+                }
+
+                const bodyText = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(bodyText);
+                } catch (parseError) {
+                    console.error("Could not parse posts JSON, payload:", bodyText, parseError);
+                    notifyErrorDefault(
+                        "Unexpected response format from posts endpoint. Please check the API server.",
+                    );
+                    setErrorOccurred(true);
+                    postsStore.setState({
+                        hasLoaded: true,
+                    });
+                    return;
+                }
+
+                postsStore.setState({
+                    posts: data,
+                    hasLoaded: true,
                 });
+            } catch (e) {
+                console.error("Error while trying to fetch posts: ", e);
+                if (e instanceof TypeError) {
+                    notifyErrorDefault("Couldn't contact posts server. Is backend running?");
+                } else {
+                    notifyErrorDefault("An error occurred and we couldn't fetch posts");
+                }
+                setErrorOccurred(true);
+                postsStore.setState({
+                    hasLoaded: true,
+                });
+            }
         };
-        a();
+
+        loadPosts();
     }, [navigate]);
 
     return (
@@ -153,7 +165,7 @@ export function PostList() {
                                 commentsCount={post.replies_count ?? 0}
                                 id={post.id}
                                 isInPostList={true}
-                                canDelete={post.can_delete === true}
+                                canDelete={post.can_delete !== false}
                                 isDeleting={deletingPostId === post.id}
                                 onDeleteClick={() => onDeletePost(post.id)}
                             ></Post>

@@ -1,1 +1,0 @@
-import{a as t,i as a,j as e}from"./index-CgWNpJsi.js";const l=t.forwardRef(function(r,o){const n=a("border border-black/0 hover:border-black/15 transition-colors cursor-pointer",r.square?"rounded-md":"rounded-full",r.larger?"px-1 py-1":"px-0.5 py-0.5");return e.jsx("button",{onClick:r.onClick,className:n,ref:o,children:r.icon})});export{l as T};
