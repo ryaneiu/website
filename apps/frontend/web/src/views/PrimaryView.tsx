@@ -10,7 +10,7 @@ export default function PrimaryView() {
 
     
     return (
-        <div>
+        <div className="text-black dark:text-white">
             <div className="w-[100vw] h-[100vh] fixed flex flex-col">
                 <div>
                     <Navbar></Navbar>
@@ -32,7 +32,8 @@ export default function PrimaryView() {
                             height="24px"
                             viewBox="0 -960 960 960"
                             width="24px"
-                            fill="#fff"
+                            fill="currentColor"
+                            className="text-white dark:text-black"
                         >
                             <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z" />
                         </svg>

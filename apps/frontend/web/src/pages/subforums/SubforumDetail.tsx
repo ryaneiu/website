@@ -16,6 +16,7 @@ import {
 import { UpdateSubforumForm } from "../../components/subforums/UpdateSubforumForm";
 import type { SubforumDto } from "../../components/subforums/CreationModal";
 import { FadeUp } from "../../components/AnimatedPresenceDiv";
+import { Panel } from "../../components/Panel";
 
 type SubforumDetailDto = SubforumDto & {
     posts: SubforumPostDto[];
@@ -139,7 +140,7 @@ export default function SubforumDetail() {
                                 height="24px"
                                 viewBox="0 -960 960 960"
                                 width="24px"
-                                fill="#1f1f1f"
+                                fill="currentColor"
                             >
                                 <path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z" />
                             </svg>
@@ -150,17 +151,17 @@ export default function SubforumDetail() {
 
                 {subforum != null && (
                     <>
-                        <div className="border border-black/15 rounded-md p-3 bg-white flex flex-col gap-2">
+                        <Panel className="flex flex-col gap-2">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div>
                                     <h1 className="text-2xl font-bold">
                                         {subforum.title}
                                     </h1>
-                                    <p className="text-black/70">
+                                    <p className="text-black/70 dark:text-white/70">
                                         {subforum.description ||
                                             "No description"}
                                     </p>
-                                    <span className="text-xs text-black/50">
+                                    <span className="text-xs text-black/50 dark:text-white/50">
                                         Created {timeAgo(subforum.created_at)}
                                     </span>
                                 </div>
@@ -215,7 +216,7 @@ export default function SubforumDetail() {
                                     )}
                                 </>
                             )}
-                        </div>
+                        </Panel>
 
                         <div>
                             <Button
@@ -256,7 +257,7 @@ export default function SubforumDetail() {
                         <section className="flex flex-col gap-3">
                             <h2 className="text-lg font-semibold">Posts</h2>
                             {subforum.posts.length === 0 && (
-                                <span className="text-black/50">
+                                <span className="text-black/50 dark:text-white/50">
                                     No posts in this subforum yet.
                                 </span>
                             )}

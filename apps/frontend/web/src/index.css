@@ -20,6 +20,8 @@ Modifying this template may break your styles or cause unexpected behavior.
 @tailwind components;
 @tailwind utilities;
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @keyframes fadeIn {
     0% {
         transform: translateY(15px);
