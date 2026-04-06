@@ -52,7 +52,7 @@ function App() {
     }, []);
 
     return (
-        <>
+        <div className="w-[100vw] h-[100vh] text-black dark:text-white bg-white dark:bg-zinc-900">
             <NotificationList></NotificationList>
             <BrowserRouter>
                 <Routes>
@@ -82,7 +82,7 @@ function App() {
                     />
                 </Routes>
             </BrowserRouter>
-        </>
+        </div>
     );
 }
 

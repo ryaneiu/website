@@ -7,7 +7,7 @@ interface Props {
 
 export function ElementWithLabel(props: Props) {
     return <div className="flex flex-col gap-2">
-        <label className="text-black font-bold">{props.label}</label>
+        <label className="font-bold">{props.label}</label>
         {props.element}
     </div>
 }

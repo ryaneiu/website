@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { Button } from "../../components/Button";
+import { Panel } from "../../components/Panel";
 
 interface Props {
     onReplyClicked: (textContent: string) => void;
@@ -18,7 +19,7 @@ export function CommentReplySection(props: Props) {
     };
 
     return (
-        <div className="flex flex-col gap-2 border border-black/15 rounded-md px-2 py-2 shadow-md">
+        <Panel className="flex flex-col gap-2" slim={true}>
             <textarea
                 rows={1}
                 className="w-full py-2 focus:outline-none h-auto"
@@ -34,7 +35,8 @@ export function CommentReplySection(props: Props) {
                             height="24px"
                             viewBox="0 -960 960 960"
                             width="24px"
-                            fill="#fff"
+                            fill="currentColor"
+                            className="text-white dark:text-black"
                         >
                             <path d="M440-400h80v-120h120v-80H520v-120h-80v120H320v80h120v120ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z" />
                         </svg>
@@ -49,6 +51,6 @@ export function CommentReplySection(props: Props) {
                     onClick={() => props.setVisible(false)}
                 ></Button>
             </div>
-        </div>
+        </Panel>
     );
 }

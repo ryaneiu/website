@@ -204,13 +204,13 @@ export default function AuthView() {
         useRef(null);
 
     const linkClass = clsx(
-        "text-underline text-black text-md",
+        "text-underline text-md",
         isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
     );
 
     const loginUi = (
         <FadeUp className="flex flex-col gap-3 items-center" key="login">
-            <h1 className="text-3xl font-bold text-black">Login</h1>
+            <h1 className="text-3xl font-bold">Login</h1>
             <FullWidthInput
                 placeholder="Username"
                 type="text"
@@ -265,7 +265,7 @@ export default function AuthView() {
 
     const signUpUi = (
         <FadeUp className="flex flex-col gap-3 items-center " key="signup">
-            <h1 className="text-3xl font-bold text-black">Sign up</h1>
+            <h1 className="text-3xl font-bold">Sign up</h1>
             <div className="h-5"></div>
 
             <FullWidthInput

@@ -20,7 +20,7 @@ export function Panel<T extends ElementType = "div">({
     const Component = as || "div";
 
     const panelClasses = clsx(
-        "rounded-md border border-black/15 shadow-md dark:border-white/15",
+        "rounded-md border border-black/15 shadow-md dark:shadow-white/5 dark:border-white/15",
         slim ? "px-2 py-2" : "px-4 py-4",
         hoverable && "hover:bg-black/3 dark:hover:bg-white/3",
         className,

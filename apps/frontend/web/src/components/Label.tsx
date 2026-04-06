@@ -4,5 +4,5 @@ interface Props {
 }
 
 export function Label(props: Props) {
-    return <h3 className="font-bold text-black">{props.text}</h3>
+    return <h3 className="font-bold">{props.text}</h3>
 }
