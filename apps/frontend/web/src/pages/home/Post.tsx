@@ -75,7 +75,7 @@ export function Post(props: Props) {
                                 viewBox="0 -960 960 960"
                                 width="24px"
                                 fill="currentColor"
-                                className="text-white dark:text-black"
+                                className="text-white dark:text-black transition-all duration-300"
                             >
                                 <path d="M280-120q-33 0-56.5-23.5T200-200v-560h-40v-80h200v-40h240v40h200v80h-40v560q0 33-23.5 56.5T680-120H280Zm400-640H280v560h400v-560ZM360-280h80v-400h-80v400Zm160 0h80v-400h-80v400ZM280-760v560-560Z" />
                             </svg>
@@ -117,7 +117,7 @@ export function Post(props: Props) {
                 (props.subforumText || props.subforumControl) && (
                     <div className="flex flex-wrap items-center gap-2">
                         {props.subforumText && (
-                            <span className="text-black/60 dark:text-white/60 text-sm">
+                            <span className="text-black/60 dark:text-white/60 text-sm transition-all duration-300">
                                 {props.subforumText}
                             </span>
                         )}
@@ -183,7 +183,7 @@ export function Post(props: Props) {
                     text={`${props.commentsCount ?? 0}`}
                 ></ReactionButton>
             </div>
-            <span className="text-black/50 dark:text-white/50 text-sm">
+            <span className="text-black/50 dark:text-white/50 text-sm transition-all duration-300">
                 Posted {timeAgo(props.created_at)}
             </span>
         </Panel>

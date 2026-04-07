@@ -29,7 +29,7 @@ export function MainArea() {
     }, [location]);
 
     return (
-        <div className="flex-grow-1 h-full p-6 sm:p-8 md:p-10 lg:p-16 relative overflow-y-auto dark:bg-zinc-900" ref={mainContainer}>
+        <div className="flex-grow-1 h-full p-6 sm:p-8 md:p-10 lg:p-16 relative overflow-y-auto dark:bg-zinc-900 transition-all duration-300" ref={mainContainer}>
             <AnimatePresence>
                 {sideNavigationOpen && screenSize < 640 && (
                     <Fade

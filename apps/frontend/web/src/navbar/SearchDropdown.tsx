@@ -27,7 +27,7 @@ export function SearchDropdown(props: Props) {
                     props.refs.setFloating(node);
                 }
             }}
-            className="bg-white max-sm:w-[95vw]! max-sm:left-[50%]! max-sm:-translate-x-[50%]! dark:bg-zinc-800 h-fit flex flex-col z-[50] px-0! py-0!"
+            className="bg-white max-sm:w-[95vw]! max-sm:left-[50%]! max-sm:-translate-x-[50%]! dark:bg-zinc-800 h-fit flex flex-col z-[50] px-0! py-0! transition-all duration-300"
             style={{
                 position: props.strategy,
                 top: props.y,

@@ -22,6 +22,6 @@ export function ReactionButton(props: Props) {
         <span className="flex items-center">
             {(hovered && props.interactable) ? props.iconFilled : props.icon}
         </span>
-        <span className="font-bold text-black/80 dark:text-white/80 text-md">{props.text}</span>
+        <span className="font-bold text-black/80 dark:text-white/80 text-md transition-all duration-300">{props.text}</span>
     </button>
 }

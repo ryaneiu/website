@@ -6,8 +6,8 @@ import type React from "react";
 export function GenericInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
 
     const classes = clsx(
-        "px-2 py-2 rounded-md border border-black/15 dark:border-white/15",
-        "focus:outline-none focus:border-black/35 dark:focus:border-white/35",
+        "px-2 py-2 rounded-md border border-black/15 dark:border-white/15 transition-all duration-300",
+        "focus:outline-none focus:border-black/35 dark:focus:border-white/35 transition-all duration-300",
         "transition-colors",
         props.disabled ? "cursor-not-allowed opacity-50" : "",
         props.className,

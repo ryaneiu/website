@@ -44,7 +44,7 @@ export default function Profile() {
                                 viewBox="0 -960 960 960"
                                 width="64px"
                                 fill="currentColor"
-                                className="text-white dark:text-black"
+                                className="text-white dark:text-black transition-all duration-300"
                             >
                                 <path d="M440-440ZM120-120q-33 0-56.5-23.5T40-200v-480q0-33 23.5-56.5T120-760h126l74-80h240v80H355l-73 80H120v480h640v-360h80v360q0 33-23.5 56.5T760-120H120Zm640-560v-80h-80v-80h80v-80h80v80h80v80h-80v80h-80ZM440-260q75 0 127.5-52.5T620-440q0-75-52.5-127.5T440-620q-75 0-127.5 52.5T260-440q0 75 52.5 127.5T440-260Zm0-80q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29Z" />
                             </svg>
@@ -62,7 +62,7 @@ export default function Profile() {
                         label="Bio"
                         element={
                             <textarea
-                                className="w-full px-2 py-2 rounded-md border border-black/15 dark:border-white/15 focus:outline-none focus:border-black/35 dark:focus:border-white/35 resize-none"
+                                className="w-full px-2 py-2 rounded-md border border-black/15 dark:border-white/15 focus:outline-none focus:border-black/35 dark:focus:border-white/35 resize-none transition-all duration-300"
                                 rows={2}
                                 placeholder="Tell others a bit about yourself"
                                 draggable={false}
@@ -101,7 +101,7 @@ export default function Profile() {
                                 viewBox="0 -960 960 960"
                                 width="24px"
                                 fill="currentColor"
-                                className="text-white dark:text-black"
+                                className="text-white dark:text-black transition-all duration-300"
                             >
                                 <path d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM565-275q35-35 35-85t-35-85q-35-35-85-35t-85 35q-35 35-35 85t35 85q35 35 85 35t85-35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z" />
                             </svg>

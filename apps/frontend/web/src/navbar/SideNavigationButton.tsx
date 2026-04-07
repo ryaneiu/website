@@ -15,8 +15,8 @@ export function SideNavigationButton(props: Props) {
 
     const buttonClasses = clsx(
         "flex items-center gap-2 px-4 py-2 cursor-pointer rounded-md w-full",
-        props.selected ? "bg-black/10 dark:bg-white/10" : "bg-transparent",
-        props.selected ? "hover:bg-black/15 dark:hover:bg-white/15" : "hover:bg-black/5 dark:hover:bg-white/5",
+        props.selected ? "bg-black/10 dark:bg-white/10 transition-all duration-300" : "bg-transparent",
+        props.selected ? "hover:bg-black/15 dark:hover:bg-white/15 transition-all duration-300" : "hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-300",
         "transition-colors"
     )
 
@@ -26,7 +26,7 @@ export function SideNavigationButton(props: Props) {
         <span>
             {props.selected ? props.filledIcon : props.icon}
         </span>
-        <span className="text-black font-bold dark:text-white">
+        <span className="text-black font-bold dark:text-white transition-all duration-300">
             {props.text}
         </span>
     </button>
