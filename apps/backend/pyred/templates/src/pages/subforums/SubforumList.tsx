@@ -12,6 +12,7 @@ import { type SubforumDto } from "../../components/subforums/CreationModal";
 import { UpdateSubforumForm } from "../../components/subforums/UpdateSubforumForm";
 import { CreateSubforumForm } from "./CreateSubforumForm";
 import { FadeUp } from "../../components/AnimatedPresenceDiv";
+import { Panel } from "../../components/Panel";
 
 type SubforumWithPosts = SubforumDto & {
     posts: {
@@ -124,7 +125,7 @@ export default function SubforumList() {
                             height="24px"
                             viewBox="0 -960 960 960"
                             width="24px"
-                            fill="#1f1f1f"
+                            fill="currentColor"
                         >
                             <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z" />
                         </svg>
@@ -162,23 +163,26 @@ export default function SubforumList() {
                         subforum.creator === currentUserId;
 
                     return (
-                        <article
+                        <Panel
                             key={subforum.slug}
-                            className="shadow-md border border-black/15 rounded-md p-3 bg-white flex flex-col gap-2 hover:bg-black/5 cursor-pointer"
+                            className="flex flex-col gap-2 cursor-pointer"
                             onClick={() =>
                                 navigate(`/subforums/${subforum.slug}`)
                             }
+                            as="article"
+                            aria-label="subforum"
+                            hoverable={true}
                         >
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div>
                                     <h2 className="text-lg font-semibold">
                                         {subforum.title}
                                     </h2>
-                                    <p className="text-black/70">
+                                    <p className="text-black/70 dark:text-white/70">
                                         {subforum.description ||
                                             "No description"}
                                     </p>
-                                    <span className="text-xs text-black/50">
+                                    <span className="text-xs text-black/50 dark:text-white/50">
                                         {subforum.posts.length} posts
                                     </span>
                                 </div>
@@ -242,7 +246,7 @@ export default function SubforumList() {
                                     )}
                                 </>
                             )}
-                        </article>
+                        </Panel>
                     );
                 })}
             </main>
