@@ -1,5 +1,9 @@
 import clsx from "clsx";
+import type React from "react";
 import type { ReactNode, ElementType, ComponentPropsWithoutRef } from "react";
+
+type PolymorphicRef<T extends ElementType> =
+  React.ComponentPropsWithRef<T>["ref"];
 
 type PanelProps<T extends ElementType> = {
     as?: T;
@@ -7,6 +11,7 @@ type PanelProps<T extends ElementType> = {
     className?: string;
     slim?: boolean;
     hoverable?: boolean;
+    ref?: PolymorphicRef<T>;
 } & ComponentPropsWithoutRef<T>;
 
 export function Panel<T extends ElementType = "div">({
@@ -15,6 +20,7 @@ export function Panel<T extends ElementType = "div">({
     className,
     slim,
     hoverable,
+    ref,
     ...rest
 }: PanelProps<T>) {
     const Component = as || "div";
@@ -27,8 +33,8 @@ export function Panel<T extends ElementType = "div">({
     );
 
     return (
-        <Component className={panelClasses} {...rest}>
+        <Component className={panelClasses} ref={ref} {...rest}>
             {children}
         </Component>
-    );
+    )
 }

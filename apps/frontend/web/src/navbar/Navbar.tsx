@@ -4,7 +4,7 @@ import { TransparentIconButton } from "../components/TransparentIconButton";
 import { useScreenSizeState } from "../stores/ScreenSizeState";
 import { useSideNavigationVisibility } from "../stores/SideNavigationVisibilityStore";
 import { Dropdown } from "../components/Dropdown";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
     autoUpdate,
     flip,
@@ -15,6 +15,9 @@ import {
 import { useAuthenticationStore } from "../stores/AuthenticationStore";
 import { storeAccessToken, storeRefreshToken } from "../auth/Authentication";
 import { useDarkModeStore } from "../stores/DarkModeStore";
+import { createPortal } from "react-dom";
+import { SearchDropdown } from "./SearchDropdown";
+import clsx from "clsx";
 
 function SignedOutButtons() {
     const navigate = useNavigate();
@@ -156,6 +159,33 @@ export function Navbar() {
 
     const isLoggedIn = useAuthenticationStore((state) => state.isLoggedIn);
 
+    const [searchBarFocused, setBarFocused] = useState<boolean>(false);
+    const searchBarRef = useRef<HTMLInputElement | null>(null);
+    const [searchBarContent, setBarContent] = useState<string>("");
+
+    const { refs, x, y, strategy } = useFloating({
+        placement: "bottom-start",
+        middleware: [offset(6), flip(), shift({ padding: 8 })],
+        whileElementsMounted: autoUpdate,
+    });
+    const [width, setWidth] = useState<number | null>(null);
+    useLayoutEffect(() => {
+        if (!refs.reference) return;
+
+        const el = refs.reference.current as HTMLElement;
+
+        const updateWidth = () => {
+            setWidth(el.getBoundingClientRect().width);
+        };
+
+        updateWidth();
+
+        const resizeObserver = new ResizeObserver(updateWidth);
+        resizeObserver.observe(el);
+
+        return () => resizeObserver.disconnect();
+    }, [refs.reference]);
+
     const modeToggleSwitchToggleIcon = isDarkMode ? (
         <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -201,7 +231,7 @@ export function Navbar() {
     );
 
     return (
-        <header className="gap-4 w-[100vw] h-16 bg-white dark:bg-zinc-800 border-b border-b-black/15 dark:border-b-white/15 flex items-center px-2 py-2">
+        <header className="px-4 gap-4 w-[100vw] h-16 bg-white dark:bg-zinc-800 border-b border-b-black/15 dark:border-b-white/15 flex justify-between items-center px-2 py-2">
             {screenSize < 640 && (
                 <TransparentIconButton
                     icon={
@@ -221,14 +251,81 @@ export function Navbar() {
                     larger={true}
                 ></TransparentIconButton>
             )}
+
+            <div className="block md:hidden"></div>
             <h1 className="font-bold text-2xl md:block hidden ml-4">
                 LT-Forum
             </h1>
 
-            <input
-                className="flex-grow-1 rounded-md border border-black/15 px-2 py-2 dark:border-white/15"
-                placeholder="Giant Search Bar... Search?"
-            ></input>
+            <div
+                className="relative w-full sm:w-100 md:w-140 lg:w-200"
+                ref={(node) => {
+                    refs.setReference(node);
+                }}
+            >
+                <div className="rounded-full border border-black/15 px-4 dark:border-white/15 flex items-center gap-3">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        height="24px"
+                        viewBox="0 -960 960 960"
+                        width="24px"
+                        fill="currentColor"
+                        className="min-w-6 min-h-6"
+                    >
+                        <path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z" />
+                    </svg>
+                    <input
+                        className="focus:outline-none flex-grow-1 py-2 h-full w-full"
+                        placeholder="Search"
+                        onFocus={() => setBarFocused(true)}
+                        onBlur={() => setBarFocused(false)}
+                        ref={searchBarRef}
+                        onChange={() => {
+                            setBarContent(
+                                searchBarRef.current
+                                    ? searchBarRef.current.value
+                                    : "",
+                            );
+                        }}
+                    ></input>
+                    <span
+                        className={clsx(
+                            searchBarContent == "" && "opacity-0",
+                            "cursor-pointer max-[460px]:hidden",
+                        )}
+                        onClick={() => {
+                            if (searchBarRef.current) {
+                                setBarContent("")
+                                searchBarRef.current.value = ""
+                            }
+                        }}
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            height="24px"
+                            viewBox="0 -960 960 960"
+                            width="24px"
+                            fill="currentColor"
+                            className="text-black/50 dark:text-white/50 block"
+                        >
+                            <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z" />
+                        </svg>
+                    </span>
+                </div>
+                {((searchBarFocused && searchBarContent != "") ||
+                    searchBarContent != "") &&
+                    createPortal(
+                        <SearchDropdown
+                            refs={refs}
+                            x={x}
+                            y={y}
+                            width={width ?? 0}
+                            strategy={strategy}
+                            currentContent={searchBarContent}
+                        ></SearchDropdown>,
+                        document.body,
+                    )}
+            </div>
 
             <div className="w-fit h-full flex items-center gap-1">
                 <TransparentIconButton
@@ -241,9 +338,7 @@ export function Navbar() {
                             document.documentElement.classList.add("dark");
                         }
                         useDarkModeStore.setState({ isDarkMode: !isDarkMode });
-                    }
-                        
-                    }
+                    }}
                 ></TransparentIconButton>
                 {isLoggedIn ? (
                     <SignedInProfile></SignedInProfile>
