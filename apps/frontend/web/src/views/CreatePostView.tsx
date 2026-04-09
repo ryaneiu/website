@@ -146,8 +146,8 @@ export default function CreatePostView() {
     };
 
     return (
-        <FadeUp className="w-full h-[100vh] flex justify-center items-center dark:bg-zinc-900 text-black dark:text-white transition-all duration-300">
-            <Panel className="flex flex-col gap-3 items-center relative shadow-lg max-h-[95vh] overflow-auto bg-white dark:bg-zinc-800 h-fit transition-all duration-300">
+        <FadeUp className="w-full h-[100vh] flex justify-center items-center dark:bg-zinc-900 text-black dark:text-white transition-colors duration-300">
+            <Panel className="flex flex-col gap-3 items-center relative shadow-lg max-h-[95vh] overflow-auto bg-white dark:bg-zinc-800 h-fit transition-colors duration-300">
                 {/* Close button */}
                 <div className="absolute top-0 right-0 m-1">
                     <TransparentIconButton
@@ -166,13 +166,13 @@ export default function CreatePostView() {
                     />
                 </div>
 
-                <h1 className="text-3xl font-bold text-black dark:text-white transition-all duration-300">
+                <h1 className="text-3xl font-bold text-black dark:text-white transition-colors duration-300">
                     Create Post
                 </h1>
 
                 <div className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] flex justify-between items-center gap-2">
                     <select
-                        className="px-2 py-2 border border-black/15 dark:border-white/15 rounded-md w-full transition-all duration-300"
+                        className="px-2 py-2 border border-black/15 dark:border-white/15 rounded-md w-full transition-colors duration-300"
                         value={selectedSubforum}
                         onChange={(e) => setSelectedSubforum(e.target.value)}
                         disabled={loading}
@@ -196,7 +196,7 @@ export default function CreatePostView() {
 
                 {/* Content textarea */}
                 <TextAreaInput
-                    className="px-2 py-2 w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] h-[50vh] rounded-md border border-black/15 dark:border-white/15 focus:outline-none focus:border-black/35 dark:focus:border-white/35 transition-all duration-300"
+                    className="px-2 py-2 w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] h-[50vh] rounded-md border border-black/15 dark:border-white/15 focus:outline-none focus:border-black/35 dark:focus:border-white/35 transition-colors duration-300"
                     placeholder="Your random thoughts..."
                     value={content}
                     onChange={(e) => setContent(e.target.value)}

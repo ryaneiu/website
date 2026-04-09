@@ -157,11 +157,11 @@ export default function SubforumDetail() {
                                     <h1 className="text-2xl font-bold">
                                         {subforum.title}
                                     </h1>
-                                    <p className="text-black/70 dark:text-white/70 transition-all duration-300">
+                                    <p className="text-black/70 dark:text-white/70 transition-colors duration-300">
                                         {subforum.description ||
                                             "No description"}
                                     </p>
-                                    <span className="text-xs text-black/50 dark:text-white/50 transition-all duration-300">
+                                    <span className="text-xs text-black/50 dark:text-white/50 transition-colors duration-300">
                                         Created {timeAgo(subforum.created_at)}
                                     </span>
                                 </div>
@@ -257,7 +257,7 @@ export default function SubforumDetail() {
                         <section className="flex flex-col gap-3">
                             <h2 className="text-lg font-semibold">Posts</h2>
                             {subforum.posts.length === 0 && (
-                                <span className="text-black/50 dark:text-white/50 transition-all duration-300">
+                                <span className="text-black/50 dark:text-white/50 transition-colors duration-300">
                                     No posts in this subforum yet.
                                 </span>
                             )}

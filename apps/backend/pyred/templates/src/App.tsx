@@ -52,7 +52,7 @@ function App() {
     }, []);
 
     return (
-        <div className="w-[100vw] h-[100vh] text-black dark:text-white bg-white dark:bg-zinc-900 transition-all duration-300">
+        <div className="w-[100vw] h-[100vh] text-black dark:text-white bg-white dark:bg-zinc-900 transition-colors duration-300">
             <NotificationList></NotificationList>
             <BrowserRouter>
                 <Routes>

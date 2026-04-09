@@ -231,7 +231,7 @@ export function Navbar() {
     );
 
     return (
-        <header className="px-4 gap-4 w-[100vw] h-16 bg-white dark:bg-zinc-800 border-b border-b-black/15 dark:border-b-white/15 flex justify-between items-center px-2 py-2 transition-all duration-300">
+        <header className="px-4 gap-4 w-[100vw] h-16 bg-white dark:bg-zinc-800 border-b border-b-black/15 dark:border-b-white/15 flex justify-between items-center px-2 py-2 transition-colors duration-300">
             {screenSize < 640 && (
                 <TransparentIconButton
                     icon={
@@ -241,7 +241,7 @@ export function Navbar() {
                             viewBox="0 -960 960 960"
                             width="24px"
                             fill="currentColor"
-                            className="dark:text-white transition-all duration-300"
+                            className="dark:text-white transition-colors duration-300"
                         >
                             <path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" />
                         </svg>
@@ -263,7 +263,7 @@ export function Navbar() {
                     refs.setReference(node);
                 }}
             >
-                <div className="rounded-full border border-black/15 px-4 dark:border-white/15 flex items-center gap-3 transition-all duration-300">
+                <div className="rounded-full border border-black/15 px-4 dark:border-white/15 flex items-center gap-3 transition-colors duration-300">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         height="24px"
@@ -306,7 +306,7 @@ export function Navbar() {
                             viewBox="0 -960 960 960"
                             width="24px"
                             fill="currentColor"
-                            className="text-black/50 dark:text-white/50 block transition-all duration-300"
+                            className="text-black/50 dark:text-white/50 block transition-colors duration-300"
                         >
                             <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z" />
                         </svg>

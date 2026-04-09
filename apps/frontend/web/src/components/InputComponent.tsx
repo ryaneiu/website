@@ -10,7 +10,7 @@ export function InputComponent({
     ...props
 }: Props) {
     const classes = clsx(
-        "transition-colors border p-2 rounded-md focus:outline-none focus:border-black/35 border-black/15 dark:border-white/15 focus:dark:border-white/35 transition-all duration-300",
+        "transition-colors border p-2 rounded-md focus:outline-none focus:border-black/35 border-black/15 dark:border-white/15 focus:dark:border-white/35 transition-colors duration-300",
         disabled ? "cursor-not-allowed opacity-50" : "",
         className,
     );

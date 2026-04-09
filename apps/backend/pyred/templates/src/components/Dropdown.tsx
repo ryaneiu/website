@@ -38,13 +38,13 @@ export function Dropdown({
                     top: y ?? 0,
                     left: x ?? 0,
                 }}
-                className="bg-white dark:bg-zinc-800 border border-black/15 rounded-md flex flex-col shadow-lg dark:shadow-white/5 z-90 transition-all duration-300"
+                className="bg-white dark:bg-zinc-800 border border-black/15 rounded-md flex flex-col shadow-lg dark:shadow-white/5 z-90 transition-colors duration-300"
             >
                 {options.map((option, i) => (
                     <button
                         key={i}
                         onClick={() => onOptionClicked(option)}
-                        className="border-b border-black/5 dark:border-white/5 flex items-center gap-2 px-2 py-2 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors transition-all duration-300"
+                        className="border-b border-black/5 dark:border-white/5 flex items-center gap-2 px-2 py-2 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors transition-colors duration-300"
                     >
                         <span>{option.icon}</span>
                         <span className="font-bold">{option.text}</span>

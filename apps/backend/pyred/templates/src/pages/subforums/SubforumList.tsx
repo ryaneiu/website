@@ -178,11 +178,11 @@ export default function SubforumList() {
                                     <h2 className="text-lg font-semibold">
                                         {subforum.title}
                                     </h2>
-                                    <p className="text-black/70 dark:text-white/70 transition-all duration-300">
+                                    <p className="text-black/70 dark:text-white/70 transition-colors duration-300">
                                         {subforum.description ||
                                             "No description"}
                                     </p>
-                                    <span className="text-xs text-black/50 dark:text-white/50 transition-all duration-300">
+                                    <span className="text-xs text-black/50 dark:text-white/50 transition-colors duration-300">
                                         {subforum.posts.length} posts
                                     </span>
                                 </div>
