@@ -1,1 +1,32 @@
 
+cff-version: 1.2.0
+title: "LT-Forum Monorepo"
+message: "If you use this project, please cite it using the metadata below."
+type: software
+
+authors:
+  - family-names: "Xu"
+    given-names: "Ryan"
+    alias: "ryaneiu"
+  - given-names: "Cari"
+    alias: "CariLT01"
+
+abstract: "A Reddit-inspired full-stack web application designed for school use, built with a Django REST backend and a React + Tailwind + Vite frontend."
+
+repository-code: "https://github.com/ryaneiu/website"
+url: "https://github.com/ryaneiu/website"
+
+keywords:
+  - reddit-clone
+  - forum
+  - django
+  - react
+  - tailwindcss
+  - vite
+  - full-stack
+  - spa
+
+license: "MIT"
+
+version: "0.1.0"
+date-released: "2026-04-09"
