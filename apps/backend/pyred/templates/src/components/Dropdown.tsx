@@ -44,7 +44,7 @@ export function Dropdown({
                     <button
                         key={i}
                         onClick={() => onOptionClicked(option)}
-                        className="border-b border-black/5 dark:border-white/5 flex items-center gap-2 px-2 py-2 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors transition-colors duration-300"
+                        className="border-b border-black/5 dark:border-white/5 flex items-center gap-2 px-2 py-2 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
                     >
                         <span>{option.icon}</span>
                         <span className="font-bold">{option.text}</span>

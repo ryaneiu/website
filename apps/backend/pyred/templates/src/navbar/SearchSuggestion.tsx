@@ -12,9 +12,9 @@ export function SearchSuggestion(props: Props) {
 
     const classes = clsx(
         "px-2 py-3 font-bold flex items-center gap-2",
-        !props.isLast && "border-b border-b-black/15 dark:border-b-white/15 transition-colors duration-300",
-        "hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors duration-300",
-        "text-black dark:text-white transition-colors duration-300"
+        !props.isLast && "border-b border-b-black/15 dark:border-b-white/15",
+        "hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer",
+        "text-black dark:text-white"
     )
 
     return (
