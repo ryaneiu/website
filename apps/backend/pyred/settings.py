@@ -55,7 +55,7 @@ REST_FRAMEWORK = {
     # How DRF authenticates users
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "pyreddit.authentication.CookieJWTAuthentication",
     ],
 
     # Who is allowed by default
@@ -76,20 +76,30 @@ DJANGO_VITE = {
         # Add other config here if needed
     }
 }
+
+JWT_ACCESS_COOKIE_NAME = "access_token"
+JWT_REFRESH_COOKIE_NAME = "refresh_token"
+JWT_COOKIE_SECURE = True
+JWT_COOKIE_HTTP_ONLY = True
+JWT_COOKIE_SAMESITE = "None"
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 
     "AUTH_HEADER_TYPES": ("Bearer",),
 
-    # 👇 Important for cookies
-    "AUTH_COOKIE": "access_token",
-    "AUTH_COOKIE_REFRESH": "refresh_token",
-    "AUTH_COOKIE_SECURE": True,        # True in production (HTTPS)
-    "AUTH_COOKIE_HTTP_ONLY": True,     # JS can't access
-    "AUTH_COOKIE_SAMESITE": "Lax",     # Good default
+    "AUTH_COOKIE": JWT_ACCESS_COOKIE_NAME,
+    "AUTH_COOKIE_REFRESH": JWT_REFRESH_COOKIE_NAME,
+    "AUTH_COOKIE_SECURE": JWT_COOKIE_SECURE,
+    "AUTH_COOKIE_HTTP_ONLY": JWT_COOKIE_HTTP_ONLY,
+    "AUTH_COOKIE_SAMESITE": JWT_COOKIE_SAMESITE,
 }
-AUTH_COOKIE_SECURE = False  # Set to True in production with HTTPS
+
+SESSION_COOKIE_SECURE = JWT_COOKIE_SECURE
+CSRF_COOKIE_SECURE = JWT_COOKIE_SECURE
+SESSION_COOKIE_SAMESITE = JWT_COOKIE_SAMESITE
+CSRF_COOKIE_SAMESITE = JWT_COOKIE_SAMESITE
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -157,16 +167,32 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "https://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://127.0.0.1:5173",
     'http://localhost:8000',
+    'https://localhost:8000',
     'http://localhost:8001',
-    'http://localhost:4173'
+    'https://localhost:8001',
+    'http://127.0.0.1:8001',
+    'https://127.0.0.1:8001',
+    'http://localhost:4173',
+    'https://localhost:4173',
 ]
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
+    "https://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://127.0.0.1:5173",
     'http://localhost:8000',
+    'https://localhost:8000',
     'http://localhost:8001',
-    'http://localhost:4173'
+    'https://localhost:8001',
+    'http://127.0.0.1:8001',
+    'https://127.0.0.1:8001',
+    'http://localhost:4173',
+    'https://localhost:4173',
 ]
 
 # Internationalization

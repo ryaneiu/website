@@ -1,13 +1,46 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Post } from "./Post";
-import { postsStore } from "../../stores/PostsStore";
+import { postsStore, type Post as PostDto } from "../../stores/PostsStore";
 import { API_ENDPOINT } from "../../Config";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { getStoredAccessToken } from "../../auth/Authentication";
 import { notifyErrorDefault } from "../../stores/NotificationsStore";
 import { useAuthenticationStore } from "../../stores/AuthenticationStore";
 import { PostSkeletonLoader } from "./PostSkeletonLoader";
 import { extractDetailFromErrorResponse } from "../../Utils";
+import {
+    buildContentFilterQuery,
+    censorText,
+    getStoredContentFilterPreferences,
+    persistContentFilterPreferences,
+    resolvePostImage,
+    type ContentFilterPreferences,
+} from "../../contentFilter";
+
+interface FilterToggleProps {
+    label: string;
+    checked: boolean;
+    onChange: (value: boolean) => void;
+}
+
+function FilterToggle({ label, checked, onChange }: FilterToggleProps) {
+    return (
+        <label className="flex items-center gap-3 cursor-pointer select-none">
+            <span>{label}</span>
+            <span className="relative inline-flex h-6 w-11">
+                <input
+                    aria-label={label}
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(event) => onChange(event.target.checked)}
+                    className="peer sr-only"
+                />
+                <span className="absolute inset-0 rounded-full bg-black/20 dark:bg-white/20 transition-colors duration-300 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-500"></span>
+                <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-300 peer-checked:translate-x-5"></span>
+            </span>
+        </label>
+    );
+}
 
 export function PostList() {
     const posts = postsStore((state) => state.posts);
@@ -15,8 +48,23 @@ export function PostList() {
 
     const [errorOccurred, setErrorOccurred] = useState(false);
     const [deletingPostId, setDeletingPostId] = useState<number | null>(null);
+    const [preferences, setPreferences] = useState<ContentFilterPreferences>(() =>
+        getStoredContentFilterPreferences(),
+    );
 
     const navigate = useNavigate();
+    const location = useLocation();
+    const includeNsfw = preferences.includeNsfw;
+    const includeSwears = preferences.includeSwears;
+    const searchQuery = useMemo(() => {
+        const params = new URLSearchParams(location.search);
+        return (params.get("q") ?? "").trim();
+    }, [location.search]);
+
+    const updatePreferences = (next: ContentFilterPreferences) => {
+        setPreferences(next);
+        persistContentFilterPreferences(next);
+    };
 
     const onDeletePost = async (postId: number) => {
         if (deletingPostId != null) return;
@@ -65,7 +113,12 @@ export function PostList() {
 
             try {
                 const token = await getStoredAccessToken();
-                const response = await fetch(`${API_ENDPOINT}/api/posts/`, {
+                const endpoint = `${API_ENDPOINT}/api/posts/?${buildContentFilterQuery({
+                    includeNsfw,
+                    includeSwears,
+                }, searchQuery)}`;
+
+                const response = await fetch(endpoint, {
                     method: "GET",
                     credentials: "include",
                     headers:
@@ -119,8 +172,20 @@ export function PostList() {
                     return;
                 }
 
+                if (!Array.isArray(data)) {
+                    notifyErrorDefault(
+                        "Unexpected posts response format. Expected an array.",
+                    );
+                    setErrorOccurred(true);
+                    postsStore.setState({
+                        posts: [],
+                        hasLoaded: true,
+                    });
+                    return;
+                }
+
                 postsStore.setState({
-                    posts: data,
+                    posts: data as PostDto[],
                     hasLoaded: true,
                 });
             } catch (e) {
@@ -138,11 +203,36 @@ export function PostList() {
         };
 
         loadPosts();
-    }, [navigate]);
+    }, [navigate, includeNsfw, includeSwears, searchQuery]);
 
     return (
         <>
             <div className="flex flex-col gap-4 items-center w-full">
+                <div className="w-full flex justify-end">
+                    <div className="flex items-center gap-4 text-sm text-black/70 dark:text-white/70 transition-colors duration-300">
+                        <FilterToggle
+                            label="NSFW"
+                            checked={includeNsfw}
+                            onChange={(checked) =>
+                                updatePreferences({
+                                    includeNsfw: checked,
+                                    includeSwears,
+                                })
+                            }
+                        />
+                        <FilterToggle
+                            label="Swears"
+                            checked={includeSwears}
+                            onChange={(checked) =>
+                                updatePreferences({
+                                    includeNsfw,
+                                    includeSwears: checked,
+                                })
+                            }
+                        />
+                    </div>
+                </div>
+
                 {(!hasLoaded && !errorOccurred) && (
                     <>
                         <PostSkeletonLoader></PostSkeletonLoader>
@@ -153,17 +243,30 @@ export function PostList() {
                     </>
                 )}
 
-                {posts &&
-                    posts.map((post) => {
+                {posts.map((post) => {
+                        const sourceText =
+                            post.body ?? post.content_markdown ?? post.content;
+                        const renderedDescription = censorText(
+                            sourceText,
+                            includeSwears,
+                        );
+                        const image = resolvePostImage(
+                            post.image,
+                            sourceText,
+                            includeNsfw,
+                            post.is_nsfw,
+                        );
+
                         return (
                             <Post
                                 title={post.title}
-                                description={post.content_markdown || post.content}
+                                description={renderedDescription}
                                 created_at={post.created_at}
                                 key={post.id}
                                 votes={post.likes_count ?? post.votes ?? 0}
                                 commentsCount={post.replies_count ?? 0}
                                 id={post.id}
+                                image={image}
                                 isInPostList={true}
                                 canDelete={post.can_delete !== false}
                                 isDeleting={deletingPostId === post.id}
@@ -172,9 +275,13 @@ export function PostList() {
                         );
                     })}
 
-                {(posts == null || posts.length == 0) && hasLoaded ? (
+                {posts.length == 0 && hasLoaded ? (
                     <div className="w-full h-full flex items-center justify-center">
-                        <h1 className="font-bold text-3xl">No posts!</h1>
+                        <h1 className="font-bold text-3xl">
+                            {searchQuery.length > 0
+                                ? "No matching posts!"
+                                : "No posts!"}
+                        </h1>
                     </div>
                 ) : null}
 

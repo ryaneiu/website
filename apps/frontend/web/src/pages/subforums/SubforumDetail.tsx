@@ -17,6 +17,12 @@ import { UpdateSubforumForm } from "../../components/subforums/UpdateSubforumFor
 import type { SubforumDto } from "../../components/subforums/CreationModal";
 import { FadeUp } from "../../components/AnimatedPresenceDiv";
 import { Panel } from "../../components/Panel";
+import {
+    buildContentFilterQuery,
+    censorText,
+    getStoredContentFilterPreferences,
+    resolvePostImage,
+} from "../../contentFilter";
 
 type SubforumDetailDto = SubforumDto & {
     posts: SubforumPostDto[];
@@ -32,6 +38,14 @@ export default function SubforumDetail() {
     const [token, setToken] = useState<string | null>(null);
 
     const [modalVisible, setModalVisible] = useState<boolean>(false);
+    const filterPreferences = useMemo(
+        () => getStoredContentFilterPreferences(),
+        [],
+    );
+    const filterQuery = useMemo(
+        () => buildContentFilterQuery(filterPreferences),
+        [filterPreferences],
+    );
 
     const currentUserId = useMemo(
         () => (token ? getUserIdFromJwt(token) : null),
@@ -51,7 +65,7 @@ export default function SubforumDetail() {
             setToken(tokenValue);
 
             const response = await fetch(
-                `${API_ENDPOINT}/api/posts/subforums/${slug}/`,
+                `${API_ENDPOINT}/api/posts/subforums/${slug}/?${filterQuery}`,
                 {
                     method: "GET",
                     headers:
@@ -76,7 +90,7 @@ export default function SubforumDetail() {
         } finally {
             setLoading(false);
         }
-    }, [slug]);
+    }, [filterQuery, slug]);
 
     useEffect(() => {
         loadSubforum();
@@ -262,20 +276,36 @@ export default function SubforumDetail() {
                                 </span>
                             )}
 
-                            {subforum.posts.map((post) => (
-                                <Post
-                                    key={post.id}
-                                    title={post.title}
-                                    description={
-                                        post.content_markdown || post.content
-                                    }
-                                    created_at={post.created_at}
-                                    votes={0}
-                                    commentsCount={0}
-                                    id={post.id}
-                                    isInPostList={true}
-                                />
-                            ))}
+                            {subforum.posts.map((post) => {
+                                const sourceText =
+                                    post.body ||
+                                    post.content_markdown ||
+                                    post.content;
+                                const description = censorText(
+                                    sourceText,
+                                    filterPreferences.includeSwears,
+                                );
+                                const image = resolvePostImage(
+                                    post.image,
+                                    sourceText,
+                                    filterPreferences.includeNsfw,
+                                    post.is_nsfw,
+                                );
+
+                                return (
+                                    <Post
+                                        key={post.id}
+                                        title={post.title}
+                                        description={description}
+                                        created_at={post.created_at}
+                                        votes={0}
+                                        commentsCount={0}
+                                        id={post.id}
+                                        image={image}
+                                        isInPostList={true}
+                                    />
+                                );
+                            })}
                         </section>
                     </>
                 )}

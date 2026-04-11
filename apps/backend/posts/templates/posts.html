@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Posts</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 24px; background: #f5f5f5; color: #111; }
+        main { max-width: 860px; margin: 0 auto; }
+        article { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .meta { color: #666; font-size: 13px; margin-top: 8px; }
+        .image-wrap { margin-top: 12px; position: relative; border-radius: 10px; overflow: hidden; border: 1px solid #ddd; }
+        .image-wrap img { width: 100%; max-height: 420px; object-fit: cover; display: block; }
+        .image-wrap.is-blurred img { filter: blur(24px); transform: scale(1.05); }
+        .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; background: rgba(0,0,0,0.45); letter-spacing: 0.03em; }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Posts</h1>
+        <p>
+            include_nsfw: {{ filters.include_nsfw }} |
+            include_swears: {{ filters.include_swears }}
+        </p>
+
+        {% for post in posts %}
+            <article>
+                <h2>{{ post.title }}</h2>
+                <p>{{ post.body }}</p>
+
+                {% if post.image %}
+                    <div class="image-wrap {% if post.image.isBlurred %}is-blurred{% endif %}">
+                        <img src="{{ post.image.url }}" alt="Post image" />
+                        {% if post.image.isBlurred %}
+                            <div class="overlay">Sensitive Content</div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                <p class="meta">
+                    NSFW: {{ post.is_nsfw }} |
+                    Contains swears: {{ post.has_swears }}
+                </p>
+            </article>
+        {% empty %}
+            <p>No posts available.</p>
+        {% endfor %}
+    </main>
+</body>
+</html>

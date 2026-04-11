@@ -7,15 +7,20 @@ import {
     notifySuccessDefault,
 } from "../../stores/NotificationsStore";
 import { PostCreationModal } from "./CreationModal";
+import type { PostImage } from "../../contentFilter";
 
 export type SubforumPostDto = {
     id: number;
     title: string;
+    body?: string;
     content: string;
     content_markdown?: string;
     author: number;
     created_at: string;
     subforum?: string | null;
+    is_nsfw?: boolean;
+    has_swears?: boolean;
+    image?: PostImage | null;
 };
 
 interface Props {

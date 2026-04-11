@@ -6,6 +6,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils.text import slugify
+from .utils.censor import classify_post_content
 
 
 class Subforum(models.Model):
@@ -72,6 +73,8 @@ class Post(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     published = models.BooleanField(default=False)
+    is_nsfw = models.BooleanField(default=False, db_index=True)
+    has_swears = models.BooleanField(default=False, db_index=True)
 
     def clean(self):
         title = (self.title or "").strip()
@@ -95,6 +98,14 @@ class Post(models.Model):
         self.title = title
         self.content = content or markdown
         self.content_markdown = markdown or content
+
+        is_nsfw, has_swears = classify_post_content(
+            self.title,
+            self.content,
+            self.content_markdown,
+        )
+        self.is_nsfw = is_nsfw
+        self.has_swears = has_swears
 
     def save(self, *args, **kwargs):
         self.full_clean()

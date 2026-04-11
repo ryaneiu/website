@@ -14,8 +14,9 @@ export function isDevelopmentMode() {
 }
 
 function warnAboutSecurity() {
-    alert("[ WARNING / SEVERE SECURITY VULNERABILITY ] :\nCookies are not used for storing refresh and access tokens! For production, you MUST make the backend use secure HTTP cookies to exchange tokens!\nThe current implementation without cookies is highly vulnerable to XSS & token stealing.");
-    notifyWarningDefault("Severe Security Vulnerability detected");
+    notifyWarningDefault(
+        "Security warning: token storage fallback is active; use secure HttpOnly cookies in production.",
+    );
 }
 
 export function getStoredRefreshToken() {

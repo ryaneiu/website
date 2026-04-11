@@ -17,6 +17,7 @@ interface Props {
     y: number;
     width: number;
     currentContent: string;
+    onSearch: (searchText: string) => void;
 }
 
 export function SearchDropdown(props: Props) {
@@ -51,6 +52,7 @@ export function SearchDropdown(props: Props) {
                     currentText={props.currentContent}
                     location="in this Subforum"
                     isLast={false}
+                    onClick={() => props.onSearch(props.currentContent)}
                 ></SearchSuggestion>
                 <SearchSuggestion
                     icon={
@@ -67,6 +69,7 @@ export function SearchDropdown(props: Props) {
                     currentText={props.currentContent}
                     location="in Posts"
                     isLast={false}
+                    onClick={() => props.onSearch(props.currentContent)}
                 ></SearchSuggestion>
                 <SearchSuggestion
                     icon={
@@ -83,6 +86,7 @@ export function SearchDropdown(props: Props) {
                     currentText={props.currentContent}
                     location="in Users"
                     isLast={false}
+                    onClick={() => props.onSearch(props.currentContent)}
                 ></SearchSuggestion>
                 <SearchSuggestion
                     icon={
@@ -99,6 +103,7 @@ export function SearchDropdown(props: Props) {
                     currentText={props.currentContent}
                     location="everywhere"
                     isLast={true}
+                    onClick={() => props.onSearch(props.currentContent)}
                 ></SearchSuggestion>
             </div>
         </Panel>

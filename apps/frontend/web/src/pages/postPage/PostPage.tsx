@@ -4,7 +4,7 @@ import { Post } from "../home/Post";
 import { Comment } from "./Comment";
 import type { CommentType } from "./CommentType";
 import { SkeletonLoaderComment } from "./SkeletonLoaderComment";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { API_ENDPOINT } from "../../Config";
 import { getStoredAccessToken } from "../../auth/Authentication";
 import { notifyErrorDefault } from "../../stores/NotificationsStore";
@@ -13,10 +13,18 @@ import { extractDetailFromErrorResponse } from "../../Utils";
 import { Button } from "../../components/Button";
 import { postsStore } from "../../stores/PostsStore";
 import { FadeUp } from "../../components/AnimatedPresenceDiv";
+import {
+    buildContentFilterQuery,
+    censorText,
+    getStoredContentFilterPreferences,
+    resolvePostImage,
+    type PostImage,
+} from "../../contentFilter";
 
 type PostResponse = {
     id: number;
     title: string;
+    body?: string;
     content: string;
     content_markdown?: string;
     author: number;
@@ -26,6 +34,9 @@ type PostResponse = {
     created_at: string;
     can_delete?: boolean;
     subforum?: string | null;
+    is_nsfw?: boolean;
+    has_swears?: boolean;
+    image?: PostImage | null;
 };
 
 type ReplyResponse = {
@@ -56,6 +67,14 @@ export default function PostPage() {
     const postId = id != null ? Number.parseInt(id) : selectedPostId;
     const canDisplay = Number.isFinite(postId) && postId > 0;
     const canDeletePost = postData?.can_delete === true;
+    const filterPreferences = useMemo(
+        () => getStoredContentFilterPreferences(),
+        [],
+    );
+    const filterQuery = useMemo(
+        () => buildContentFilterQuery(filterPreferences),
+        [filterPreferences],
+    );
 
     const buildCommentTree = useCallback(
         (replies: ReplyResponse[]): CommentType[] => {
@@ -115,7 +134,7 @@ export default function PostPage() {
 
             try {
                 const [postResponse] = await Promise.all([
-                    fetch(`${API_ENDPOINT}/api/posts/${postId}/`, {
+                    fetch(`${API_ENDPOINT}/api/posts/${postId}/?${filterQuery}`, {
                         method: "GET",
                     }),
                     fetchReplies(),
@@ -127,11 +146,16 @@ export default function PostPage() {
 
                 const postPayload: PostResponse = await postResponse.json();
                 setPostData(postPayload);
+                const renderedDescription = censorText(
+                    postPayload.body ||
+                        postPayload.content_markdown ||
+                        postPayload.content,
+                    filterPreferences.includeSwears,
+                );
 
                 useSelectedPostStore.setState({
                     title: postPayload.title,
-                    description:
-                        postPayload.content_markdown || postPayload.content,
+                    description: renderedDescription,
                     publishedTime: postPayload.created_at,
                     likes: postPayload.likes_count ?? postPayload.votes ?? 0,
                     comments: postPayload.replies_count ?? 0,
@@ -150,7 +174,7 @@ export default function PostPage() {
         };
 
         loadPostPage();
-    }, [canDisplay, fetchReplies, postId]);
+    }, [canDisplay, fetchReplies, filterPreferences.includeSwears, filterQuery, postId]);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -394,6 +418,23 @@ export default function PostPage() {
         }
     };
 
+    const renderedPostDescription =
+        postData == null
+            ? ""
+            : censorText(
+                  postData.body || postData.content_markdown || postData.content,
+                  filterPreferences.includeSwears,
+              );
+    const renderedPostImage =
+        postData == null
+            ? null
+            : resolvePostImage(
+                  postData.image,
+                  postData.body || postData.content_markdown || postData.content,
+                  filterPreferences.includeNsfw,
+                  postData.is_nsfw,
+              );
+
     return (
         <FadeUp>
             <div className="flex flex-col items-center px-2 py-2">
@@ -405,16 +446,14 @@ export default function PostPage() {
                         <>
                             <Post
                                 title={postData.title}
-                                description={
-                                    postData.content_markdown ||
-                                    postData.content
-                                }
+                                description={renderedPostDescription}
                                 created_at={postData.created_at}
                                 votes={
                                     postData.likes_count ?? postData.votes ?? 0
                                 }
                                 commentsCount={postData.replies_count ?? 0}
                                 id={postData.id}
+                                image={renderedPostImage}
                                 onLikeClick={onPostLikeClick}
                                 subforumText={`Subforum: ${postData.subforum || "general"}`}
                                 subforumControl={

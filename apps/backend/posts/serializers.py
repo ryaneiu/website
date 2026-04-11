@@ -1,5 +1,10 @@
 from rest_framework import serializers
+
 from .models import Post, Reply, Like, Subforum
+from .utils.censor import censor_text, extract_first_image_url, process_image
+
+
+DEFAULT_FILTER_PREFERENCES = {"include_nsfw": False, "include_swears": False}
 
 
 class SubforumSerializer(serializers.ModelSerializer):
@@ -8,18 +13,8 @@ class SubforumSerializer(serializers.ModelSerializer):
 
     def get_posts(self, obj):
         posts = obj.posts.select_related("author").order_by("-created_at")
-        return [
-            {
-                "id": post.id,
-                "title": post.title,
-                "content": post.content,
-                "content_markdown": post.content_markdown,
-                "author": post.author_id,
-                "created_at": post.created_at,
-                "subforum": obj.slug,
-            }
-            for post in posts
-        ]
+        serializer = PostSerializer(posts, many=True, context=self.context)
+        return serializer.data
 
     def validate_title(self, value):
         cleaned = (value or "").strip()
@@ -80,12 +75,22 @@ class PostSerializer(serializers.ModelSerializer):
     body = serializers.SerializerMethodField()
     votes = serializers.SerializerMethodField()
     can_delete = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
     subforum = serializers.SlugRelatedField(
         slug_field="slug",
         queryset=Subforum.objects.all(),
         required=False,
         allow_null=True,
     )
+
+    def _get_filter_preferences(self) -> dict[str, bool]:
+        preferences = self.context.get("filter_preferences")
+        if isinstance(preferences, dict):
+            return {
+                "include_nsfw": bool(preferences.get("include_nsfw", False)),
+                "include_swears": bool(preferences.get("include_swears", False)),
+            }
+        return DEFAULT_FILTER_PREFERENCES
 
     def get_likes_count(self, obj):
         return getattr(obj, "likes_count", obj.likes.count())
@@ -94,7 +99,21 @@ class PostSerializer(serializers.ModelSerializer):
         return getattr(obj, "replies_count", obj.replies.count())
 
     def get_body(self, obj):
-        return obj.content_markdown or obj.content
+        filter_preferences = self._get_filter_preferences()
+        include_swears = filter_preferences["include_swears"]
+        source_text = obj.content_markdown or obj.content
+        return censor_text(source_text, enabled=include_swears)
+
+    def get_image(self, obj):
+        filter_preferences = self._get_filter_preferences()
+        include_nsfw = filter_preferences["include_nsfw"]
+        source_text = obj.content_markdown or obj.content
+        image_url = extract_first_image_url(source_text)
+        return process_image(
+            image_url,
+            nsfw_enabled=include_nsfw,
+            is_nsfw=obj.is_nsfw,
+        )
 
     def get_votes(self, obj):
         return self.get_likes_count(obj)
@@ -133,6 +152,20 @@ class PostSerializer(serializers.ModelSerializer):
         attrs["content_markdown"] = markdown or content
         return attrs
 
+    def to_representation(self, obj):
+        representation = super().to_representation(obj)
+        include_swears = self._get_filter_preferences()["include_swears"]
+        source_content = obj.content or ""
+        source_markdown = obj.content_markdown or ""
+
+        representation["content"] = censor_text(source_content, enabled=include_swears)
+        representation["content_markdown"] = censor_text(source_markdown, enabled=include_swears)
+        representation["body"] = censor_text(
+            source_markdown or source_content,
+            enabled=include_swears,
+        )
+        return representation
+
     class Meta:
         model = Post
         fields = [
@@ -149,5 +182,14 @@ class PostSerializer(serializers.ModelSerializer):
             "likes_count",
             "replies_count",
             "can_delete",
+            "image",
+            "is_nsfw",
+            "has_swears",
         ]
-        read_only_fields = ["author", "published", "created_at"]
+        read_only_fields = [
+            "author",
+            "published",
+            "created_at",
+            "is_nsfw",
+            "has_swears",
+        ]

@@ -48,9 +48,6 @@ async function signUp(username: string, password: string, email: string) {
                 notifyErrorDefault(
                     `Failed to sign up: ${response.status} ${response.statusText}`,
                 );
-                /* alert(
-                    `Failed to sign up: ${response.status} ${response.statusText}`,
-                ); */
             }
 
             return false;
@@ -116,9 +113,6 @@ async function login(username: string, password: string): Promise<boolean> {
             );
         }
 
-        /* alert(
-            "Login successfull. Cookies will not work unless this page is served on the actual backend server.",
-        ); */
         useAuthenticationStore.setState({ isLoggedIn: true });
         return true;
     } catch (e) {
@@ -228,17 +222,6 @@ export default function AuthView() {
             <LoadableButton
                 text="Login"
                 onClick={async () => {
-                    /* const validityResult = areInputsValid(
-                        isLogin,
-                        loginEmailRef.current!,
-                        loginPasswordRef.current!,
-                    );
-
-                    if (!validityResult.isValid) {
-                        alert(`Invalid input: ${validityResult.message}`);
-                        return;
-                    } */
-
                     setIsLoading(true);
                     const success = await login(
                         loginEmailRef.current!.value,

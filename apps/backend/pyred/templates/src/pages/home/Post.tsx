@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { ReactionButton } from "../../components/ReactionButton";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -9,6 +9,10 @@ import { MarkdownComponents } from "../../MarkdownComponents";
 import clsx from "clsx";
 import { LoadableButton } from "../../components/LoadableButton";
 import { Panel } from "../../components/Panel";
+import type { PostImage } from "../../contentFilter";
+import { BlurredImage } from "../../components/BlurredImage";
+
+const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/;
 
 interface Props {
     title: string;
@@ -23,18 +27,46 @@ interface Props {
     isDeleting?: boolean;
     subforumText?: string;
     subforumControl?: ReactNode;
+    image?: PostImage | null;
 
     isInPostList: boolean;
 }
 
 export function Post(props: Props) {
     const [expanded, setExpanded] = useState(!props.isInPostList);
-    const truncatedText = props.description.slice(0, 500) + "...";
-    const truncatedTitle = props.title.slice(0, 100) + "...";
     const needsExpandButton = props.description.length > 500;
     const needsTruncatedTitle = props.title.length > 100;
+    const truncatedText = needsExpandButton
+        ? `${props.description.slice(0, 500)}...`
+        : props.description;
+    const truncatedTitle = needsTruncatedTitle
+        ? `${props.title.slice(0, 100)}...`
+        : props.title;
 
     const navigate = useNavigate();
+    const hasMarkdownImage = useMemo(
+        () => MARKDOWN_IMAGE_PATTERN.test(props.description),
+        [props.description],
+    );
+    const markdownComponents = useMemo(
+        () => ({
+            ...MarkdownComponents,
+            img: ({ src, alt }: { src?: string; alt?: string }) => {
+                if (typeof src !== "string" || src.trim().length === 0) {
+                    return null;
+                }
+
+                return (
+                    <BlurredImage
+                        src={src}
+                        alt={alt ?? props.title}
+                        isBlurred={props.image?.isBlurred ?? false}
+                    />
+                );
+            },
+        }),
+        [props.image?.isBlurred, props.title],
+    );
 
     const onPostClicked = () => {
         if (!props.isInPostList) return;
@@ -96,11 +128,18 @@ export function Post(props: Props) {
             </h1>
             <div>
                 <ReactMarkdown
-                    components={MarkdownComponents}
+                    components={markdownComponents}
                     remarkPlugins={[remarkGfm]}
                 >
                     {expanded ? props.description : truncatedText}
                 </ReactMarkdown>
+                {props.image != null && !hasMarkdownImage && (
+                    <BlurredImage
+                        src={props.image.url}
+                        alt={props.title}
+                        isBlurred={props.image.isBlurred}
+                    />
+                )}
                 {needsExpandButton && props.isInPostList && (
                     <button
                         className="text-blue-600 hover:underline focus:outline-none cursor-pointer"

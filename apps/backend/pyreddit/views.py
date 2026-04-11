@@ -14,10 +14,100 @@ from django.contrib.auth.models import User
 from django.views.generic import TemplateView
 from django.contrib.auth import authenticate
 from django.conf import settings
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .models import Post, Comment
 from .serializers import PostSerializer, CommentSerializer
+
+
+def set_jwt_cookies(
+    response: Response,
+    access_token: str | None = None,
+    refresh_token: str | None = None,
+) -> None:
+    """Attach JWT access/refresh cookies using project security settings."""
+    access_cookie_name = settings.SIMPLE_JWT.get("AUTH_COOKIE", "access_token")
+    refresh_cookie_name = settings.SIMPLE_JWT.get("AUTH_COOKIE_REFRESH", "refresh_token")
+    secure = settings.SIMPLE_JWT.get("AUTH_COOKIE_SECURE", True)
+    httponly = settings.SIMPLE_JWT.get("AUTH_COOKIE_HTTP_ONLY", True)
+    samesite = settings.SIMPLE_JWT.get("AUTH_COOKIE_SAMESITE", "Lax")
+
+    access_token_lifetime = settings.SIMPLE_JWT.get("ACCESS_TOKEN_LIFETIME")
+    refresh_token_lifetime = settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME")
+
+    access_max_age = int(access_token_lifetime.total_seconds()) if access_token_lifetime else None
+    refresh_max_age = int(refresh_token_lifetime.total_seconds()) if refresh_token_lifetime else None
+
+    if access_token:
+        response.set_cookie(
+            key=access_cookie_name,
+            value=access_token,
+            httponly=httponly,
+            secure=secure,
+            samesite=samesite,
+            max_age=access_max_age,
+            path="/",
+        )
+
+    if refresh_token:
+        response.set_cookie(
+            key=refresh_cookie_name,
+            value=refresh_token,
+            httponly=httponly,
+            secure=secure,
+            samesite=samesite,
+            max_age=refresh_max_age,
+            path="/",
+        )
+
+
+class CookieTokenObtainPairView(TokenObtainPairView):
+    """Issue JWTs in response body and secure HttpOnly cookies."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == status.HTTP_200_OK:
+            set_jwt_cookies(
+                response,
+                access_token=response.data.get("access"),
+                refresh_token=response.data.get("refresh"),
+            )
+
+        return response
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+    """Refresh access JWT using refresh token from body or cookie."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
+        if not data.get("refresh"):
+            refresh_cookie_name = settings.SIMPLE_JWT.get("AUTH_COOKIE_REFRESH", "refresh_token")
+            cookie_refresh_token = request.COOKIES.get(refresh_cookie_name)
+            if cookie_refresh_token:
+                data["refresh"] = cookie_refresh_token
+
+        serializer = self.get_serializer(data=data)
+
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError as exc:
+            raise InvalidToken(exc.args[0]) from exc
+
+        response = Response(serializer.validated_data, status=status.HTTP_200_OK)
+        set_jwt_cookies(
+            response,
+            access_token=serializer.validated_data.get("access"),
+            refresh_token=serializer.validated_data.get("refresh"),
+        )
+        return response
 
 
 
@@ -82,20 +172,10 @@ class LoginAPIView(APIView):
         refresh = RefreshToken.for_user(user)
         response = Response({"detail": "Login successful"})
 
-        # Set cookies
-        response.set_cookie(
-            key="access_token",
-            value=str(refresh.access_token),
-            httponly=True,
-            secure=False,  # True in production
-            samesite="Lax",
-        )
-        response.set_cookie(
-            key="refresh_token",
-            value=str(refresh),
-            httponly=True,
-            secure=False,  # True in production
-            samesite="Lax",
+        set_jwt_cookies(
+            response,
+            access_token=str(refresh.access_token),
+            refresh_token=str(refresh),
         )
 
         return response

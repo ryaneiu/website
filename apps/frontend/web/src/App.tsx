@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import React, { Suspense, useEffect } from "react";
 import { useScreenSizeState } from "./stores/ScreenSizeState";
 import { isDevelopmentMode } from "./auth/Authentication";
+import { notifyInfoDefault } from "./stores/NotificationsStore";
 import {
     useAuthenticationStore,
     verifyIsLoggedIn,
@@ -36,8 +37,8 @@ function App() {
 
     useEffect(() => {
         if (!hasShownDebugTip() && isDevelopmentMode()) {
-            alert(
-                "To debug an issue, use F12 or Ctrl + Shift + I to open the development tools.\nTo see issues with the API (login failed, request failed, etc.), use the network tab.\nFor other issues, try the Console tab.",
+            notifyInfoDefault(
+                "Debug tip: use F12 (or Ctrl+Shift+I) and check Network/Console tabs.",
             );
             localStorage.setItem("debugTipShown", "true");
         }

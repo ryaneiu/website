@@ -56,7 +56,7 @@ export default function CreatePostView() {
 
     const onPublishPost = async () => {
         if (!title && !content) {
-            alert("Please enter a title or content");
+            notifyErrorDefault("Please enter a title or content");
             return;
         }
 
@@ -94,7 +94,6 @@ export default function CreatePostView() {
             const data = await res.json();
             console.log("Post created:", data);
 
-            /// alert("Post created!");
             notifySuccessDefault("Post created!");
             setTitle("");
             setContent("");

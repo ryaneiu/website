@@ -9,6 +9,7 @@ from .views import (
     PublishPostView,
     PostListCreateAPIView,
     PostRetrieveAPIView,
+    PostTemplateListView,
     ToggleLikeAPIView,
     ReplyListCreateAPIView,
     SubforumListCreateAPIView,
@@ -18,6 +19,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path('rendered/', PostTemplateListView.as_view(), name='posts-rendered-template'),
     path('create/', CreatePostView.as_view(), name='create-post'),
     path('publish/<int:id>/', PublishPostView.as_view(), name='publish-post'),
     path('<int:id>/', PostRetrieveAPIView.as_view(), name='retrieve-post'),

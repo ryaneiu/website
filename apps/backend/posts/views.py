@@ -3,14 +3,16 @@ Views for the posts app.
 
 Contains API views to list, create, and publish posts for the Reddit-like site.
 """
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
+from django.template.response import TemplateResponse
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Post, Like, Reply, Subforum
 from .serializers import PostSerializer, ReplySerializer, SubforumSerializer
+from .utils.validators import validate_query
 
 
 class IsAuthorOrReadOnly(permissions.BasePermission):
@@ -34,13 +36,84 @@ def get_general_subforum():
     )
     return subforum
 
+
+def apply_post_search(queryset, search_query: str):
+    if not search_query:
+        return queryset
+
+    return queryset.filter(
+        Q(title__icontains=search_query)
+        | Q(content__icontains=search_query)
+        | Q(content_markdown__icontains=search_query)
+        | Q(subforum__title__icontains=search_query)
+        | Q(subforum__slug__icontains=search_query)
+        | Q(author__username__icontains=search_query)
+    )
+
+
+class FilterPreferencesMixin:
+    _filter_preferences: dict[str, bool | str] | None = None
+
+    def get_filter_preferences(self) -> dict[str, bool | str]:
+        if self._filter_preferences is None:
+            try:
+                self._filter_preferences = validate_query(self.request.query_params)
+            except ValueError as exc:
+                raise ValidationError({"detail": str(exc)})
+        return self._filter_preferences
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["filter_preferences"] = self.get_filter_preferences()
+        return context
+
+
+class PostTemplateListView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        try:
+            filter_preferences = validate_query(request.query_params)
+        except ValueError as exc:
+            raise ValidationError({"detail": str(exc)})
+
+        search_query = str(filter_preferences.get("q", "")).strip()
+
+        queryset = apply_post_search(Post.objects.all(), search_query).annotate(
+            likes_count=Count("likes", distinct=True),
+            replies_count=Count("replies", distinct=True),
+        ).order_by("-created_at")
+
+        serializer = PostSerializer(
+            queryset,
+            many=True,
+            context={
+                "request": request,
+                "filter_preferences": filter_preferences,
+            },
+        )
+
+        return TemplateResponse(
+            request,
+            "posts.html",
+            {
+                "posts": serializer.data,
+                "filters": filter_preferences,
+            },
+        )
+
 # List all posts
-class PostListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Post.objects.annotate(
-        likes_count=Count("likes", distinct=True),
-        replies_count=Count("replies", distinct=True),
-    ).order_by("-created_at")
+class PostListCreateAPIView(FilterPreferencesMixin, generics.ListCreateAPIView):
     serializer_class = PostSerializer
+
+    def get_queryset(self):
+        filter_preferences = self.get_filter_preferences()
+        search_query = str(filter_preferences.get("q", "")).strip()
+
+        return apply_post_search(Post.objects.all(), search_query).annotate(
+            likes_count=Count("likes", distinct=True),
+            replies_count=Count("replies", distinct=True),
+        ).order_by("-created_at")
 
     def get_permissions(self):
         if self.request.method == 'POST':
@@ -59,7 +132,7 @@ class PostListCreateAPIView(generics.ListCreateAPIView):
         )
 
 
-class PostRetrieveAPIView(generics.RetrieveDestroyAPIView):
+class PostRetrieveAPIView(FilterPreferencesMixin, generics.RetrieveDestroyAPIView):
     queryset = Post.objects.annotate(
         likes_count=Count("likes", distinct=True),
         replies_count=Count("replies", distinct=True),
@@ -144,7 +217,7 @@ class ReplyListCreateAPIView(generics.ListCreateAPIView):
         )
 
 
-class SubforumListCreateAPIView(generics.ListCreateAPIView):
+class SubforumListCreateAPIView(FilterPreferencesMixin, generics.ListCreateAPIView):
     queryset = Subforum.objects.prefetch_related("posts").all().order_by("title")
     serializer_class = SubforumSerializer
 
@@ -157,7 +230,7 @@ class SubforumListCreateAPIView(generics.ListCreateAPIView):
         serializer.save(creator=self.request.user)
 
 
-class SubforumRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+class SubforumRetrieveUpdateDestroyAPIView(FilterPreferencesMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = Subforum.objects.prefetch_related("posts").all()
     serializer_class = SubforumSerializer
     lookup_field = "slug"

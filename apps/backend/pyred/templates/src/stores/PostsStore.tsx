@@ -1,6 +1,7 @@
 import { create } from "zustand";
+import type { PostImage } from "../contentFilter";
 
-type Post = {
+export type Post = {
     id: number;
     title: string;
     body?: string;
@@ -13,6 +14,9 @@ type Post = {
     replies_count?: number;
     can_delete?: boolean;
     subforum?: string | null;
+    is_nsfw?: boolean;
+    has_swears?: boolean;
+    image?: PostImage | null;
 }
 
 interface PostsStore {

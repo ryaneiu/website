@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/Button";
 import { TransparentIconButton } from "../components/TransparentIconButton";
 import { useScreenSizeState } from "../stores/ScreenSizeState";
@@ -18,6 +18,7 @@ import { useDarkModeStore } from "../stores/DarkModeStore";
 import { createPortal } from "react-dom";
 import { SearchDropdown } from "./SearchDropdown";
 import clsx from "clsx";
+import { notifyWarningDefault } from "../stores/NotificationsStore";
 
 function SignedOutButtons() {
     const navigate = useNavigate();
@@ -43,6 +44,11 @@ function SignedOutButtons() {
     );
 }
 
+function getSearchQueryValue(search: string) {
+    const params = new URLSearchParams(search);
+    return (params.get("q") ?? "").trim();
+}
+
 function SignedInProfile() {
     const [dropdownVisible, setDropdownVisible] = useState<boolean>(false);
 
@@ -61,15 +67,10 @@ function SignedInProfile() {
         }
     }, [refs]);
 
-    /* const onOptionClicked = () => {
-        setDropdownVisible(false);
-        alert("Not implemented");
-    }; */
-
     const onLogoutClicked = () => {
         setDropdownVisible(false);
-        alert(
-            "Note: this will only delete the refresh token on your browser. It will not be revoked and an attacker can still use the current refresh token to access your account even after logging out.",
+        notifyWarningDefault(
+            "Logout only clears local browser tokens; server-side token revocation is not enabled.",
         );
         storeAccessToken("");
         storeRefreshToken("");
@@ -147,6 +148,8 @@ function SignedInProfile() {
 export function Navbar() {
     const screenSize = useScreenSizeState((state) => state.width);
     const isDarkMode = useDarkModeStore((state) => state.isDarkMode);
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const onMenuBarClick = () => {
         const currentVisibility =
@@ -158,10 +161,28 @@ export function Navbar() {
     };
 
     const isLoggedIn = useAuthenticationStore((state) => state.isLoggedIn);
+    const locationSearchValue = getSearchQueryValue(location.search);
 
     const [searchBarFocused, setBarFocused] = useState<boolean>(false);
-    const searchBarRef = useRef<HTMLInputElement | null>(null);
-    const [searchBarContent, setBarContent] = useState<string>("");
+    const [searchBarContent, setBarContent] = useState<string>(() =>
+        getSearchQueryValue(location.search),
+    );
+
+    const runSearch = (searchText: string) => {
+        const trimmed = searchText.trim();
+        const params = new URLSearchParams();
+
+        if (trimmed.length > 0) {
+            params.set("q", trimmed);
+        }
+
+        setBarContent(trimmed);
+        setBarFocused(false);
+        navigate({
+            pathname: "/",
+            search: params.toString().length > 0 ? `?${params.toString()}` : "",
+        });
+    };
 
     const { refs, x, y, strategy } = useFloating({
         placement: "bottom-start",
@@ -277,16 +298,21 @@ export function Navbar() {
                     <input
                         className="focus:outline-none flex-grow-1 py-2 h-full w-full"
                         placeholder="Search"
-                        onFocus={() => setBarFocused(true)}
-                        onBlur={() => setBarFocused(false)}
-                        ref={searchBarRef}
-                        onChange={() => {
-                            setBarContent(
-                                searchBarRef.current
-                                    ? searchBarRef.current.value
-                                    : "",
-                            );
+                        onFocus={() => {
+                            setBarContent(locationSearchValue);
+                            setBarFocused(true);
                         }}
+                        onBlur={() => setBarFocused(false)}
+                        onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                                event.preventDefault();
+                                runSearch(event.currentTarget.value);
+                            }
+                        }}
+                        onChange={(event) => {
+                            setBarContent(event.currentTarget.value);
+                        }}
+                        value={searchBarFocused ? searchBarContent : locationSearchValue}
                     ></input>
                     <span
                         className={clsx(
@@ -294,10 +320,7 @@ export function Navbar() {
                             "cursor-pointer max-[460px]:hidden",
                         )}
                         onClick={() => {
-                            if (searchBarRef.current) {
-                                setBarContent("")
-                                searchBarRef.current.value = ""
-                            }
+                            runSearch("");
                         }}
                     >
                         <svg
@@ -312,8 +335,7 @@ export function Navbar() {
                         </svg>
                     </span>
                 </div>
-                {((searchBarFocused && searchBarContent != "") ||
-                    searchBarContent != "") &&
+                {searchBarFocused && searchBarContent != "" &&
                     createPortal(
                         <SearchDropdown
                             refs={refs}
@@ -322,6 +344,7 @@ export function Navbar() {
                             width={width ?? 0}
                             strategy={strategy}
                             currentContent={searchBarContent}
+                            onSearch={runSearch}
                         ></SearchDropdown>,
                         document.body,
                     )}
