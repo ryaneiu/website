@@ -9,7 +9,7 @@ authors:
     given-names: "Ryan"
     alias: "ryaneiu"
   - family-names: "Peng"
-  - given-names: "Cari"
+    given-names: "Cari"
     alias: "CariLT01"
 
 abstract: "A Reddit-inspired full-stack web application designed for school use, built with a Django REST backend and a React + Tailwind + Vite frontend."
