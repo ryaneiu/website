@@ -2,6 +2,7 @@ import type { MutableRefObject } from "react";
 import { Panel } from "../components/Panel";
 import type { ReferenceType, Strategy } from "@floating-ui/react";
 import { SearchSuggestion } from "./SearchSuggestion";
+import type { SearchScope } from "./searchScopes";
 
 type RefsType = {
     reference: MutableRefObject<ReferenceType | null>;
@@ -17,7 +18,7 @@ interface Props {
     y: number;
     width: number;
     currentContent: string;
-    onSearch: (searchText: string) => void;
+    onSearch: (searchText: string, scope: SearchScope) => void;
 }
 
 export function SearchDropdown(props: Props) {
@@ -52,7 +53,7 @@ export function SearchDropdown(props: Props) {
                     currentText={props.currentContent}
                     location="in this Subforum"
                     isLast={false}
-                    onClick={() => props.onSearch(props.currentContent)}
+                    onClick={() => props.onSearch(props.currentContent, "subforum")}
                 ></SearchSuggestion>
                 <SearchSuggestion
                     icon={
@@ -69,7 +70,7 @@ export function SearchDropdown(props: Props) {
                     currentText={props.currentContent}
                     location="in Posts"
                     isLast={false}
-                    onClick={() => props.onSearch(props.currentContent)}
+                    onClick={() => props.onSearch(props.currentContent, "posts")}
                 ></SearchSuggestion>
                 <SearchSuggestion
                     icon={
@@ -86,7 +87,7 @@ export function SearchDropdown(props: Props) {
                     currentText={props.currentContent}
                     location="in Users"
                     isLast={false}
-                    onClick={() => props.onSearch(props.currentContent)}
+                    onClick={() => props.onSearch(props.currentContent, "users")}
                 ></SearchSuggestion>
                 <SearchSuggestion
                     icon={
@@ -103,7 +104,7 @@ export function SearchDropdown(props: Props) {
                     currentText={props.currentContent}
                     location="everywhere"
                     isLast={true}
-                    onClick={() => props.onSearch(props.currentContent)}
+                    onClick={() => props.onSearch(props.currentContent, "everywhere")}
                 ></SearchSuggestion>
             </div>
         </Panel>

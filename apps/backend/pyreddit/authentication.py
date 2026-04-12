@@ -1,7 +1,9 @@
 """Authentication helpers for JWT cookies."""
 
 from django.conf import settings
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from .email_validation import is_user_email_valid
 
 
 class CookieJWTAuthentication(JWTAuthentication):
@@ -18,4 +20,11 @@ class CookieJWTAuthentication(JWTAuthentication):
                 return None
 
         validated_token = self.get_validated_token(raw_token)
-        return self.get_user(validated_token), validated_token
+        user = self.get_user(validated_token)
+
+        if not is_user_email_valid(user.email):
+            raise AuthenticationFailed(
+                "Your account email is invalid. Please log in again with a valid email.",
+            )
+
+        return user, validated_token

@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.views.generic import TemplateView
 from django.contrib.auth import authenticate
 from django.conf import settings
@@ -20,6 +21,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .models import Post, Comment
 from .serializers import PostSerializer, CommentSerializer
+from .email_validation import normalize_and_validate_email, is_user_email_valid
 
 
 def set_jwt_cookies(
@@ -63,6 +65,36 @@ def set_jwt_cookies(
         )
 
 
+def clear_jwt_cookies(response: Response) -> None:
+    access_cookie_name = settings.SIMPLE_JWT.get("AUTH_COOKIE", "access_token")
+    refresh_cookie_name = settings.SIMPLE_JWT.get("AUTH_COOKIE_REFRESH", "refresh_token")
+
+    response.delete_cookie(access_cookie_name, path="/")
+    response.delete_cookie(refresh_cookie_name, path="/")
+
+
+def build_relogin_response(detail: str) -> Response:
+    response = Response({"detail": detail}, status=status.HTTP_401_UNAUTHORIZED)
+    clear_jwt_cookies(response)
+    return response
+
+
+def get_user_from_refresh_token(refresh_token: str | None) -> User | None:
+    if not refresh_token:
+        return None
+
+    try:
+        token = RefreshToken(refresh_token)
+    except TokenError:
+        return None
+
+    user_id = token.get("user_id")
+    if user_id is None:
+        return None
+
+    return User.objects.filter(id=user_id).first()
+
+
 class CookieTokenObtainPairView(TokenObtainPairView):
     """Issue JWTs in response body and secure HttpOnly cookies."""
 
@@ -72,6 +104,21 @@ class CookieTokenObtainPairView(TokenObtainPairView):
         response = super().post(request, *args, **kwargs)
 
         if response.status_code == status.HTTP_200_OK:
+            refresh_token = response.data.get("refresh")
+            user = get_user_from_refresh_token(
+                refresh_token if isinstance(refresh_token, str) else None,
+            )
+
+            if user is None:
+                return build_relogin_response(
+                    "Invalid authentication session. Please log in again.",
+                )
+
+            if not is_user_email_valid(user.email):
+                return build_relogin_response(
+                    "Your account email is invalid. Please log in again with a valid email.",
+                )
+
             set_jwt_cookies(
                 response,
                 access_token=response.data.get("access"),
@@ -101,6 +148,18 @@ class CookieTokenRefreshView(TokenRefreshView):
         except TokenError as exc:
             raise InvalidToken(exc.args[0]) from exc
 
+        refresh_token = data.get("refresh")
+        user = get_user_from_refresh_token(str(refresh_token) if refresh_token else None)
+        if user is None:
+            return build_relogin_response(
+                "Invalid authentication session. Please log in again.",
+            )
+
+        if not is_user_email_valid(user.email):
+            return build_relogin_response(
+                "Your account email is invalid. Please log in again with a valid email.",
+            )
+
         response = Response(serializer.validated_data, status=status.HTTP_200_OK)
         set_jwt_cookies(
             response,
@@ -126,19 +185,23 @@ class SignupView(APIView):
         :param request: Description
         """
         email = request.data.get("email")
-        username = request.data.get("username")
-        password = request.data.get("password")
+        username = str(request.data.get("username", "")).strip()
+        password = str(request.data.get("password", ""))
 
         if not email or not username or not password:
             return Response({"detail": "Missing fields"}, status=status.HTTP_400_BAD_REQUEST)
 
+        normalized_email, email_error = normalize_and_validate_email(str(email))
+        if email_error is not None or normalized_email is None:
+            return Response({"detail": email_error}, status=status.HTTP_400_BAD_REQUEST)
+
         if User.objects.filter(username=username).exists():
             return Response({"detail": "Username taken"}, status=status.HTTP_400_BAD_REQUEST)
-        if User.objects.filter(email=email).exists():
+        if User.objects.filter(email=normalized_email).exists():
             return Response({"detail": "Email already registered"},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        User.objects.create_user(username=username, email=email, password=password)
+        User.objects.create_user(username=username, email=normalized_email, password=password)
 
         return Response({"detail": "Signup successful"}, status=status.HTTP_201_CREATED)
 
@@ -157,13 +220,25 @@ class LoginAPIView(APIView):
         :param self: Description
         :param request: Description
         """
-        email: str = cast(str, cast(dict, request.data).get("email"))
-        password: str = cast(str, cast(dict, request.data).get("password"))
+        email: str = str(cast(dict, request.data).get("email", "")).strip()
+        password: str = str(cast(dict, request.data).get("password", ""))
+
+        if not email or not password:
+            return Response({"detail": "Missing fields"}, status=status.HTTP_400_BAD_REQUEST)
+
+        normalized_email, email_error = normalize_and_validate_email(email)
+        if email_error is not None or normalized_email is None:
+            return Response({"detail": email_error}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            user_obj = User.objects.get(email=email)
+            user_obj = User.objects.get(email=normalized_email)
         except User.DoesNotExist: # type: ignore
             return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if not is_user_email_valid(user_obj.email):
+            return build_relogin_response(
+                "Your account email is invalid. Please log in again with a valid email.",
+            )
 
         user = authenticate(username=user_obj.username, password=password)
         if user is None:
@@ -179,6 +254,32 @@ class LoginAPIView(APIView):
         )
 
         return response
+
+
+
+class UserSearchAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        query = str(request.query_params.get("q", "")).strip()
+        if not query:
+            return Response([], status=status.HTTP_200_OK)
+
+        users = User.objects.filter(
+            Q(username__icontains=query)
+            | Q(first_name__icontains=query)
+            | Q(last_name__icontains=query)
+        ).order_by("username")[:25]
+
+        payload = [
+            {
+                "id": user.id,
+                "username": user.username,
+            }
+            for user in users
+        ]
+
+        return Response(payload, status=status.HTTP_200_OK)
 
 
 

@@ -9,6 +9,7 @@ from pyreddit.views import (
     CookieTokenRefreshView,
     LoginAPIView,
     SignupView,
+    UserSearchAPIView,
 )
 from pyreddit.views import PostViewSet, CommentViewSet
 
@@ -25,6 +26,7 @@ urlpatterns = [
 urlpatterns += [
     path('api/posts/', include('posts.urls')),
     path("api/", include(router.urls)),
+    path("api/users/search/", UserSearchAPIView.as_view(), name="user-search"),
     path("api/signup/", SignupView.as_view(), name="signup"),
     path("api/login/", LoginAPIView.as_view(), name="login"),
 ]

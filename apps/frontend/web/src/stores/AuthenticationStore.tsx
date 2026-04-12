@@ -20,24 +20,41 @@ export async function verifyIsLoggedIn() {
     // DO NOT USE IN PRODUCTION, NEED A MORE STABLE WAY TO CHECK (a real API), BUT WORKS FOR NOW
 
     try {
-            const refreshToken = getStoredRefreshToken();
-    if (refreshToken == null) {
-        return false;
-    }
+        const refreshToken = getStoredRefreshToken();
 
+        const response = await fetch(`${API_ENDPOINT}/token/refresh/`, {
+            method: "POST",
+            credentials: "include",
+            body:
+                refreshToken != null
+                    ? JSON.stringify({
+                          refresh: refreshToken,
+                      })
+                    : null,
+            headers:
+                refreshToken != null
+                    ? {
+                          "Content-Type": "application/json",
+                      }
+                    : {},
+        });
 
-    const response = await fetch(`${API_ENDPOINT}/token/refresh/`, {
-        method: 'POST',
-        credentials: 'include',
-        body: JSON.stringify({
-            refresh: refreshToken
-        }),
-        headers: {
-            'Content-Type': 'application/json'
+        if (response.status === 401 || response.status === 403) {
+            try {
+                const body = await response.json();
+                const detail =
+                    typeof body?.detail === "string" ? body.detail : "";
+                if (detail.toLowerCase().includes("email")) {
+                    notifyErrorDefault(detail);
+                }
+            } catch {
+                // ignore parsing errors
+            }
+
+            return false;
         }
-    });
 
-    return response.status != 401 && response.status != 403;
+        return response.ok;
     } catch (e) {
         console.error("Failed to check session status: ", e);
         if (e instanceof TypeError) {
@@ -47,6 +64,4 @@ export async function verifyIsLoggedIn() {
         notifyErrorDefault("Couldn't contact server to check session status: " + e);
         return false;
     }
-
-
 }

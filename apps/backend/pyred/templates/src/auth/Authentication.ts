@@ -65,9 +65,13 @@ export async function getStoredAccessToken() {
         const newToken = await refreshTokenIfNeeded(token);
         if (newToken) {
             return newToken;
-        } else {
-            return token;
         }
+
+        if (isJwtExpired(token)) {
+            return null;
+        }
+
+        return token;
     }
     return token;
 }
@@ -87,6 +91,11 @@ export function storeRefreshToken(token: string) {
         console.warn("refused request to store refresh token in production");
     }
 
+}
+
+export function clearStoredTokens() {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
 }
 
 function isJwtExpired(token: string): boolean {
@@ -130,6 +139,7 @@ export async function refreshTokenIfNeeded(accessToken: string): Promise<string 
 
             const response = await fetch(`${API_ENDPOINT}/token/refresh/`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: refreshToken != null ? {
                     "Content-Type": "application/json"
                 } : {},
@@ -152,6 +162,12 @@ export async function refreshTokenIfNeeded(accessToken: string): Promise<string 
                     notifyErrorDefault("Failed to refresh token");
                     console.error("Failed to refresh token");
                 }
+
+                if (response.status === 401 || response.status === 403) {
+                    clearStoredTokens();
+                }
+
+                return;
             } else {
                 // Refresh token OK
 

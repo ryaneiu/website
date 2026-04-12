@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import React, { Suspense, useEffect } from "react";
 import { useScreenSizeState } from "./stores/ScreenSizeState";
-import { isDevelopmentMode } from "./auth/Authentication";
+import { clearStoredTokens, isDevelopmentMode } from "./auth/Authentication";
 import { notifyInfoDefault } from "./stores/NotificationsStore";
 import {
     useAuthenticationStore,
@@ -48,6 +48,14 @@ function App() {
         const f = async () => {
             const loggedIn = await verifyIsLoggedIn();
             useAuthenticationStore.setState({ isLoggedIn: loggedIn });
+
+            if (!loggedIn) {
+                clearStoredTokens();
+
+                if (!window.location.pathname.startsWith("/auth")) {
+                    window.location.replace("/auth?action=login");
+                }
+            }
         };
         f();
     }, []);

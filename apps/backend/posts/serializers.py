@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Q
 
 from .models import Post, Reply, Like, Subforum
 from .utils.censor import censor_text, extract_first_image_url, process_image
@@ -13,6 +14,20 @@ class SubforumSerializer(serializers.ModelSerializer):
 
     def get_posts(self, obj):
         posts = obj.posts.select_related("author").order_by("-created_at")
+
+        filter_preferences = self.context.get("filter_preferences")
+        search_query = ""
+        if isinstance(filter_preferences, dict):
+            search_query = str(filter_preferences.get("q", "")).strip()
+
+        if search_query:
+            posts = posts.filter(
+                Q(title__icontains=search_query)
+                | Q(content__icontains=search_query)
+                | Q(content_markdown__icontains=search_query)
+                | Q(author__username__icontains=search_query)
+            )
+
         serializer = PostSerializer(posts, many=True, context=self.context)
         return serializer.data
 

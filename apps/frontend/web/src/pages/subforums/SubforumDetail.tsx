@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { API_ENDPOINT } from "../../Config";
 import {
     getStoredAccessToken,
@@ -31,6 +31,7 @@ type SubforumDetailDto = SubforumDto & {
 export default function SubforumDetail() {
     const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     const [subforum, setSubforum] = useState<SubforumDetailDto | null>(null);
     const [loading, setLoading] = useState(true);
     const [showUpdateForm, setShowUpdateForm] = useState(false);
@@ -38,13 +39,17 @@ export default function SubforumDetail() {
     const [token, setToken] = useState<string | null>(null);
 
     const [modalVisible, setModalVisible] = useState<boolean>(false);
+    const searchQuery = useMemo(() => {
+        const params = new URLSearchParams(location.search);
+        return (params.get("q") ?? "").trim();
+    }, [location.search]);
     const filterPreferences = useMemo(
         () => getStoredContentFilterPreferences(),
         [],
     );
     const filterQuery = useMemo(
-        () => buildContentFilterQuery(filterPreferences),
-        [filterPreferences],
+        () => buildContentFilterQuery(filterPreferences, searchQuery),
+        [filterPreferences, searchQuery],
     );
 
     const currentUserId = useMemo(
@@ -272,7 +277,9 @@ export default function SubforumDetail() {
                             <h2 className="text-lg font-semibold">Posts</h2>
                             {subforum.posts.length === 0 && (
                                 <span className="text-black/50 dark:text-white/50 transition-colors duration-300">
-                                    No posts in this subforum yet.
+                                    {searchQuery.length > 0
+                                        ? "No matching posts in this subforum."
+                                        : "No posts in this subforum yet."}
                                 </span>
                             )}
 

@@ -19,6 +19,7 @@ import { createPortal } from "react-dom";
 import { SearchDropdown } from "./SearchDropdown";
 import clsx from "clsx";
 import { notifyWarningDefault } from "../stores/NotificationsStore";
+import type { SearchScope } from "./searchScopes";
 
 function SignedOutButtons() {
     const navigate = useNavigate();
@@ -47,6 +48,15 @@ function SignedOutButtons() {
 function getSearchQueryValue(search: string) {
     const params = new URLSearchParams(search);
     return (params.get("q") ?? "").trim();
+}
+
+function getCurrentSubforumSlug(pathname: string): string | null {
+    const match = pathname.match(/^\/subforums\/([^/]+)\/?$/);
+    if (!match?.[1]) {
+        return null;
+    }
+
+    return decodeURIComponent(match[1]);
 }
 
 function SignedInProfile() {
@@ -162,25 +172,52 @@ export function Navbar() {
 
     const isLoggedIn = useAuthenticationStore((state) => state.isLoggedIn);
     const locationSearchValue = getSearchQueryValue(location.search);
+    const currentSubforumSlug = getCurrentSubforumSlug(location.pathname);
 
     const [searchBarFocused, setBarFocused] = useState<boolean>(false);
     const [searchBarContent, setBarContent] = useState<string>(() =>
         getSearchQueryValue(location.search),
     );
 
-    const runSearch = (searchText: string) => {
+    const runSearch = (
+        searchText: string,
+        scope: SearchScope = "everywhere",
+    ) => {
         const trimmed = searchText.trim();
-        const params = new URLSearchParams();
-
-        if (trimmed.length > 0) {
-            params.set("q", trimmed);
-        }
 
         setBarContent(trimmed);
         setBarFocused(false);
+
+        if (trimmed.length === 0) {
+            navigate({
+                pathname: "/",
+                search: "",
+            });
+            return;
+        }
+
+        const params = new URLSearchParams();
+        params.set("q", trimmed);
+
+        let targetPathname = "/";
+
+        if (scope === "posts") {
+            targetPathname = "/subforums/general";
+        } else if (scope === "subforum") {
+            targetPathname = currentSubforumSlug
+                ? `/subforums/${currentSubforumSlug}`
+                : "/subforums/general";
+        } else if (scope === "users") {
+            targetPathname = "/discover";
+            params.set("scope", "users");
+        } else if (scope === "everywhere") {
+            targetPathname = "/discover";
+            params.set("scope", "everywhere");
+        }
+
         navigate({
-            pathname: "/",
-            search: params.toString().length > 0 ? `?${params.toString()}` : "",
+            pathname: targetPathname,
+            search: `?${params.toString()}`,
         });
     };
 
