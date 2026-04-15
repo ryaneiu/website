@@ -324,8 +324,8 @@ class PostContentFilteringTests(APITestCase):
         self.assertFalse(nested_by_id[self.nsfw_post.id]["image"]["isBlurred"])
         self.assertIn("fucking", nested_by_id[self.swear_post.id]["body"].lower())
 
-    def test_template_posts_endpoint_renders_processed_posts(self):
+    def test_template_posts_endpoint_shows_toggle_messages_for_hidden_posts(self):
         response = self.client.get("/api/posts/rendered/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertContains(response, "Sensitive Content")
-        self.assertContains(response, "****")
+        self.assertContains(response, "Activate NSFW toggle to show NSFW posts.")
+        self.assertContains(response, "Activate swears toggle to show posts with swears.")

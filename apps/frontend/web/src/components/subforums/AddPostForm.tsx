@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ClipboardEvent } from "react";
 import { API_ENDPOINT } from "../../Config";
 import { getStoredAccessToken } from "../../auth/Authentication";
 import { extractDetailFromErrorResponse } from "../../Utils";
@@ -7,7 +7,12 @@ import {
     notifySuccessDefault,
 } from "../../stores/NotificationsStore";
 import { PostCreationModal } from "./CreationModal";
-import type { PostImage } from "../../contentFilter";
+import {
+    appendAttachedImageToContent,
+    extractImageUrlFromClipboardData,
+    normalizeAttachedImageUrl,
+    type PostImage,
+} from "../../contentFilter";
 
 export type SubforumPostDto = {
     id: number;
@@ -32,16 +37,52 @@ interface Props {
 export function AddPostForm({ subforumSlug, onPostAdded, onHide }: Props) {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
+    const [imageUrl, setImageUrl] = useState("");
+    const imagePreviewUrl = normalizeAttachedImageUrl(imageUrl);
+
+    const onImagePaste = (event: ClipboardEvent<HTMLInputElement>) => {
+        const pastedImageUrl = extractImageUrlFromClipboardData(
+            event.clipboardData,
+        );
+        if (pastedImageUrl == null) {
+            return;
+        }
+
+        event.preventDefault();
+        setImageUrl(pastedImageUrl);
+    };
+
+    const onDescriptionPaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+        const pastedImageUrl = extractImageUrlFromClipboardData(
+            event.clipboardData,
+        );
+        if (pastedImageUrl == null) {
+            return;
+        }
+
+        setImageUrl(pastedImageUrl);
+    };
 
     const onAddPost = async () => {
         const trimmedTitle = title.trim();
         const trimmedContent = content.trim();
+        const normalizedImageUrl = normalizeAttachedImageUrl(imageUrl);
+
+        if (imageUrl.trim().length > 0 && normalizedImageUrl == null) {
+            notifyErrorDefault("Please enter a valid http(s) image URL");
+            return;
+        }
+
+        const composedContent = appendAttachedImageToContent(
+            trimmedContent,
+            normalizedImageUrl,
+        );
 
         if (!trimmedTitle) {
             notifyErrorDefault("Post title cannot be empty");
             return;
         }
-        if (!trimmedContent) {
+        if (!composedContent) {
             notifyErrorDefault("Post content cannot be empty");
             return;
         }
@@ -62,8 +103,8 @@ export function AddPostForm({ subforumSlug, onPostAdded, onHide }: Props) {
                 },
                 body: JSON.stringify({
                     title: trimmedTitle,
-                    content: trimmedContent,
-                    content_markdown: trimmedContent,
+                    content: composedContent,
+                    content_markdown: composedContent,
                 }),
             },
         );
@@ -78,6 +119,7 @@ export function AddPostForm({ subforumSlug, onPostAdded, onHide }: Props) {
         onPostAdded(created);
         setTitle("");
         setContent("");
+        setImageUrl("");
         notifySuccessDefault("Post added to subforum");
         onHide()
     };
@@ -86,13 +128,21 @@ export function AddPostForm({ subforumSlug, onPostAdded, onHide }: Props) {
         <PostCreationModal
             onClickCreate={onAddPost}
             onDescriptionChanged={setContent}
+            onDescriptionPaste={onDescriptionPaste}
             onTitleChanged={setTitle}
+            onImageUrlChanged={setImageUrl}
+            onImagePaste={onImagePaste}
             onCloseModal={onHide}
             buttonCreateText="Add Post"
             buttonLoadingText="Adding..."
             titlePlaceholder="Post Title"
+            imagePlaceholder="Image URL (optional)"
+            imageValue={imageUrl}
+            imagePreviewUrl={imagePreviewUrl}
+            imageAltText={title || "Attached image"}
             descriptionPlaceholder="Post Content..."
             modalTitle="Add Post"
+            showImageInput={true}
         ></PostCreationModal>
     );
 }

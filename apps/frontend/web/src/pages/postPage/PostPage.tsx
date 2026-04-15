@@ -11,11 +11,13 @@ import { notifyErrorDefault } from "../../stores/NotificationsStore";
 import { CommentReplySection } from "./CommentReplySection";
 import { extractDetailFromErrorResponse } from "../../Utils";
 import { Button } from "../../components/Button";
+import { Panel } from "../../components/Panel";
 import { postsStore } from "../../stores/PostsStore";
 import { FadeUp } from "../../components/AnimatedPresenceDiv";
 import {
     buildContentFilterQuery,
     censorText,
+    getHiddenPostMessage,
     getStoredContentFilterPreferences,
     resolvePostImage,
     type PostImage,
@@ -434,6 +436,10 @@ export default function PostPage() {
                   filterPreferences.includeNsfw,
                   postData.is_nsfw,
               );
+    const hiddenPostMessage =
+        postData == null
+            ? null
+            : getHiddenPostMessage(postData, filterPreferences);
 
     return (
         <FadeUp>
@@ -444,59 +450,70 @@ export default function PostPage() {
                     )}
                     {canDisplay && postData && (
                         <>
-                            <Post
-                                title={postData.title}
-                                description={renderedPostDescription}
-                                created_at={postData.created_at}
-                                votes={
-                                    postData.likes_count ?? postData.votes ?? 0
-                                }
-                                commentsCount={postData.replies_count ?? 0}
-                                id={postData.id}
-                                image={renderedPostImage}
-                                onLikeClick={onPostLikeClick}
-                                subforumText={`Subforum: ${postData.subforum || "general"}`}
-                                subforumControl={
-                                    <div className="flex gap-2 items-center">
-                                        <select
-                                            className="px-2 py-2 border border-black/15 rounded-md"
-                                            value={subforumToAssign}
-                                            onChange={(e) =>
-                                                setSubforumToAssign(
-                                                    e.target.value,
-                                                )
-                                            }
-                                            disabled={
-                                                !canDeletePost ||
-                                                isAssigningSubforum
-                                            }
-                                        >
-                                            {subforums.map((subforum) => (
-                                                <option
-                                                    key={subforum.slug}
-                                                    value={subforum.slug}
-                                                >
-                                                    {subforum.title}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <Button
-                                            text={
-                                                isAssigningSubforum
-                                                    ? "Updating..."
-                                                    : "Add to Subforum"
-                                            }
-                                            onClick={onAssignSubforumClicked}
-                                            disabled={
-                                                !canDeletePost ||
-                                                isAssigningSubforum
-                                            }
-                                            isPrimary={true}
-                                        ></Button>
-                                    </div>
-                                }
-                                isInPostList={false}
-                            ></Post>
+                            {hiddenPostMessage == null ? (
+                                <Post
+                                    title={postData.title}
+                                    description={renderedPostDescription}
+                                    created_at={postData.created_at}
+                                    votes={
+                                        postData.likes_count ?? postData.votes ?? 0
+                                    }
+                                    commentsCount={postData.replies_count ?? 0}
+                                    id={postData.id}
+                                    image={renderedPostImage}
+                                    onLikeClick={onPostLikeClick}
+                                    subforumText={`Subforum: ${postData.subforum || "general"}`}
+                                    subforumControl={
+                                        <div className="flex gap-2 items-center">
+                                            <select
+                                                className="px-2 py-2 border border-black/15 rounded-md"
+                                                value={subforumToAssign}
+                                                onChange={(e) =>
+                                                    setSubforumToAssign(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={
+                                                    !canDeletePost ||
+                                                    isAssigningSubforum
+                                                }
+                                            >
+                                                {subforums.map((subforum) => (
+                                                    <option
+                                                        key={subforum.slug}
+                                                        value={subforum.slug}
+                                                    >
+                                                        {subforum.title}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <Button
+                                                text={
+                                                    isAssigningSubforum
+                                                        ? "Updating..."
+                                                        : "Add to Subforum"
+                                                }
+                                                onClick={onAssignSubforumClicked}
+                                                disabled={
+                                                    !canDeletePost ||
+                                                    isAssigningSubforum
+                                                }
+                                                isPrimary={true}
+                                            ></Button>
+                                        </div>
+                                    }
+                                    isInPostList={false}
+                                ></Post>
+                            ) : (
+                                <Panel className="flex flex-col gap-2">
+                                    <h2 className="text-xl font-semibold">
+                                        Post hidden
+                                    </h2>
+                                    <p className="text-black/70 dark:text-white/70 transition-colors duration-300">
+                                        {hiddenPostMessage}
+                                    </p>
+                                </Panel>
+                            )}
                             {canDeletePost && (
                                 <div className="w-full">
                                     <Button

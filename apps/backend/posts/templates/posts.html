@@ -24,24 +24,40 @@
         </p>
 
         {% for post in posts %}
-            <article>
-                <h2>{{ post.title }}</h2>
-                <p>{{ post.body }}</p>
+            {% if post.is_nsfw and not filters.include_nsfw %}
+                <article>
+                    <h2>Post hidden</h2>
+                    {% if post.has_swears and not filters.include_swears %}
+                        <p>Activate NSFW and swears toggles to show this post.</p>
+                    {% else %}
+                        <p>Activate NSFW toggle to show NSFW posts.</p>
+                    {% endif %}
+                </article>
+            {% elif post.has_swears and not filters.include_swears %}
+                <article>
+                    <h2>Post hidden</h2>
+                    <p>Activate swears toggle to show posts with swears.</p>
+                </article>
+            {% else %}
+                <article>
+                    <h2>{{ post.title }}</h2>
+                    <p>{{ post.body }}</p>
 
-                {% if post.image %}
-                    <div class="image-wrap {% if post.image.isBlurred %}is-blurred{% endif %}">
-                        <img src="{{ post.image.url }}" alt="Post image" />
-                        {% if post.image.isBlurred %}
-                            <div class="overlay">Sensitive Content</div>
-                        {% endif %}
-                    </div>
-                {% endif %}
+                    {% if post.image %}
+                        <div class="image-wrap {% if post.image.isBlurred %}is-blurred{% endif %}">
+                            <img src="{{ post.image.url }}" alt="Post image" />
+                            {% if post.image.isBlurred %}
+                                <div class="overlay">Sensitive Content</div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
 
-                <p class="meta">
-                    NSFW: {{ post.is_nsfw }} |
-                    Contains swears: {{ post.has_swears }}
-                </p>
-            </article>
+                    <p class="meta">
+                        NSFW: {{ post.is_nsfw }} |
+                        Contains swears: {{ post.has_swears }}
+                    </p>
+                </article>
+            {% endif %}
         {% empty %}
             <p>No posts available.</p>
         {% endfor %}

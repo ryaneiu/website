@@ -11,11 +11,13 @@ import { extractDetailFromErrorResponse } from "../../Utils";
 import {
     buildContentFilterQuery,
     censorText,
+    getHiddenPostMessage,
     getStoredContentFilterPreferences,
     persistContentFilterPreferences,
     resolvePostImage,
     type ContentFilterPreferences,
 } from "../../contentFilter";
+import { Panel } from "../../components/Panel";
 
 interface FilterToggleProps {
     label: string;
@@ -244,6 +246,24 @@ export function PostList() {
                 )}
 
                 {posts.map((post) => {
+                        const hiddenPostMessage = getHiddenPostMessage(
+                            post,
+                            preferences,
+                        );
+
+                        if (hiddenPostMessage != null) {
+                            return (
+                                <Panel key={post.id} className="w-full">
+                                    <h2 className="text-xl font-semibold">
+                                        Post hidden
+                                    </h2>
+                                    <p className="text-black/70 dark:text-white/70 transition-colors duration-300">
+                                        {hiddenPostMessage}
+                                    </p>
+                                </Panel>
+                            );
+                        }
+
                         const sourceText =
                             post.body ?? post.content_markdown ?? post.content;
                         const renderedDescription = censorText(

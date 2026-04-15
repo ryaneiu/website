@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ClipboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { TransparentIconButton } from "../components/TransparentIconButton";
 import { FadeUp } from "../components/AnimatedPresenceDiv";
@@ -14,6 +14,12 @@ import { extractDetailFromErrorResponse } from "../Utils";
 import { API_ENDPOINT } from "../Config";
 import { Panel } from "../components/Panel";
 import { Button } from "../components/Button";
+import { BlurredImage } from "../components/BlurredImage";
+import {
+    appendAttachedImageToContent,
+    extractImageUrlFromClipboardData,
+    normalizeAttachedImageUrl,
+} from "../contentFilter";
 
 export default function CreatePostView() {
     const navigate = useNavigate();
@@ -21,11 +27,36 @@ export default function CreatePostView() {
     // Post state
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
+    const [imageUrl, setImageUrl] = useState("");
     const [loading, setLoading] = useState(false);
     const [subforums, setSubforums] = useState<
         { title: string; slug: string }[]
     >([]);
     const [selectedSubforum, setSelectedSubforum] = useState("general");
+    const imagePreviewUrl = normalizeAttachedImageUrl(imageUrl);
+
+    const onImagePaste = (event: ClipboardEvent<HTMLInputElement>) => {
+        const pastedImageUrl = extractImageUrlFromClipboardData(
+            event.clipboardData,
+        );
+        if (pastedImageUrl == null) {
+            return;
+        }
+
+        event.preventDefault();
+        setImageUrl(pastedImageUrl);
+    };
+
+    const onContentPaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+        const pastedImageUrl = extractImageUrlFromClipboardData(
+            event.clipboardData,
+        );
+        if (pastedImageUrl == null) {
+            return;
+        }
+
+        setImageUrl(pastedImageUrl);
+    };
 
     useEffect(() => {
         fetch(`${API_ENDPOINT}/api/posts/subforums/`, { method: "GET" })
@@ -55,8 +86,27 @@ export default function CreatePostView() {
     };
 
     const onPublishPost = async () => {
-        if (!title && !content) {
-            notifyErrorDefault("Please enter a title or content");
+        const trimmedTitle = title.trim();
+        const trimmedContent = content.trim();
+        const normalizedImageUrl = imagePreviewUrl;
+
+        if (!trimmedTitle) {
+            notifyErrorDefault("Please enter a title");
+            return;
+        }
+
+        if (imageUrl.trim().length > 0 && normalizedImageUrl == null) {
+            notifyErrorDefault("Please enter a valid http(s) image URL");
+            return;
+        }
+
+        const composedContent = appendAttachedImageToContent(
+            trimmedContent,
+            normalizedImageUrl,
+        );
+
+        if (!composedContent) {
+            notifyErrorDefault("Please enter content or attach an image");
             return;
         }
 
@@ -76,9 +126,9 @@ export default function CreatePostView() {
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    title,
-                    content,
-                    content_markdown: content,
+                    title: trimmedTitle,
+                    content: composedContent,
+                    content_markdown: composedContent,
                     subforum: selectedSubforum,
                 }),
             });
@@ -97,6 +147,7 @@ export default function CreatePostView() {
             notifySuccessDefault("Post created!");
             setTitle("");
             setContent("");
+            setImageUrl("");
             navigate("/"); // back to homepage or wherever
         } catch (err) {
             console.error(err);
@@ -193,12 +244,32 @@ export default function CreatePostView() {
                     disabled={loading}
                 />
 
+                <InputComponent
+                    className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw]"
+                    placeholder="Image URL (optional)"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    onPaste={onImagePaste}
+                    disabled={loading}
+                />
+
+                {imagePreviewUrl != null && (
+                    <div className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw]">
+                        <BlurredImage
+                            src={imagePreviewUrl}
+                            alt={title || "Attached image"}
+                            isBlurred={false}
+                        />
+                    </div>
+                )}
+
                 {/* Content textarea */}
                 <TextAreaInput
                     className="px-2 py-2 w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] h-[50vh] rounded-md border border-black/15 dark:border-white/15 focus:outline-none focus:border-black/35 dark:focus:border-white/35 transition-colors duration-300"
                     placeholder="Your random thoughts..."
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
+                    onPaste={onContentPaste}
                     disabled={loading}
                 ></TextAreaInput>
 

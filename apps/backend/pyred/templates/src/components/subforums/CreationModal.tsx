@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, type ClipboardEvent } from "react";
 import { InputComponent } from "../InputComponent";
 import { TextAreaInput } from "../TextAreaInput";
 import { createPortal } from "react-dom";
 import { TransparentIconButton } from "../TransparentIconButton";
 import { LoadableButton } from "../LoadableButton";
 import { Fade, FadeUp } from "../AnimatedPresenceDiv";
+import { BlurredImage } from "../BlurredImage";
 
 export type SubforumDto = {
     id: number;
@@ -18,13 +19,21 @@ export type SubforumDto = {
 interface Props {
     onClickCreate: () => void;
     onDescriptionChanged: (s: string) => void;
+    onDescriptionPaste?: (event: ClipboardEvent<HTMLTextAreaElement>) => void;
     onTitleChanged: (s: string) => void;
+    onImageUrlChanged?: (s: string) => void;
+    onImagePaste?: (event: ClipboardEvent<HTMLInputElement>) => void;
     onCloseModal: () => void;
     buttonCreateText: string;
     buttonLoadingText: string;
     titlePlaceholder: string;
+    imagePlaceholder?: string;
+    imageValue?: string;
+    imagePreviewUrl?: string | null;
+    imageAltText?: string;
     descriptionPlaceholder: string;
     modalTitle: string;
+    showImageInput?: boolean;
 }
 
 export function PostCreationModal(props: Props) {
@@ -129,6 +138,32 @@ export function PostCreationModal(props: Props) {
                             disabled={loading}
                             className="w-full"
                         />
+                        {props.showImageInput && (
+                            <InputComponent
+                                placeholder={
+                                    props.imagePlaceholder ??
+                                    "Image URL (optional)"
+                                }
+                                value={props.imageValue ?? ""}
+                                onChange={(event) =>
+                                    props.onImageUrlChanged?.(
+                                        event.target.value,
+                                    )
+                                }
+                                onPaste={props.onImagePaste}
+                                disabled={loading}
+                                className="w-full"
+                            />
+                        )}
+                        {props.showImageInput && props.imagePreviewUrl != null && (
+                            <div className="w-full">
+                                <BlurredImage
+                                    src={props.imagePreviewUrl}
+                                    alt={props.imageAltText ?? "Attached image preview"}
+                                    isBlurred={false}
+                                />
+                            </div>
+                        )}
                         <TextAreaInput
                             className="!w-full h-28"
                             placeholder={props.descriptionPlaceholder}
@@ -136,6 +171,7 @@ export function PostCreationModal(props: Props) {
                             onChange={(event) =>
                                 props.onDescriptionChanged(event.target.value)
                             }
+                            onPaste={props.onDescriptionPaste}
                             disabled={loading}
                         />
                         <div className="w-fit">

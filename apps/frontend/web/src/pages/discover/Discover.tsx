@@ -7,6 +7,7 @@ import { Post } from "../home/Post";
 import {
     buildContentFilterQuery,
     censorText,
+    getHiddenPostMessage,
     getStoredContentFilterPreferences,
     resolvePostImage,
 } from "../../contentFilter";
@@ -171,6 +172,27 @@ export default function Discover() {
                             </span>
                         )}
                         {posts.map((post) => {
+                            const hiddenPostMessage = getHiddenPostMessage(
+                                post,
+                                filterPreferences,
+                            );
+
+                            if (hiddenPostMessage != null) {
+                                return (
+                                    <Panel
+                                        key={post.id}
+                                        className="flex flex-col gap-2"
+                                    >
+                                        <h3 className="text-lg font-semibold">
+                                            Post hidden
+                                        </h3>
+                                        <p className="text-black/70 dark:text-white/70 transition-colors duration-300">
+                                            {hiddenPostMessage}
+                                        </p>
+                                    </Panel>
+                                );
+                            }
+
                             const sourceText =
                                 post.body ?? post.content_markdown ?? post.content;
                             const description = censorText(
