@@ -12,6 +12,7 @@ const Profile = React.lazy(() => import("./pages/editProfile/Profile"));
 const PostPage = React.lazy(() => import("./pages/postPage/PostPage"));
 const SubforumList = React.lazy(() => import("./pages/subforums/SubforumList"));
 const SubforumDetail = React.lazy(() => import("./pages/subforums/SubforumDetail"));
+const FrenchPage = React.lazy(() => import("./pages/custom/FrenchPage"));
 
 export function MainArea() {
     const sideNavigationOpen = useSideNavigationVisibility(
@@ -98,6 +99,14 @@ export function MainArea() {
                         </Suspense>
                     }
                 ></Route>
+                <Route
+                    path="fr"
+                    element={
+                        <Suspense fallback={<LoadingPageFallback />}>
+                            <FrenchPage />
+                        </Suspense>
+                    }
+                />
             </Routes>
         </div>
     );

@@ -17,8 +17,13 @@ class SubforumSerializer(serializers.ModelSerializer):
 
         filter_preferences = self.context.get("filter_preferences")
         search_query = ""
+        language = "en"
         if isinstance(filter_preferences, dict):
             search_query = str(filter_preferences.get("q", "")).strip()
+            language = str(filter_preferences.get("language", "en")).strip().lower()
+
+        if language in {"en", "fr"}:
+            posts = posts.filter(language=language)
 
         if search_query:
             posts = posts.filter(
@@ -97,6 +102,7 @@ class PostSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
+    language = serializers.ChoiceField(choices=["en", "fr"], required=False, default="en")
 
     def _get_filter_preferences(self) -> dict[str, bool]:
         preferences = self.context.get("filter_preferences")
@@ -158,13 +164,14 @@ class PostSerializer(serializers.ModelSerializer):
                 {"content": "Post content cannot be empty."}
             )
 
-        if len(content) > 10000 or len(markdown) > 10000:
+        if len(content) > 500000 or len(markdown) > 500000:
             raise serializers.ValidationError(
-                {"content": "Post content cannot exceed 10000 characters."}
+                {"content": "Post content cannot exceed 500000 characters."}
             )
 
         attrs["content"] = content or markdown
         attrs["content_markdown"] = markdown or content
+        attrs["language"] = attrs.get("language") or "en"
         return attrs
 
     def to_representation(self, obj):
@@ -200,6 +207,7 @@ class PostSerializer(serializers.ModelSerializer):
             "image",
             "is_nsfw",
             "has_swears",
+            "language",
         ]
         read_only_fields = [
             "author",

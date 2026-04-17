@@ -7,7 +7,7 @@ export default function Home() {
     return (
         <FadeUp>
             <main>
-                <PostList></PostList>
+                <PostList language="en"></PostList>
             </main>
         </FadeUp>
     );

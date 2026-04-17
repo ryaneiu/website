@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { ReactionButton } from "../../components/ReactionButton";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -12,7 +12,7 @@ import { Panel } from "../../components/Panel";
 import type { PostImage } from "../../contentFilter";
 import { BlurredImage } from "../../components/BlurredImage";
 
-const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/;
+const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/gi;
 
 interface Props {
     title: string;
@@ -34,39 +34,20 @@ interface Props {
 
 export function Post(props: Props) {
     const [expanded, setExpanded] = useState(!props.isInPostList);
-    const needsExpandButton = props.description.length > 500;
+    const descriptionWithoutImage = props.description
+        .replace(MARKDOWN_IMAGE_PATTERN, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+    const needsExpandButton = descriptionWithoutImage.length > 500;
     const needsTruncatedTitle = props.title.length > 100;
     const truncatedText = needsExpandButton
-        ? `${props.description.slice(0, 500)}...`
-        : props.description;
+        ? `${descriptionWithoutImage.slice(0, 500)}...`
+        : descriptionWithoutImage;
     const truncatedTitle = needsTruncatedTitle
         ? `${props.title.slice(0, 100)}...`
         : props.title;
 
     const navigate = useNavigate();
-    const hasMarkdownImage = useMemo(
-        () => MARKDOWN_IMAGE_PATTERN.test(props.description),
-        [props.description],
-    );
-    const markdownComponents = useMemo(
-        () => ({
-            ...MarkdownComponents,
-            img: ({ src, alt }: { src?: string; alt?: string }) => {
-                if (typeof src !== "string" || src.trim().length === 0) {
-                    return null;
-                }
-
-                return (
-                    <BlurredImage
-                        src={src}
-                        alt={alt ?? props.title}
-                        isBlurred={props.image?.isBlurred ?? false}
-                    />
-                );
-            },
-        }),
-        [props.image?.isBlurred, props.title],
-    );
 
     const onPostClicked = () => {
         if (!props.isInPostList) return;
@@ -128,12 +109,12 @@ export function Post(props: Props) {
             </h1>
             <div>
                 <ReactMarkdown
-                    components={markdownComponents}
+                    components={MarkdownComponents}
                     remarkPlugins={[remarkGfm]}
                 >
-                    {expanded ? props.description : truncatedText}
+                    {expanded ? descriptionWithoutImage : truncatedText}
                 </ReactMarkdown>
-                {props.image != null && !hasMarkdownImage && (
+                {props.image != null && (
                     <BlurredImage
                         src={props.image.url}
                         alt={props.title}

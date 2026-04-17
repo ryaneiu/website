@@ -51,6 +51,11 @@ def apply_post_search(queryset, search_query: str):
     )
 
 
+def apply_post_language(queryset, language: str):
+    normalized = (language or "en").strip().lower()
+    return queryset.filter(language=normalized if normalized in {"en", "fr"} else "en")
+
+
 class FilterPreferencesMixin:
     _filter_preferences: dict[str, bool | str] | None = None
 
@@ -78,8 +83,12 @@ class PostTemplateListView(APIView):
             raise ValidationError({"detail": str(exc)})
 
         search_query = str(filter_preferences.get("q", "")).strip()
+        language = str(filter_preferences.get("language", "en")).strip()
 
-        queryset = apply_post_search(Post.objects.all(), search_query).annotate(
+        queryset = apply_post_language(
+            apply_post_search(Post.objects.all(), search_query),
+            language,
+        ).annotate(
             likes_count=Count("likes", distinct=True),
             replies_count=Count("replies", distinct=True),
         ).order_by("-created_at")
@@ -109,8 +118,12 @@ class PostListCreateAPIView(FilterPreferencesMixin, generics.ListCreateAPIView):
     def get_queryset(self):
         filter_preferences = self.get_filter_preferences()
         search_query = str(filter_preferences.get("q", "")).strip()
+        language = str(filter_preferences.get("language", "en")).strip()
 
-        return apply_post_search(Post.objects.all(), search_query).annotate(
+        return apply_post_language(
+            apply_post_search(Post.objects.all(), search_query),
+            language,
+        ).annotate(
             likes_count=Count("likes", distinct=True),
             replies_count=Count("replies", distinct=True),
         ).order_by("-created_at")
@@ -129,6 +142,7 @@ class PostListCreateAPIView(FilterPreferencesMixin, generics.ListCreateAPIView):
             subforum=subforum,
             content_markdown=markdown or plain,
             content=plain or markdown,
+            language=serializer.validated_data.get("language") or "en",
         )
 
 
@@ -156,6 +170,7 @@ class CreatePostView(generics.CreateAPIView):
             subforum=subforum,
             content_markdown=markdown or plain,
             content=plain or markdown,
+            language=serializer.validated_data.get("language") or "en",
         )
 
 # Publish a post
@@ -260,6 +275,7 @@ class SubforumPostCreateAPIView(generics.CreateAPIView):
             subforum=subforum,
             content_markdown=markdown or plain,
             content=plain or markdown,
+            language=serializer.validated_data.get("language") or "en",
         )
 
 

@@ -58,6 +58,13 @@ class Post(models.Model):
     """
     Docstring for Post
     """
+    LANGUAGE_ENGLISH = "en"
+    LANGUAGE_FRENCH = "fr"
+    LANGUAGE_CHOICES = [
+        (LANGUAGE_ENGLISH, "English"),
+        (LANGUAGE_FRENCH, "French"),
+    ]
+
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE,
                                related_name="posts_posts")  # <--- add related_name
@@ -75,6 +82,7 @@ class Post(models.Model):
     published = models.BooleanField(default=False)
     is_nsfw = models.BooleanField(default=False, db_index=True)
     has_swears = models.BooleanField(default=False, db_index=True)
+    language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default=LANGUAGE_ENGLISH, db_index=True)
 
     def clean(self):
         title = (self.title or "").strip()
@@ -90,10 +98,13 @@ class Post(models.Model):
             raise ValidationError(
                 {"content": "Post content cannot be empty."}
             )
-        if len(content) > 10000 or len(markdown) > 10000:
+        if len(content) > 500000 or len(markdown) > 500000:
             raise ValidationError(
-                {"content": "Post content cannot exceed 10000 characters."}
+                {"content": "Post content cannot exceed 500000 characters."}
             )
+
+        if self.language not in {self.LANGUAGE_ENGLISH, self.LANGUAGE_FRENCH}:
+            raise ValidationError({"language": "Post language must be en or fr."})
 
         self.title = title
         self.content = content or markdown

@@ -8,6 +8,8 @@ export type ContentFilterPreferences = {
     includeSwears: boolean;
 };
 
+export type PostLanguage = "en" | "fr";
+
 export type PostFilterFlags = {
     is_nsfw?: boolean;
     has_swears?: boolean;
@@ -26,12 +28,26 @@ const SWEAR_PATTERNS = [
     /\bbastard(?:s)?\b/gi,
     /\bdamn\b/gi,
     /\bcrap\b/gi,
+    /\bmerde(?:ux|use|uses|s)?\b/gi,
+    /\bputain(?:s)?\b/gi,
+    /\bencul[ée](?:s)?\b/gi,
+    /\bconnard(?:e|es|s)?\b/gi,
+    /\bconne?(?:s)?\b/gi,
+    /\btabarn(?:ak|ac|aque|akk|ouche|ouette)s?\b/gi,
+    /\bc(?:â|a)?liss(?:e|es)?\b/gi,
+    /\bcalice(?:s)?\b/gi,
+    /\bcriss(?:e|es|er)?\b/gi,
+    /\b(?:osti|ostie|hostie|esti|estie)s?\b/gi,
+    /\bsacr(?:ament|amant)(?:s)?\b/gi,
+    /\bviarge(?:s)?\b/gi,
+    /\bciboir(?:e|es)?\b/gi,
 ];
 
 const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/i;
 const DIRECT_IMAGE_URL_PATTERN = /(https?:\/\/[^\s]+?\.(?:png|jpe?g|gif|webp|avif))/i;
 const PLAIN_HTTP_URL_PATTERN = /(https?:\/\/[^\s<>")']+)/i;
 const HTML_IMAGE_SRC_PATTERN = /<img[^>]+src=["']([^"']+)["']/i;
+const IMAGE_DATA_URL_PATTERN = /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=\s]+$/i;
 
 function readStoredBoolean(primaryKey: string, legacyKey: string): boolean {
     const storedValue =
@@ -55,6 +71,26 @@ function isSafeHttpUrl(url: string): boolean {
     } catch {
         return false;
     }
+}
+
+function isSafeImageDataUrl(url: string): boolean {
+    return IMAGE_DATA_URL_PATTERN.test(url.trim());
+}
+
+function isSafeImageUrl(url: string): boolean {
+    return isSafeHttpUrl(url) || isSafeImageDataUrl(url);
+}
+
+function readImageFileAsDataUrl(file: File): Promise<string | null> {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = typeof reader.result === "string" ? reader.result : null;
+            resolve(result != null && isSafeImageDataUrl(result) ? result : null);
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+    });
 }
 
 export function getStoredContentFilterPreferences(): ContentFilterPreferences {
@@ -88,10 +124,12 @@ export function persistContentFilterPreferences(
 export function buildContentFilterQuery(
     preferences: ContentFilterPreferences,
     searchText?: string,
+    language: PostLanguage = "en",
 ): string {
     const query = new URLSearchParams();
     query.set("include_nsfw", preferences.includeNsfw ? "true" : "false");
     query.set("include_swears", preferences.includeSwears ? "true" : "false");
+    query.set("language", language);
 
     const trimmedSearchText = (searchText ?? "").trim();
     if (trimmedSearchText.length > 0) {
@@ -143,7 +181,7 @@ export function extractFirstImageUrl(text: string): string | null {
     const markdownMatch = MARKDOWN_IMAGE_PATTERN.exec(text);
     if (markdownMatch != null) {
         const candidate = markdownMatch[1]?.trim() ?? "";
-        if (candidate.length > 0 && isSafeHttpUrl(candidate)) {
+        if (candidate.length > 0 && isSafeImageUrl(candidate)) {
             return candidate;
         }
     }
@@ -165,7 +203,33 @@ export function normalizeAttachedImageUrl(rawUrl: string): string | null {
         return null;
     }
 
-    return isSafeHttpUrl(trimmedUrl) ? trimmedUrl : null;
+    return isSafeImageUrl(trimmedUrl) ? trimmedUrl : null;
+}
+
+export async function extractImageReferenceFromClipboardData(
+    clipboardData: DataTransfer | null,
+): Promise<string | null> {
+    if (clipboardData == null) {
+        return null;
+    }
+
+    for (const item of Array.from(clipboardData.items)) {
+        if (item.kind !== "file" || !item.type.startsWith("image/")) {
+            continue;
+        }
+
+        const file = item.getAsFile();
+        if (file == null) {
+            continue;
+        }
+
+        const dataUrl = await readImageFileAsDataUrl(file);
+        if (dataUrl != null) {
+            return dataUrl;
+        }
+    }
+
+    return extractImageUrlFromClipboardData(clipboardData);
 }
 
 export function extractImageUrlFromClipboardData(
@@ -179,7 +243,7 @@ export function extractImageUrlFromClipboardData(
     if (htmlContent.length > 0) {
         const htmlImageMatch = HTML_IMAGE_SRC_PATTERN.exec(htmlContent);
         const htmlImageUrl = htmlImageMatch?.[1]?.trim() ?? "";
-        if (isSafeHttpUrl(htmlImageUrl)) {
+        if (isSafeImageUrl(htmlImageUrl)) {
             return htmlImageUrl;
         }
     }
@@ -191,7 +255,7 @@ export function extractImageUrlFromClipboardData(
 
     const markdownImageMatch = MARKDOWN_IMAGE_PATTERN.exec(plainText);
     const markdownImageUrl = markdownImageMatch?.[1]?.trim() ?? "";
-    if (isSafeHttpUrl(markdownImageUrl)) {
+    if (isSafeImageUrl(markdownImageUrl)) {
         return markdownImageUrl;
     }
 
@@ -231,7 +295,7 @@ export function resolvePostImage(
     includeNsfw: boolean,
     isNsfw: boolean | undefined,
 ): PostImage | null {
-    if (image != null && isSafeHttpUrl(image.url)) {
+    if (image != null && isSafeImageUrl(image.url)) {
         return image;
     }
 

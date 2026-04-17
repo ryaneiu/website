@@ -25,6 +25,19 @@ SWEAR_PATTERN_SOURCES = [
     r"\bbastard(?:s)?\b",
     r"\bdamn\b",
     r"\bcrap\b",
+    r"\bmerde(?:ux|use|uses|s)?\b",
+    r"\bputain(?:s)?\b",
+    r"\bencul[ée](?:s)?\b",
+    r"\bconnard(?:e|es|s)?\b",
+    r"\bconne?(?:s)?\b",
+    r"\btabarn(?:ak|ac|aque|akk|ouche|ouette)s?\b",
+    r"\bc(?:â|a)?liss(?:e|es)?\b",
+    r"\bcalice(?:s)?\b",
+    r"\bcriss(?:e|es|er)?\b",
+    r"\b(?:osti|ostie|hostie|esti|estie)s?\b",
+    r"\bsacr(?:ament|amant)(?:s)?\b",
+    r"\bviarge(?:s)?\b",
+    r"\bciboir(?:e|es)?\b",
 ]
 
 NSFW_PATTERNS = [re.compile(pattern, re.IGNORECASE) for pattern in NSFW_PATTERN_SOURCES]

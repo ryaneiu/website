@@ -9,7 +9,7 @@ import {
 import { PostCreationModal } from "./CreationModal";
 import {
     appendAttachedImageToContent,
-    extractImageUrlFromClipboardData,
+    extractImageReferenceFromClipboardData,
     normalizeAttachedImageUrl,
     type PostImage,
 } from "../../contentFilter";
@@ -40,8 +40,8 @@ export function AddPostForm({ subforumSlug, onPostAdded, onHide }: Props) {
     const [imageUrl, setImageUrl] = useState("");
     const imagePreviewUrl = normalizeAttachedImageUrl(imageUrl);
 
-    const onImagePaste = (event: ClipboardEvent<HTMLInputElement>) => {
-        const pastedImageUrl = extractImageUrlFromClipboardData(
+    const onImagePaste = async (event: ClipboardEvent<HTMLInputElement>) => {
+        const pastedImageUrl = await extractImageReferenceFromClipboardData(
             event.clipboardData,
         );
         if (pastedImageUrl == null) {
@@ -52,14 +52,15 @@ export function AddPostForm({ subforumSlug, onPostAdded, onHide }: Props) {
         setImageUrl(pastedImageUrl);
     };
 
-    const onDescriptionPaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
-        const pastedImageUrl = extractImageUrlFromClipboardData(
+    const onDescriptionPaste = async (event: ClipboardEvent<HTMLTextAreaElement>) => {
+        const pastedImageUrl = await extractImageReferenceFromClipboardData(
             event.clipboardData,
         );
         if (pastedImageUrl == null) {
             return;
         }
 
+        event.preventDefault();
         setImageUrl(pastedImageUrl);
     };
 
@@ -69,7 +70,9 @@ export function AddPostForm({ subforumSlug, onPostAdded, onHide }: Props) {
         const normalizedImageUrl = normalizeAttachedImageUrl(imageUrl);
 
         if (imageUrl.trim().length > 0 && normalizedImageUrl == null) {
-            notifyErrorDefault("Please enter a valid http(s) image URL");
+            notifyErrorDefault(
+                "Please paste an image or enter a valid image URL",
+            );
             return;
         }
 
@@ -136,7 +139,8 @@ export function AddPostForm({ subforumSlug, onPostAdded, onHide }: Props) {
             buttonCreateText="Add Post"
             buttonLoadingText="Adding..."
             titlePlaceholder="Post Title"
-            imagePlaceholder="Image URL (optional)"
+            imagePlaceholder="Paste image or image URL (optional)"
+            imageInstruction="Copy an image and press Ctrl+V in the image field or post content to attach it."
             imageValue={imageUrl}
             imagePreviewUrl={imagePreviewUrl}
             imageAltText={title || "Attached image"}

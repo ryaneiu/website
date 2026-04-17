@@ -17,6 +17,7 @@ export type Post = {
     is_nsfw?: boolean;
     has_swears?: boolean;
     image?: PostImage | null;
+    language?: "en" | "fr";
 }
 
 interface PostsStore {

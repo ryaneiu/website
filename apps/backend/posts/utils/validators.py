@@ -6,7 +6,18 @@ from collections.abc import Mapping
 from typing import Any
 
 
-ALLOWED_FILTER_QUERY_KEYS = frozenset({"include_nsfw", "include_swears", "q"})
+ALLOWED_FILTER_QUERY_KEYS = frozenset({"include_nsfw", "include_swears", "q", "language"})
+
+
+def validate_language(param: str) -> str:
+    if not isinstance(param, str):
+        raise ValueError("Language query parameter must be a string.")
+
+    normalized = param.strip().lower()
+    if normalized not in {"en", "fr"}:
+        raise ValueError("Language query parameter must be 'en' or 'fr'.")
+
+    return normalized
 
 
 def validate_bool(param: str) -> bool:
@@ -48,9 +59,11 @@ def validate_query(args: Mapping[str, Any]) -> dict[str, bool | str]:
     include_nsfw_value = _get_single_value(args, "include_nsfw")
     include_swears_value = _get_single_value(args, "include_swears")
     search_value = _get_single_value(args, "q")
+    language_value = _get_single_value(args, "language")
 
     return {
         "include_nsfw": validate_bool(include_nsfw_value) if include_nsfw_value is not None else False,
         "include_swears": validate_bool(include_swears_value) if include_swears_value is not None else False,
         "q": search_value or "",
+        "language": validate_language(language_value) if language_value is not None else "en",
     }

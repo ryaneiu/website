@@ -16,8 +16,13 @@ import {
     persistContentFilterPreferences,
     resolvePostImage,
     type ContentFilterPreferences,
+    type PostLanguage,
 } from "../../contentFilter";
 import { Panel } from "../../components/Panel";
+
+interface PostListProps {
+    language?: PostLanguage;
+}
 
 interface FilterToggleProps {
     label: string;
@@ -44,7 +49,7 @@ function FilterToggle({ label, checked, onChange }: FilterToggleProps) {
     );
 }
 
-export function PostList() {
+export function PostList({ language = "en" }: PostListProps) {
     const posts = postsStore((state) => state.posts);
     const hasLoaded = postsStore((state) => state.hasLoaded);
 
@@ -118,7 +123,7 @@ export function PostList() {
                 const endpoint = `${API_ENDPOINT}/api/posts/?${buildContentFilterQuery({
                     includeNsfw,
                     includeSwears,
-                }, searchQuery)}`;
+                }, searchQuery, language)}`;
 
                 const response = await fetch(endpoint, {
                     method: "GET",
@@ -205,7 +210,7 @@ export function PostList() {
         };
 
         loadPosts();
-    }, [navigate, includeNsfw, includeSwears, searchQuery]);
+    }, [navigate, includeNsfw, includeSwears, searchQuery, language]);
 
     return (
         <>

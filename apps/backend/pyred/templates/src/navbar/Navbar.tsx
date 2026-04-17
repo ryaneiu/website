@@ -173,6 +173,7 @@ export function Navbar() {
     const isLoggedIn = useAuthenticationStore((state) => state.isLoggedIn);
     const locationSearchValue = getSearchQueryValue(location.search);
     const currentSubforumSlug = getCurrentSubforumSlug(location.pathname);
+    const activeLanguage = location.pathname.startsWith("/fr") ? "fr" : "en";
 
     const [searchBarFocused, setBarFocused] = useState<boolean>(false);
     const [searchBarContent, setBarContent] = useState<string>(() =>
@@ -388,6 +389,17 @@ export function Navbar() {
             </div>
 
             <div className="w-fit h-full flex items-center gap-1">
+                <select
+                    className="h-9 rounded-md border border-black/15 dark:border-white/15 bg-white dark:bg-zinc-800 px-2 text-sm transition-colors duration-300"
+                    value={activeLanguage}
+                    onChange={(event) => {
+                        navigate(event.target.value === "fr" ? "/fr" : "/");
+                    }}
+                    aria-label="Language"
+                >
+                    <option value="en">English</option>
+                    <option value="fr">Français</option>
+                </select>
                 <TransparentIconButton
                     icon={modeToggleSwitchToggleIcon}
                     filledIcon={modeToggleSwitchToggleIconFilled}

@@ -34,6 +34,7 @@ function getScope(search: string): DiscoverScope {
 
 export default function Discover() {
     const location = useLocation();
+    const activeLanguage = location.pathname.startsWith("/fr") ? "fr" : "en";
     const searchQuery = useMemo(() => getSearchQuery(location.search), [
         location.search,
     ]);
@@ -69,7 +70,7 @@ export default function Discover() {
                 const postsResponsePromise: Promise<Response | null> =
                     scope === "everywhere"
                         ? fetch(
-                              `${API_ENDPOINT}/api/posts/?${buildContentFilterQuery(filterPreferences, searchQuery)}`,
+                              `${API_ENDPOINT}/api/posts/?${buildContentFilterQuery(filterPreferences, searchQuery, activeLanguage)}`,
                               { method: "GET" },
                           )
                         : Promise.resolve(null);
@@ -132,7 +133,7 @@ export default function Discover() {
         return () => {
             cancelled = true;
         };
-    }, [scope, searchQuery, filterPreferences]);
+    }, [scope, searchQuery, filterPreferences, activeLanguage]);
 
     return (
         <FadeUp>

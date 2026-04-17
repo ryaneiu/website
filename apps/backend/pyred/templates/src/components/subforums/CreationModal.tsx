@@ -31,6 +31,7 @@ interface Props {
     imageValue?: string;
     imagePreviewUrl?: string | null;
     imageAltText?: string;
+    imageInstruction?: string;
     descriptionPlaceholder: string;
     modalTitle: string;
     showImageInput?: boolean;
@@ -139,21 +140,28 @@ export function PostCreationModal(props: Props) {
                             className="w-full"
                         />
                         {props.showImageInput && (
-                            <InputComponent
-                                placeholder={
-                                    props.imagePlaceholder ??
-                                    "Image URL (optional)"
-                                }
-                                value={props.imageValue ?? ""}
-                                onChange={(event) =>
-                                    props.onImageUrlChanged?.(
-                                        event.target.value,
-                                    )
-                                }
-                                onPaste={props.onImagePaste}
-                                disabled={loading}
-                                className="w-full"
-                            />
+                            <>
+                                <InputComponent
+                                    placeholder={
+                                        props.imagePlaceholder ??
+                                        "Paste image or image URL (optional)"
+                                    }
+                                    value={props.imageValue ?? ""}
+                                    onChange={(event) =>
+                                        props.onImageUrlChanged?.(
+                                            event.target.value,
+                                        )
+                                    }
+                                    onPaste={props.onImagePaste}
+                                    disabled={loading}
+                                    className="w-full"
+                                />
+                                {props.imageInstruction && (
+                                    <p className="w-full text-sm text-black/60 dark:text-white/60 transition-colors duration-300">
+                                        {props.imageInstruction}
+                                    </p>
+                                )}
+                            </>
                         )}
                         {props.showImageInput && props.imagePreviewUrl != null && (
                             <div className="w-full">

@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../components/Button";
 import { MainArea } from "../MainArea";
 import { Navbar } from "../navbar/Navbar";
@@ -7,6 +7,7 @@ import { SideNavigation } from "../navbar/sideNavigation";
 export default function PrimaryView() {
 
     const navigate = useNavigate();
+    const location = useLocation();
 
     
     return (
@@ -39,7 +40,8 @@ export default function PrimaryView() {
                         </svg>
                     }
                     onClick={() => {
-                        navigate("/create");
+                        const language = location.pathname.startsWith("/fr") ? "fr" : "en";
+                        navigate(`/create?lang=${language}`);
                     }}
                     additionalClasses="shadow-lg/20"
                 ></Button>

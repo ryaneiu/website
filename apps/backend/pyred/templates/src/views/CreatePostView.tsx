@@ -1,5 +1,5 @@
-import { useEffect, useState, type ClipboardEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState, type ClipboardEvent } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { TransparentIconButton } from "../components/TransparentIconButton";
 import { FadeUp } from "../components/AnimatedPresenceDiv";
 import {
@@ -17,12 +17,20 @@ import { Button } from "../components/Button";
 import { BlurredImage } from "../components/BlurredImage";
 import {
     appendAttachedImageToContent,
-    extractImageUrlFromClipboardData,
+    extractImageReferenceFromClipboardData,
     normalizeAttachedImageUrl,
 } from "../contentFilter";
 
 export default function CreatePostView() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const postLanguage = useMemo(() => {
+        const queryLang = new URLSearchParams(location.search).get("lang");
+        if (queryLang === "fr") {
+            return "fr";
+        }
+        return location.pathname.startsWith("/fr") ? "fr" : "en";
+    }, [location.pathname, location.search]);
 
     // Post state
     const [title, setTitle] = useState("");
@@ -35,8 +43,8 @@ export default function CreatePostView() {
     const [selectedSubforum, setSelectedSubforum] = useState("general");
     const imagePreviewUrl = normalizeAttachedImageUrl(imageUrl);
 
-    const onImagePaste = (event: ClipboardEvent<HTMLInputElement>) => {
-        const pastedImageUrl = extractImageUrlFromClipboardData(
+    const onImagePaste = async (event: ClipboardEvent<HTMLInputElement>) => {
+        const pastedImageUrl = await extractImageReferenceFromClipboardData(
             event.clipboardData,
         );
         if (pastedImageUrl == null) {
@@ -47,14 +55,15 @@ export default function CreatePostView() {
         setImageUrl(pastedImageUrl);
     };
 
-    const onContentPaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
-        const pastedImageUrl = extractImageUrlFromClipboardData(
+    const onContentPaste = async (event: ClipboardEvent<HTMLTextAreaElement>) => {
+        const pastedImageUrl = await extractImageReferenceFromClipboardData(
             event.clipboardData,
         );
         if (pastedImageUrl == null) {
             return;
         }
 
+        event.preventDefault();
         setImageUrl(pastedImageUrl);
     };
 
@@ -82,13 +91,17 @@ export default function CreatePostView() {
     }, []);
 
     const onCloseView = () => {
-        navigate("/");
+        navigate(postLanguage === "fr" ? "/fr" : "/");
     };
 
     const onPublishPost = async () => {
         const trimmedTitle = title.trim();
         const trimmedContent = content.trim();
         const normalizedImageUrl = imagePreviewUrl;
+        const availableSubforumSlugs = new Set(subforums.map((v) => v.slug));
+        const chosenSubforum = availableSubforumSlugs.has(selectedSubforum)
+            ? selectedSubforum
+            : null;
 
         if (!trimmedTitle) {
             notifyErrorDefault("Please enter a title");
@@ -96,7 +109,9 @@ export default function CreatePostView() {
         }
 
         if (imageUrl.trim().length > 0 && normalizedImageUrl == null) {
-            notifyErrorDefault("Please enter a valid http(s) image URL");
+            notifyErrorDefault(
+                "Please paste an image or enter a valid image URL",
+            );
             return;
         }
 
@@ -112,12 +127,18 @@ export default function CreatePostView() {
 
         setLoading(true);
         try {
-            console.log("Title: ", title, " content: ", content);
-
             const token = await getStoredAccessToken();
             if (!token) {
                 throw new Error("No access token");
             }
+
+            const payload = {
+                title: trimmedTitle,
+                content: composedContent,
+                content_markdown: composedContent,
+                language: postLanguage,
+                ...(chosenSubforum ? { subforum: chosenSubforum } : {}),
+            };
 
             const res = await fetch(`${API_ENDPOINT}/api/posts/create/`, {
                 method: "POST",
@@ -125,12 +146,7 @@ export default function CreatePostView() {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    title: trimmedTitle,
-                    content: composedContent,
-                    content_markdown: composedContent,
-                    subforum: selectedSubforum,
-                }),
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) {
@@ -141,16 +157,14 @@ export default function CreatePostView() {
                     throw new Error("Failed to create post: " + res.statusText);
             }
 
-            const data = await res.json();
-            console.log("Post created:", data);
+            await res.json();
 
             notifySuccessDefault("Post created!");
             setTitle("");
             setContent("");
             setImageUrl("");
-            navigate("/"); // back to homepage or wherever
+            navigate(postLanguage === "fr" ? "/fr" : "/");
         } catch (err) {
-            console.error(err);
             const message = err instanceof Error ? err.message : String(err);
             notifyErrorDefault(message);
         } finally {
@@ -246,12 +260,15 @@ export default function CreatePostView() {
 
                 <InputComponent
                     className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw]"
-                    placeholder="Image URL (optional)"
+                    placeholder="Paste image or image URL (optional)"
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
                     onPaste={onImagePaste}
                     disabled={loading}
                 />
+                <p className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] text-sm text-black/60 dark:text-white/60 transition-colors duration-300">
+                    Copy an image and press Ctrl+V in the image field or post content to attach it.
+                </p>
 
                 {imagePreviewUrl != null && (
                     <div className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw]">
@@ -266,7 +283,7 @@ export default function CreatePostView() {
                 {/* Content textarea */}
                 <TextAreaInput
                     className="px-2 py-2 w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] h-[50vh] rounded-md border border-black/15 dark:border-white/15 focus:outline-none focus:border-black/35 dark:focus:border-white/35 transition-colors duration-300"
-                    placeholder="Your random thoughts..."
+                    placeholder="Your random thoughts... (paste images directly)"
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     onPaste={onContentPaste}

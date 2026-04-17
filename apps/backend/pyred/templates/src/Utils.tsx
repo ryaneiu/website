@@ -1,15 +1,48 @@
 export async function extractDetailFromErrorResponse(res: Response) {
+    const extractFirstReadableMessage = (value: unknown): string | null => {
+        if (typeof value === "string") {
+            const trimmed = value.trim();
+            return trimmed.length > 0 ? trimmed : null;
+        }
+
+        if (Array.isArray(value)) {
+            for (const item of value) {
+                const message = extractFirstReadableMessage(item);
+                if (message) return message;
+            }
+            return null;
+        }
+
+        if (value && typeof value === "object") {
+            for (const nested of Object.values(value as Record<string, unknown>)) {
+                const message = extractFirstReadableMessage(nested);
+                if (message) return message;
+            }
+        }
+
+        return null;
+    };
+
     try {
         const data = await res.json();
 
-        if (data.detail) {
-            return data.detail;
-        } else {
+        if (data != null && typeof data === "object") {
+            const detailMessage = extractFirstReadableMessage(
+                (data as { detail?: unknown }).detail,
+            );
+            if (detailMessage) {
+                return detailMessage;
+            }
+        }
+
+        return extractFirstReadableMessage(data);
+    } catch {
+        try {
+            const rawText = (await res.text()).trim();
+            return rawText.length > 0 ? rawText : null;
+        } catch {
             return null;
         }
-    } catch (e) {
-        console.warn("Failed to extract details: ", e);
-        return null;
     }
 }
 
