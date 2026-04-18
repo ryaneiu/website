@@ -22,7 +22,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# DO NOT REMOVE
-# Not ignoring dist/* creates very complex merge conflicts
-# that are very hard to fix
-dist/*
+# add back dist/ to repository
+# we need it to be able to sync files with the backend without
+# installing NodeJS or NPM
+# dist/*
