@@ -1,29 +1,25 @@
 import { useImageProgressStore } from "./stores/ImageEncodingProgress";
 import { Progress } from "./stores/ImageEncodingProgressState";
+import type { AVIFModule } from "@saschazar/wasm-avif";
+
+// The actual options accepted by the factory function include Emscripten's `locateFile`
+type AVIFModuleOptions = Partial<AVIFModule> & {
+    locateFile?: (path: string) => string;
+};
+
+// FFmpeg imports are no longer required for the new AVIF encoding path.
+// Keep them commented if you plan to revert or use elsewhere.
+// import coreURL from "@ffmpeg/core?url";
+// import wasmURL from "@ffmpeg/core/wasm?url";
+
+// --- NEW IMPORTS FOR SASCHAZAR WASM-AVIF ---
+import wasm_avif from "@saschazar/wasm-avif";
+import defaultOptions from "@saschazar/wasm-avif/options";
+import wasmAvifURL from "@saschazar/wasm-avif/wasm_avif.wasm?url";
 
 const dataImageRegex =
     /^data:image\/(png|jpe?g|webp|bmp|svg\+xml);base64,[A-Za-z0-9+/]+={0,2}$/;
 const supportedExtensions = ["png", "jpg", "jpeg", "gif", "avif", "webp"];
-
-let libavifModule: Promise<typeof import("@jsquash/avif")> | null = null;
-
-async function loadLibavif() {
-    if (!libavifModule) {
-        libavifModule = import("@jsquash/avif");
-    }
-    return libavifModule;
-}
-
-async function blobDataToUrl(b: Blob): Promise<string> {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(b);
-    });
-}
-
-
-
 
 export function isValidDataImage(input: string): boolean {
     return dataImageRegex.test(input);
@@ -32,16 +28,21 @@ export function isValidDataImage(input: string): boolean {
 export function canLoadImage(url: string): Promise<boolean> {
     return new Promise((resolve) => {
         const img = new Image();
-
         img.onload = () => resolve(true);
         img.onerror = () => resolve(false);
-
         img.src = url;
     });
 }
 
-// Converts image into a more efficient
-// AV1 format
+async function blobDataToUrl(b: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(b);
+    });
+}
+
 export async function dataToAvif(
     dataUrl: string,
     updateState: boolean = true,
@@ -50,18 +51,14 @@ export async function dataToAvif(
         return dataUrl;
     }
 
-    if (updateState)
+    if (updateState) {
         useImageProgressStore.setState({
             progress: Progress.DOWNLOADING_ENCODER,
         });
+    }
 
-    const { encode } = await loadLibavif();
-
-    if (updateState)
-        useImageProgressStore.setState({ progress: Progress.PREPROCESSING });
-
+    // --- Load the image and get raw RGBA pixels via canvas ---
     const img = new Image();
-
     await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve();
         img.onerror = reject;
@@ -85,28 +82,68 @@ export async function dataToAvif(
     }
 
     ctx.drawImage(img, 0, 0);
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const rgbaPixels = new Uint8Array(imageData.data.buffer);
 
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-    if (updateState)
+    if (updateState) {
         useImageProgressStore.setState({ progress: Progress.ENCODING });
+    }
 
-    const avifBuffer = await encode(imageData, {
-        quality: 50,
-        bitDepth: 8,
-    });
+    try {
+        // Initialize the WASM module. `locateFile` is used to provide the wasm file URL.
+        // The type definitions are incomplete, so we use `as any` to bypass the error.
+        const avifModule = await wasm_avif({
+            locateFile: () => wasmAvifURL,
+        } as AVIFModuleOptions);
 
-    const avifBlob = new Blob([avifBuffer], { type: "image/avif" });
+        const customOptions = {
+            ...defaultOptions,
+            minQuantizer: 32,
+            maxQuantizer: 32,
+            speed: 6, // Optional: Higher speed = faster encode but slightly larger file
+        };
 
-    const blobUrl = await blobDataToUrl(avifBlob);
+        // Encode: (pixels, width, height, channels, options, chroma subsampling)
+        // 4 channels = RGBA, 3 = 4:2:0 chroma subsampling.
+        const avifData = avifModule.encode(
+            rgbaPixels,
+            width,
+            height,
+            4,
+            customOptions,
+            3,
+        );
 
-    if (updateState)
-        useImageProgressStore.setState({ progress: Progress.NONE });
+        // The module may return an error object instead of a Uint8Array.
+        if (
+            !avifData ||
+            (typeof avifData === "object" && "error" in avifData)
+        ) {
+            throw new Error(
+                `AVIF encoding failed: ${avifData.error || "Unknown error"}`,
+            );
+        }
 
-    return blobUrl;
+        // Ensure we have a Uint8Array before slicing.
+        const encodedBuffer = avifData as Uint8Array;
+        const avifBlob = new Blob([encodedBuffer.slice()], {
+            type: "image/avif",
+        });
+
+        // Free the C++ module memory
+        avifModule.free();
+
+        const blobUrl = await blobDataToUrl(avifBlob);
+        return blobUrl;
+    } catch (error) {
+        // Ensure we reset progress state on failure
+        throw new Error(`Failed to encode: ${error}`);
+    } finally {
+        if (updateState) {
+            useImageProgressStore.setState({ progress: Progress.NONE });
+        }
+    }
 }
-
-
 
 export function hasSupportedImageExtension(url: string): boolean {
     try {
