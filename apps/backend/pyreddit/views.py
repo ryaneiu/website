@@ -3,6 +3,8 @@ Views
 """
 
 # Create your views here
+import re
+from urllib.parse import urlparse
 from typing import cast
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
@@ -19,9 +21,34 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .models import Post, Comment
+from .models import Post, Comment, UserProfile
 from .serializers import PostSerializer, CommentSerializer
 from .email_validation import normalize_and_validate_email, is_user_email_valid
+
+
+MARKDOWN_IMAGE_PATTERN = re.compile(r"!\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+IMAGE_DATA_URL_PATTERN = re.compile(r"^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=\s]+$", re.IGNORECASE)
+
+
+def _is_safe_http_url(url: str) -> bool:
+    parsed = urlparse(url.strip())
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _normalize_profile_image(value: str) -> str | None:
+    trimmed = value.strip()
+    if not trimmed:
+        return None
+
+    markdown_match = MARKDOWN_IMAGE_PATTERN.search(trimmed)
+    candidate = markdown_match.group(1).strip() if markdown_match else trimmed
+
+    if _is_safe_http_url(candidate):
+        return candidate
+    if IMAGE_DATA_URL_PATTERN.match(candidate):
+        return candidate
+
+    return ""
 
 
 def set_jwt_cookies(
@@ -285,22 +312,27 @@ class UserSearchAPIView(APIView):
 class CurrentUserProfileAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @staticmethod
+    def _serialize_profile(user: User) -> dict[str, str | None]:
+        profile = UserProfile.objects.filter(user=user).first()
+        profile_image = profile.image_url if profile and profile.image_url else None
+        return {
+            "username": user.username,
+            "email": user.email,
+            "bio": user.last_name or "",
+            "profile_image": profile_image,
+        }
+
     def get(self, request):
         user = request.user
-        return Response(
-            {
-                "username": user.username,
-                "email": user.email,
-                "bio": user.last_name or "",
-            },
-            status=status.HTTP_200_OK,
-        )
+        return Response(self._serialize_profile(user), status=status.HTTP_200_OK)
 
     def patch(self, request):
         user = request.user
         username = request.data.get("username")
         email = request.data.get("email")
         bio = request.data.get("bio")
+        profile_image = request.data.get("profile_image")
 
         if username is not None:
             normalized_username = str(username).strip()
@@ -341,16 +373,26 @@ class CurrentUserProfileAPIView(APIView):
                 )
             user.last_name = normalized_bio
 
+        if profile_image is not None:
+            normalized_profile_image = str(profile_image).strip()
+            parsed_profile_image = _normalize_profile_image(normalized_profile_image)
+            if parsed_profile_image == "":
+                return Response(
+                    {
+                        "detail": (
+                            "Profile image must be a valid markdown image or direct image URL."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            profile_obj, _ = UserProfile.objects.get_or_create(user=user)
+            profile_obj.image_url = parsed_profile_image or ""
+            profile_obj.save(update_fields=["image_url"])
+
         user.save()
 
-        return Response(
-            {
-                "username": user.username,
-                "email": user.email,
-                "bio": user.last_name or "",
-            },
-            status=status.HTTP_200_OK,
-        )
+        return Response(self._serialize_profile(user), status=status.HTTP_200_OK)
 
 
 

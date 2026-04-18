@@ -10,8 +10,23 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from pathlib import Path
+import os
 from datetime import timedelta
+from pathlib import Path
+
+
+def env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def env_list(name: str, default: list[str] | None = None) -> list[str]:
+    value = os.getenv(name, "")
+    if not value.strip():
+        return default or []
+    return [item.strip() for item in value.split(",") if item.strip()]
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -21,12 +36,34 @@ FRONTEND_DIST = BASE_DIR / "apps/frontend/web/dist"
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-_3vxbtx+8s_=%xsj9rmv=y=1m-&ubrdi1+!vhtom1qu$@3jaxd'
+SECRET_KEY = os.getenv(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-_3vxbtx+8s_=%xsj9rmv=y=1m-&ubrdi1+!vhtom1qu$@3jaxd",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env_bool("DJANGO_DEBUG", True)
 
-ALLOWED_HOSTS = []
+PYTHONANYWHERE_USERNAME = os.getenv("PYTHONANYWHERE_USERNAME", "yobroryan").strip()
+PYTHONANYWHERE_HOST = (
+    f"{PYTHONANYWHERE_USERNAME}.pythonanywhere.com"
+    if PYTHONANYWHERE_USERNAME
+    else ""
+)
+
+default_allowed_hosts = ["localhost", "127.0.0.1"]
+if PYTHONANYWHERE_HOST:
+    default_allowed_hosts.append(PYTHONANYWHERE_HOST)
+
+ALLOWED_HOSTS = list(
+    dict.fromkeys(
+        [
+            *default_allowed_hosts,
+            *env_list("CUSTOM_DOMAINS"),
+            *env_list("DJANGO_ALLOWED_HOSTS"),
+        ]
+    )
+)
 
 # Application definition
 
@@ -70,18 +107,18 @@ REST_FRAMEWORK = {
 
 DJANGO_VITE = {
     "default": {
-        "dev_mode": True,  # Note: logic might require this to be 'True' (bool)
-        "dev_server_host": "localhost",
-        "dev_server_port": 5173,
+        "dev_mode": env_bool("DJANGO_VITE_DEV_MODE", DEBUG),
+        "dev_server_host": os.getenv("DJANGO_VITE_DEV_HOST", "localhost"),
+        "dev_server_port": int(os.getenv("DJANGO_VITE_DEV_PORT", "5173")),
         # Add other config here if needed
     }
 }
 
 JWT_ACCESS_COOKIE_NAME = "access_token"
 JWT_REFRESH_COOKIE_NAME = "refresh_token"
-JWT_COOKIE_SECURE = True
+JWT_COOKIE_SECURE = env_bool("JWT_COOKIE_SECURE", not DEBUG)
 JWT_COOKIE_HTTP_ONLY = True
-JWT_COOKIE_SAMESITE = "None"
+JWT_COOKIE_SAMESITE = os.getenv("JWT_COOKIE_SAMESITE", "Lax" if DEBUG else "None")
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
@@ -165,35 +202,46 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-CORS_ALLOWED_ORIGINS = [
+local_dev_origins = [
     "http://localhost:5173",
     "https://localhost:5173",
     "http://127.0.0.1:5173",
     "https://127.0.0.1:5173",
-    'http://localhost:8000',
-    'https://localhost:8000',
-    'http://localhost:8001',
-    'https://localhost:8001',
-    'http://127.0.0.1:8001',
-    'https://127.0.0.1:8001',
-    'http://localhost:4173',
-    'https://localhost:4173',
+    "http://localhost:8000",
+    "https://localhost:8000",
+    "http://localhost:8001",
+    "https://localhost:8001",
+    "http://127.0.0.1:8001",
+    "https://127.0.0.1:8001",
+    "http://localhost:4173",
+    "https://localhost:4173",
 ]
+
+prod_https_origins = [
+    f"https://{host}"
+    for host in ALLOWED_HOSTS
+    if host not in {"localhost", "127.0.0.1"}
+]
+
+CORS_ALLOWED_ORIGINS = list(
+    dict.fromkeys(
+        [
+            *(local_dev_origins if DEBUG else []),
+            *prod_https_origins,
+            *env_list("CORS_ALLOWED_ORIGINS"),
+        ]
+    )
+)
 CORS_ALLOW_CREDENTIALS = True
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "https://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://127.0.0.1:5173",
-    'http://localhost:8000',
-    'https://localhost:8000',
-    'http://localhost:8001',
-    'https://localhost:8001',
-    'http://127.0.0.1:8001',
-    'https://127.0.0.1:8001',
-    'http://localhost:4173',
-    'https://localhost:4173',
-]
+CSRF_TRUSTED_ORIGINS = list(
+    dict.fromkeys(
+        [
+            *(local_dev_origins if DEBUG else []),
+            *prod_https_origins,
+            *env_list("CSRF_TRUSTED_ORIGINS"),
+        ]
+    )
+)
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -222,3 +270,7 @@ STATIC_URL = "/assets/"
 STATICFILES_DIRS = [
     BASE_DIR.parent / "apps/frontend/web/dist/assets",
 ]
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)

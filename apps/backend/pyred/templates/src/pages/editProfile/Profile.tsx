@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ClipboardEvent } from "react";
 import { FadeUp } from "../../components/AnimatedPresenceDiv";
 import { ElementWithLabel } from "../../components/ElementWithLabel";
 import { InputWithLabel } from "../../components/GenericInputWithLabel";
@@ -13,15 +13,48 @@ import {
 } from "../../stores/NotificationsStore";
 import { useAuthenticationStore } from "../../stores/AuthenticationStore";
 import { getAppLanguageFromPath } from "../../i18n";
+import {
+    extractFirstImageUrl,
+    extractImageReferenceFromClipboardData,
+    normalizeAttachedImageUrl,
+} from "../../contentFilter";
+
+function resolveProfileImageInput(value: string): string | null {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+        return null;
+    }
+
+    const markdownImage = extractFirstImageUrl(trimmed);
+    if (markdownImage != null) {
+        return markdownImage;
+    }
+
+    return normalizeAttachedImageUrl(trimmed);
+}
 
 export default function Profile() {
     const [isProfilePicHovered, sethovered] = useState(false);
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [bio, setBio] = useState("");
+    const [profileImageInput, setProfileImageInput] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const language = getAppLanguageFromPath(window.location.pathname);
+    const resolvedProfileImage = resolveProfileImageInput(profileImageInput);
+
+    const onProfileImagePaste = async (event: ClipboardEvent<HTMLInputElement>) => {
+        const pastedImage = await extractImageReferenceFromClipboardData(
+            event.clipboardData,
+        );
+        if (pastedImage == null) {
+            return;
+        }
+
+        event.preventDefault();
+        setProfileImageInput(pastedImage);
+    };
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -48,6 +81,7 @@ export default function Profile() {
                 setUsername(payload.username ?? "");
                 setEmail(payload.email ?? "");
                 setBio(payload.bio ?? "");
+                setProfileImageInput(payload.profile_image ?? "");
             } catch {
                 notifyErrorDefault(
                     language === "fr"
@@ -75,6 +109,15 @@ export default function Profile() {
             return;
         }
 
+        if (profileImageInput.trim().length > 0 && resolvedProfileImage == null) {
+            notifyErrorDefault(
+                language === "fr"
+                    ? "L'image de profil doit être une image markdown valide ou une URL d'image directe."
+                    : "Profile image must be a valid markdown image or direct image URL.",
+            );
+            return;
+        }
+
         const token = await getStoredAccessToken();
         if (!token) {
             notifyErrorDefault("You need to login first.");
@@ -93,6 +136,7 @@ export default function Profile() {
                     username,
                     email: emailValue,
                     bio,
+                    profile_image: profileImageInput,
                 }),
             });
 
@@ -106,9 +150,11 @@ export default function Profile() {
             setUsername(payload.username ?? username);
             setEmail(payload.email ?? emailValue);
             setBio(payload.bio ?? bio);
+            setProfileImageInput(payload.profile_image ?? profileImageInput);
             useAuthenticationStore.setState({
                 username: payload.username ?? username,
                 bio: payload.bio ?? bio,
+                profileImage: payload.profile_image ?? profileImageInput,
             });
             notifySuccessDefault(
                 language === "fr"
@@ -138,16 +184,24 @@ export default function Profile() {
                     onMouseEnter={() => sethovered(true)}
                     onMouseLeave={() => sethovered(false)}
                 >
-                    <span className="absolute md:top-0 md:left-0 top-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 md:translate-x-0 md:translate-y-0">
-                        <svg
-                            className="md:h-[256px] md:w-[256px] h-[128px] w-[128px]"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 -960 960 960"
-                            fill="currentColor"
-                        >
-                            <path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 59 19.5 111t54.5 93Zm146.5-204.5Q340-521 340-580t40.5-99.5Q421-720 480-720t99.5 40.5Q620-639 620-580t-40.5 99.5Q539-440 480-440t-99.5-40.5ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm100-95.5q47-15.5 86-44.5-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160q53 0 100-15.5ZM523-537q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm-43-43Zm0 360Z" />
-                        </svg>
-                    </span>
+                    {resolvedProfileImage != null ? (
+                        <img
+                            src={resolvedProfileImage}
+                            alt={language === "fr" ? "Image de profil" : "Profile image"}
+                            className="w-[128px] h-[128px] md:w-[256px] md:h-[256px] rounded-full object-cover border border-black/15 dark:border-white/15"
+                        />
+                    ) : (
+                        <span className="absolute md:top-0 md:left-0 top-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 md:translate-x-0 md:translate-y-0">
+                            <svg
+                                className="md:h-[256px] md:w-[256px] h-[128px] w-[128px]"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 -960 960 960"
+                                fill="currentColor"
+                            >
+                                <path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 59 19.5 111t54.5 93Zm146.5-204.5Q340-521 340-580t40.5-99.5Q421-720 480-720t99.5 40.5Q620-639 620-580t-40.5 99.5Q539-440 480-440t-99.5-40.5ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm100-95.5q47-15.5 86-44.5-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160q53 0 100-15.5ZM523-537q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm-43-43Zm0 360Z" />
+                            </svg>
+                        </span>
+                    )}
                     {isProfilePicHovered && (
                         <span className="absolute top-0 left-0 z-9 bg-black/50 flex items-center justify-center w-full h-full rounded-full">
                             <svg
@@ -197,6 +251,25 @@ export default function Profile() {
                             ></textarea>
                         }
                     ></ElementWithLabel>
+                    <InputWithLabel
+                        label={language === "fr" ? "Image de profil" : "Profile image"}
+                        placeholder={
+                            language === "fr"
+                                ? "![Avatar](https://exemple.com/avatar.png)"
+                                : "![Avatar](https://example.com/avatar.png)"
+                        }
+                        className="w-full"
+                        value={profileImageInput}
+                        onPaste={onProfileImagePaste}
+                        onChange={(event) => {
+                            setProfileImageInput(event.currentTarget.value);
+                        }}
+                    ></InputWithLabel>
+                    <p className="text-sm text-black/65 dark:text-white/65">
+                        {language === "fr"
+                            ? "Astuce : collez une image avec Ctrl+V, ou collez un lien direct, ou du markdown comme ![Avatar](https://exemple.com/avatar.png)."
+                            : "Tip: paste an image with Ctrl+V, or paste a direct URL, or markdown like ![Avatar](https://example.com/avatar.png)."}
+                    </p>
                 </div>
             </div>
 

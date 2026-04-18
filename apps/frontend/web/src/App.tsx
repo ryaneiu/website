@@ -53,7 +53,11 @@ function App() {
             if (loggedIn) {
                 await fetchCurrentProfile();
             } else {
-                useAuthenticationStore.setState({ username: "", bio: "" });
+                useAuthenticationStore.setState({
+                    username: "",
+                    bio: "",
+                    profileImage: "",
+                });
                 clearStoredTokens();
 
                 if (!window.location.pathname.startsWith("/auth")) {

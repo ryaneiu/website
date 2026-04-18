@@ -26,6 +26,7 @@ import {
     stripLanguagePrefix,
     type AppLanguage,
 } from "../i18n";
+import { extractFirstImageUrl, normalizeAttachedImageUrl } from "../contentFilter";
 
 function SignedOutButtons({ language }: { language: AppLanguage }) {
     const navigate = useNavigate();
@@ -65,10 +66,18 @@ function getCurrentSubforumSlug(pathname: string): string | null {
     return decodeURIComponent(match[1]);
 }
 
-function toTitleCaseUsername(value: string): string {
-    return value
-        .toLowerCase()
-        .replace(/\b\w/g, (char) => char.toUpperCase());
+function resolveProfileImageInput(value: string): string | null {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+        return null;
+    }
+
+    const markdownImage = extractFirstImageUrl(trimmed);
+    if (markdownImage != null) {
+        return markdownImage;
+    }
+
+    return normalizeAttachedImageUrl(trimmed);
 }
 
 function SignedInProfile({ language }: { language: AppLanguage }) {
@@ -78,7 +87,8 @@ function SignedInProfile({ language }: { language: AppLanguage }) {
 
     const navigate = useNavigate();
     const username = useAuthenticationStore((state) => state.username);
-    const usernameTitleCase = toTitleCaseUsername(username || "user");
+    const profileImage = useAuthenticationStore((state) => state.profileImage);
+    const resolvedProfileImage = resolveProfileImageInput(profileImage);
 
     const { refs, x, y, strategy } = useFloating({
         middleware: [offset(6), flip(), shift({ padding: 8 })],
@@ -111,15 +121,23 @@ function SignedInProfile({ language }: { language: AppLanguage }) {
         <div className="flex items-center gap-2">
             <TransparentIconButton
                 icon={
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        height="36px"
-                        viewBox="0 -960 960 960"
-                        width="36px"
-                        fill="currentColor"
-                    >
-                        <path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 59 19.5 111t54.5 93Zm146.5-204.5Q340-521 340-580t40.5-99.5Q421-720 480-720t99.5 40.5Q620-639 620-580t-40.5 99.5Q539-440 480-440t-99.5-40.5ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm100-95.5q47-15.5 86-44.5-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160q53 0 100-15.5ZM523-537q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm-43-43Zm0 360Z" />
-                    </svg>
+                    resolvedProfileImage != null ? (
+                        <img
+                            src={resolvedProfileImage}
+                            alt={language === "fr" ? "Image de profil" : "Profile image"}
+                            className="w-9 h-9 rounded-full object-cover border border-black/15 dark:border-white/15"
+                        />
+                    ) : (
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            height="36px"
+                            viewBox="0 -960 960 960"
+                            width="36px"
+                            fill="currentColor"
+                        >
+                            <path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 59 19.5 111t54.5 93Zm146.5-204.5Q340-521 340-580t40.5-99.5Q421-720 480-720t99.5 40.5Q620-639 620-580t-40.5 99.5Q539-440 480-440t-99.5-40.5ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm100-95.5q47-15.5 86-44.5-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160q53 0 100-15.5ZM523-537q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm-43-43Zm0 360Z" />
+                        </svg>
+                    )
                 }
                 ref={referenceRef}
                 onClick={() => {
@@ -127,7 +145,7 @@ function SignedInProfile({ language }: { language: AppLanguage }) {
                 }}
             ></TransparentIconButton>
             <Button
-                text={`${language === "fr" ? "Bonjour" : "Hello"}, ${usernameTitleCase}`}
+                text={`${language === "fr" ? "Bonjour" : "Hello"}, ${username || "user"}`}
                 onClick={onEditProfileClicked}
             ></Button>
             <Dropdown

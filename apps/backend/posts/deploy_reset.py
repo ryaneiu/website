@@ -9,6 +9,7 @@ from django.db import OperationalError, ProgrammingError, transaction
 from posts.models import DeploymentResetMarker, Like, Post, Reply, Subforum
 from pyreddit.models import Comment as LegacyComment
 from pyreddit.models import Post as LegacyPost
+from pyreddit.models import UserProfile
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
 logger = logging.getLogger(__name__)
@@ -65,6 +66,7 @@ def maybe_reset_api_on_deploy() -> None:
             Subforum.objects.all().delete()
             LegacyComment.objects.all().delete()
             LegacyPost.objects.all().delete()
+            UserProfile.objects.all().delete()
             User.objects.filter(is_superuser=False).delete()
 
             marker.value = deploy_id

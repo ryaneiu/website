@@ -7,8 +7,9 @@ interface AuthenticationStore {
     isLoggedIn: boolean;
     username: string;
     bio: string;
+    profileImage: string;
     setLoggedIn: (v: boolean) => void;
-    setProfile: (username: string, bio: string) => void;
+    setProfile: (username: string, bio: string, profileImage: string) => void;
 }
 
 export const useAuthenticationStore = create<AuthenticationStore>((set) => {
@@ -16,9 +17,10 @@ export const useAuthenticationStore = create<AuthenticationStore>((set) => {
         isLoggedIn: false,
         username: "",
         bio: "",
+        profileImage: "",
         setLoggedIn: (v: boolean) => set({ isLoggedIn: v }),
-        setProfile: (username: string, bio: string) =>
-            set({ username, bio }),
+        setProfile: (username: string, bio: string, profileImage: string) =>
+            set({ username, bio, profileImage }),
     };
 });
 
@@ -46,6 +48,10 @@ export async function fetchCurrentProfile() {
             username:
                 typeof profile?.username === "string" ? profile.username : "",
             bio: typeof profile?.bio === "string" ? profile.bio : "",
+            profileImage:
+                typeof profile?.profile_image === "string"
+                    ? profile.profile_image
+                    : "",
         });
         return true;
     } catch {
