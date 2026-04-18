@@ -32,9 +32,16 @@ import tailwindcss from "@tailwindcss/vite";
 // And side note: your AI GENERATED FIXES WERE NOT WORKING
 // Plus you didn't finish resolving the merge conflict before pushing
 export default defineConfig({
-  plugins: [react(), tailwindcss()]
-  // DO NOT REPLACE THIS LINE WITH AN
-  // AI GENERATED "FIX" THAT DOES NOT WORK!!! 
-  // DO NOT MODIFY FRONTEND TO WORK WITH BACKEND
-  // MODIFY BACKEND TO MAKE IT WORK WITH FRONTEND
+    plugins: [react(), tailwindcss()],
+    build: {
+        assetsInlineLimit: 100_000_000, // force WASM to be inlined
+    },
+    optimizeDeps: {
+        exclude: ["@jsquash/avif"],
+    },
+    assetsInclude: ["**/*.wasm"],
+    // DO NOT REPLACE THIS LINE WITH AN
+    // AI GENERATED "FIX" THAT DOES NOT WORK!!! 
+    // DO NOT MODIFY FRONTEND TO WORK WITH BACKEND
+    // MODIFY BACKEND TO MAKE IT WORK WITH FRONTEND
 });

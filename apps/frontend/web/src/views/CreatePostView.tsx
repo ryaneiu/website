@@ -20,6 +20,9 @@ import {
     extractImageReferenceFromClipboardData,
     normalizeAttachedImageUrl,
 } from "../contentFilter";
+import { useImageProgressStore } from "../stores/ImageEncodingProgress";
+import { Progress } from "../stores/ImageEncodingProgressState";
+import { canLoadImage, dataToAvif } from "../ImageProcessing";
 
 export default function CreatePostView() {
     const navigate = useNavigate();
@@ -43,6 +46,9 @@ export default function CreatePostView() {
     const [selectedSubforum, setSelectedSubforum] = useState("general");
     const imagePreviewUrl = normalizeAttachedImageUrl(imageUrl);
 
+    const [plublishingText, setPublishingText] =
+        useState<string>("Publishing...");
+
     const onImagePaste = async (event: ClipboardEvent<HTMLInputElement>) => {
         const pastedImageUrl = await extractImageReferenceFromClipboardData(
             event.clipboardData,
@@ -55,7 +61,9 @@ export default function CreatePostView() {
         setImageUrl(pastedImageUrl);
     };
 
-    const onContentPaste = async (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    const onContentPaste = async (
+        event: ClipboardEvent<HTMLTextAreaElement>,
+    ) => {
         const pastedImageUrl = await extractImageReferenceFromClipboardData(
             event.clipboardData,
         );
@@ -94,81 +102,148 @@ export default function CreatePostView() {
         navigate(postLanguage === "fr" ? "/fr" : "/");
     };
 
+    /* image encoding progress */
+    const imageEncodingProgress = useImageProgressStore(
+        (state) => state.progress,
+    );
+
+    useEffect(() => {
+        switch (imageEncodingProgress) {
+            case Progress.NONE:
+                setPublishingText("Publishing...");
+                break;
+            case Progress.DOWNLOADING_ENCODER:
+                setPublishingText("Downloading Encoder...");
+                break;
+            case Progress.PREPROCESSING:
+                setPublishingText("Preprocessing...");
+                break;
+            case Progress.ENCODING:
+                setPublishingText("Encoding...");
+                break;
+            default:
+                setPublishingText("Publishing...");
+        }
+    }, [imageEncodingProgress]);
+
     const onPublishPost = async () => {
-        const trimmedTitle = title.trim();
-        const trimmedContent = content.trim();
-        const normalizedImageUrl = imagePreviewUrl;
-        const availableSubforumSlugs = new Set(subforums.map((v) => v.slug));
-        const chosenSubforum = availableSubforumSlugs.has(selectedSubforum)
-            ? selectedSubforum
-            : null;
-
-        if (!trimmedTitle) {
-            notifyErrorDefault("Please enter a title");
-            return;
-        }
-
-        if (imageUrl.trim().length > 0 && normalizedImageUrl == null) {
-            notifyErrorDefault(
-                "Please paste an image or enter a valid image URL",
-            );
-            return;
-        }
-
-        const composedContent = appendAttachedImageToContent(
-            trimmedContent,
-            normalizedImageUrl,
-        );
-
-        if (!composedContent) {
-            notifyErrorDefault("Please enter content or attach an image");
-            return;
-        }
-
-        setLoading(true);
         try {
-            const token = await getStoredAccessToken();
-            if (!token) {
-                throw new Error("No access token");
+            const trimmedTitle = title.trim();
+            const trimmedContent = content.trim();
+            const normalizedImageUrl = imagePreviewUrl;
+            const availableSubforumSlugs = new Set(
+                subforums.map((v) => v.slug),
+            );
+            const chosenSubforum = availableSubforumSlugs.has(selectedSubforum)
+                ? selectedSubforum
+                : null;
+
+            if (!trimmedTitle) {
+                notifyErrorDefault("Please enter a title");
+                return;
             }
 
-            const payload = {
-                title: trimmedTitle,
-                content: composedContent,
-                content_markdown: composedContent,
-                language: postLanguage,
-                ...(chosenSubforum ? { subforum: chosenSubforum } : {}),
-            };
-
-            const res = await fetch(`${API_ENDPOINT}/api/posts/create/`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (!res.ok) {
-                // Try to extract detail field
-                const detail = await extractDetailFromErrorResponse(res);
-                if (detail) throw new Error(detail);
-                else
-                    throw new Error("Failed to create post: " + res.statusText);
+            if (imageUrl.trim().length > 0 && normalizedImageUrl == null) {
+                notifyErrorDefault(
+                    "Please paste an image or enter a valid image URL",
+                );
+                return;
             }
 
-            await res.json();
+            if (!normalizedImageUrl) {
+                notifyErrorDefault("Please attach a valid image");
+                setLoading(false);
+                return;
+            }
 
-            notifySuccessDefault("Post created!");
-            setTitle("");
-            setContent("");
-            setImageUrl("");
-            navigate(postLanguage === "fr" ? "/fr" : "/");
+            setLoading(true);
+            setPublishingText("Verifying source...");
+            const loadable = await canLoadImage(normalizedImageUrl);
+
+            if (!loadable) {
+                notifyErrorDefault(
+                    "Image source cannot be loaded, possibly due to cross-origin restrictions or the target image could not be found. Try copying the actual image instead of the image URL.",
+                );
+                setLoading(false);
+                return;
+            }
+
+            setPublishingText("Publishing...");
+
+            const encodedImage = await dataToAvif(normalizedImageUrl, true);
+
+            console.log(
+                "Size reduction from reencoding and compression: original: ",
+                normalizedImageUrl.length,
+                " new: ",
+                encodedImage.length,
+                " ratio: ",
+                encodedImage.length / normalizedImageUrl.length,
+            );
+
+            const composedContent = appendAttachedImageToContent(
+                trimmedContent,
+                encodedImage,
+            );
+
+            if (!composedContent) {
+                setLoading(false);
+                notifyErrorDefault("Please enter content or attach an image");
+                return;
+            }
+
+            try {
+                const token = await getStoredAccessToken();
+                if (!token) {
+                    throw new Error("No access token");
+                }
+
+                const payload = {
+                    title: trimmedTitle,
+                    content: composedContent,
+                    content_markdown: composedContent,
+                    language: postLanguage,
+                    ...(chosenSubforum ? { subforum: chosenSubforum } : {}),
+                };
+
+                const res = await fetch(`${API_ENDPOINT}/api/posts/create/`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!res.ok) {
+                    // Try to extract detail field
+                    const detail = await extractDetailFromErrorResponse(res);
+                    if (detail) throw new Error(detail);
+                    else
+                        throw new Error(
+                            "Failed to create post: " + res.statusText,
+                        );
+                }
+
+                await res.json();
+
+                notifySuccessDefault("Post created!");
+                setTitle("");
+                setContent("");
+                setImageUrl("");
+                navigate(postLanguage === "fr" ? "/fr" : "/");
+            } catch (err) {
+                const message =
+                    err instanceof Error ? err.message : String(err);
+                notifyErrorDefault(message);
+            } finally {
+                setLoading(false);
+            }
         } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            notifyErrorDefault(message);
-        } finally {
+            console.error("Error during publishing: ", err);
+            notifyErrorDefault("An error occurred during publishing")
             setLoading(false);
+            return;
         }
     };
 
@@ -267,7 +342,8 @@ export default function CreatePostView() {
                     disabled={loading}
                 />
                 <p className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] text-sm text-black/60 dark:text-white/60 transition-colors duration-300">
-                    Copy an image and press Ctrl+V in the image field or post content to attach it.
+                    Copy an image and press Ctrl+V in the image field or post
+                    content to attach it.
                 </p>
 
                 {imagePreviewUrl != null && (
@@ -295,11 +371,9 @@ export default function CreatePostView() {
                         onClick={onCreateSubforum}
                         disabled={loading}
                         text={"Create Subforum"}
-                    >
-                        
-                    </Button>
+                    ></Button>
                     <LoadableButton
-                        text={loading ? "Publishing..." : "Publish"}
+                        text={loading ? plublishingText : "Publish"}
                         isPrimary={true}
                         icon={
                             <svg
