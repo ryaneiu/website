@@ -56,6 +56,7 @@ export function CreateSubforumForm(props: Props) {
                         title: trimmedTitle,
                         description: description.trim(),
                     }),
+                    credentials: "omit"
                 },
             );
 

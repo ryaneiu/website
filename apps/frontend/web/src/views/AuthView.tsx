@@ -27,6 +27,7 @@ async function signUp(username: string, password: string, email: string) {
             headers: {
                 "Content-Type": "application/json",
             },
+            credentials: "include"
         });
 
         if (response.status != 201 && response.status != 200) {
@@ -73,6 +74,7 @@ async function login(username: string, password: string): Promise<boolean> {
             headers: {
                 "Content-Type": "application/json",
             },
+            credentials: "include"
         });
 
         if (response.status != 200) {

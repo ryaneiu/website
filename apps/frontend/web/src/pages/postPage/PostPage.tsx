@@ -123,6 +123,7 @@ export default function PostPage() {
             `${API_ENDPOINT}/api/posts/${postId}/replies/`,
             {
                 method: "GET",
+                credentials: "omit"
             },
         );
 
@@ -142,6 +143,7 @@ export default function PostPage() {
                 const [postResponse] = await Promise.all([
                     fetch(`${API_ENDPOINT}/api/posts/${postId}/?${filterQuery}`, {
                         method: "GET",
+                        credentials: "omit"
                     }),
                     fetchReplies(),
                 ]);
@@ -187,7 +189,7 @@ export default function PostPage() {
     }, []);
 
     useEffect(() => {
-        fetch(`${API_ENDPOINT}/api/posts/subforums/`, { method: "GET" })
+        fetch(`${API_ENDPOINT}/api/posts/subforums/`, { method: "GET", credentials: "omit"})
             .then(async (res) => {
                 if (!res.ok) {
                     throw new Error("Failed to load subforums");
@@ -279,6 +281,7 @@ export default function PostPage() {
                     content_markdown: textContent,
                     parent_reply: parentReplyId,
                 }),
+                credentials: "omit"
             },
         );
 
@@ -315,6 +318,7 @@ export default function PostPage() {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
+                credentials: "omit"
             },
         );
 
@@ -361,6 +365,7 @@ export default function PostPage() {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
+                    credentials: "omit"
                 },
             );
 
@@ -400,6 +405,7 @@ export default function PostPage() {
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({ subforum: subforumToAssign }),
+                    credentials: "omit"
                 },
             );
 

@@ -76,7 +76,7 @@ export default function CreatePostView() {
     };
 
     useEffect(() => {
-        fetch(`${API_ENDPOINT}/api/posts/subforums/`, { method: "GET" })
+        fetch(`${API_ENDPOINT}/api/posts/subforums/`, { method: "GET", credentials: "omit"})
             .then(async (res) => {
                 if (!res.ok) {
                     throw new Error("Failed to load subforums");
@@ -213,6 +213,7 @@ export default function CreatePostView() {
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify(payload),
+                    credentials: "omit"
                 });
 
                 if (!res.ok) {
@@ -266,6 +267,7 @@ export default function CreatePostView() {
                 Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({ title, description }),
+            credentials: "omit"
         });
 
         if (!res.ok) {

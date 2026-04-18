@@ -47,6 +47,7 @@ export default function SubforumList() {
                 `${API_ENDPOINT}/api/posts/subforums/`,
                 {
                     method: "GET",
+                    credentials: "omit",
                     headers:
                         tokenValue != null
                             ? { Authorization: `Bearer ${tokenValue}` }
@@ -96,6 +97,7 @@ export default function SubforumList() {
                     headers: {
                         Authorization: `Bearer ${tokenValue}`,
                     },
+                    credentials: "omit"
                 },
             );
 

@@ -51,6 +51,7 @@ export function UpdateSubforumForm({ subforum, onUpdated }: Props) {
                         title: trimmedTitle,
                         description: description.trim(),
                     }),
+                    credentials: "omit"
                 },
             );
 

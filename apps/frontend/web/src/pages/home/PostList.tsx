@@ -68,6 +68,7 @@ export function PostList({ language = "en" }: PostListProps) {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
+                    credentials: "omit"
                 },
             );
 
@@ -106,7 +107,7 @@ export function PostList({ language = "en" }: PostListProps) {
 
                 const response = await fetch(endpoint, {
                     method: "GET",
-                    credentials: "include",
+                    credentials: "omit",
                     headers:
                         token != null
                             ? {

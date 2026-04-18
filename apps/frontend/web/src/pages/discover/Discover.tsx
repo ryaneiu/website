@@ -65,14 +65,14 @@ export default function Discover() {
             try {
                 const usersResponsePromise = fetch(
                     `${API_ENDPOINT}/api/users/search/?q=${encodeURIComponent(searchQuery)}`,
-                    { method: "GET" },
+                    { method: "GET", credentials: "omit"},
                 );
 
                 const postsResponsePromise: Promise<Response | null> =
                     scope === "everywhere"
                         ? fetch(
                               `${API_ENDPOINT}/api/posts/?${buildContentFilterQuery(filterPreferences, searchQuery, activeLanguage)}`,
-                              { method: "GET" },
+                              { method: "GET", credentials: "omit"},
                           )
                         : Promise.resolve(null);
 

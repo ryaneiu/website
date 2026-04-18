@@ -109,6 +109,7 @@ export function AddPostForm({ subforumSlug, onPostAdded, onHide }: Props) {
                     content: composedContent,
                     content_markdown: composedContent,
                 }),
+                credentials: "omit"
             },
         );
 

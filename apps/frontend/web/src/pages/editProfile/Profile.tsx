@@ -93,6 +93,7 @@ export default function Profile() {
                         headers: {
                             Authorization: `Bearer ${token}`,
                         },
+                        credentials: "omit"
                     },
                 );
 
@@ -167,6 +168,7 @@ export default function Profile() {
                     bio,
                     profile_image: profileImageInput,
                 }),
+                credentials: "omit"
             });
 
             const payload = await response.json().catch(() => ({}));

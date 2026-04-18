@@ -30,7 +30,7 @@ export async function fetchCurrentProfile() {
 
         const response = await fetch(`${API_ENDPOINT}/api/profile/me/`, {
             method: "GET",
-            credentials: "include",
+            credentials: "omit",
             headers:
                 accessToken != null
                     ? {

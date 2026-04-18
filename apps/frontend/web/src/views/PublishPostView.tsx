@@ -36,7 +36,8 @@ export default function PublishPostView() {
                     method: "GET",
                     headers: {
                         "Authorization": `Bearer ${token}`
-                    }
+                    },
+                    credentials: "omit"
                 });
 
                 if (!res.ok) {
@@ -83,7 +84,8 @@ export default function PublishPostView() {
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
-                }
+                },
+                credentials: "omit"
             });
 
             if (!res.ok) {
