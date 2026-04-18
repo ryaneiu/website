@@ -15,7 +15,7 @@ authors:
 abstract: "A Reddit-inspired full-stack web application designed for school use, built with a Django REST backend and a React + Tailwind + Vite frontend."
 
 repository-code: "https://github.com/ryaneiu/website"
-url: "lt-forum.com"
+url: "https://www.lt-forum.ca"
 
 keywords:
   - reddit-clone
