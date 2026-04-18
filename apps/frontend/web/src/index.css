@@ -26,10 +26,6 @@ Modifying this template may break your styles or cause unexpected behavior.
     border-radius: 9999px;
 }
 
-button {
-    border-radius: 9999px !important;
-}
-
 @keyframes fadeIn {
     0% {
         transform: translateY(15px);

@@ -1,3 +1,5 @@
+import { extractFirstImageUrl, normalizeAttachedImageUrl } from "./contentFilter";
+
 export async function extractDetailFromErrorResponse(res: Response) {
     const extractFirstReadableMessage = (value: unknown): string | null => {
         if (typeof value === "string") {
@@ -68,4 +70,18 @@ export function timeAgo(isoDate: string): string {
 
     const years = Math.floor(days / 365);
     return `${years} year${years > 1 ? "s" : ""} ago`;
+}
+
+export function resolveProfileImageInput(value: string): string | null {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+        return null;
+    }
+
+    const markdownImage = extractFirstImageUrl(trimmed);
+    if (markdownImage != null) {
+        return markdownImage;
+    }
+
+    return normalizeAttachedImageUrl(trimmed);
 }

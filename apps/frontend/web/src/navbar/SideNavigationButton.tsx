@@ -8,6 +8,7 @@ interface Props {
     navigateTo: string;
     selected: boolean;
     filledIcon: ReactNode;
+    onClick?: () => void;
 }
 
 export function SideNavigationButton(props: Props) {
@@ -21,6 +22,10 @@ export function SideNavigationButton(props: Props) {
     )
 
     return <button className={buttonClasses} onClick={() => {
+        if (props.onClick) {
+            props.onClick();
+        }
+        
         navigate(props.navigateTo);
     }}>
         <span>

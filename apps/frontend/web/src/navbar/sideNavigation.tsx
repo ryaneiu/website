@@ -1,11 +1,20 @@
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { SideNavigationButton } from "./SideNavigationButton";
 import { DisplayedTab } from "../stores/DisplayedTabStore";
 import { useSideNavigationVisibility } from "../stores/SideNavigationVisibilityStore";
 import { useScreenSizeState } from "../stores/ScreenSizeState";
 import { AnimatePresence } from "framer-motion";
 import { FadeInFromLeft } from "../components/AnimatedPresenceDiv";
-import { getAppLanguageFromPath, localizePath, stripLanguagePrefix } from "../i18n";
+import {
+    getAppLanguageFromPath,
+    localizePath,
+    stripLanguagePrefix,
+} from "../i18n";
+import { LanguageSelection } from "./LanguageSelection";
+import { useAuthenticationStore } from "../stores/AuthenticationStore";
+import { resolveProfileImageInput } from "../Utils";
+import { useNavigate } from "react-router-dom";
+import { DarkModeToggleButton } from "./DarkModeToggleButton";
 
 type TabInfo = {
     id: number;
@@ -131,36 +140,184 @@ export function SideNavigation() {
     const language = getAppLanguageFromPath(window.location.pathname);
     const pathWithoutLanguage = stripLanguagePrefix(window.location.pathname);
 
+    const username = useAuthenticationStore((state) => state.username);
+    const profileImage = useAuthenticationStore((state) => state.profileImage);
+    const resolvedProfileImage = resolveProfileImageInput(profileImage);
+
     const visible = useSideNavigationVisibility((state) => state.visible);
+
+    const tabsRef = useRef<HTMLDivElement | null>(null);
+    const totalRef = useRef<HTMLDivElement | null>(null);
+    const languageSelectionRef = useRef<HTMLDivElement | null>(null);
+    const spacerRef = useRef<HTMLDivElement | null>(null);
+
+    const navigate = useNavigate();
+
+    /*
+    THERE HAS TO BE A CLEANER WAY TO DO THIS
+    literally using AABBs to calculate overflow and position a spacer div
+    */
+    useLayoutEffect(() => {
+        if (
+            !tabsRef.current ||
+            !totalRef.current ||
+            !spacerRef.current ||
+            !languageSelectionRef.current
+        )
+            return;
+
+        const styles = window.getComputedStyle(totalRef.current);
+
+        const paddingTop = parseFloat(styles.paddingTop);
+        const paddingBottom = parseFloat(styles.paddingBottom);
+
+        const borderTop = parseFloat(styles.borderTopWidth);
+        const borderBottom = parseFloat(styles.borderBottomWidth);
+
+        const fullHeight = totalRef.current.offsetHeight;
+
+        const rect = totalRef.current.getBoundingClientRect();
+
+        const elTop = rect.top;
+        const elBottom = rect.bottom;
+
+        const overflowTop = Math.max(0, 0 - elTop);
+        const overflowBottom = Math.max(0, elBottom - window.innerHeight);
+
+        const totalOverflow = overflowTop + overflowBottom;
+
+        const totalHeight =
+            fullHeight -
+            paddingTop -
+            paddingBottom -
+            borderTop -
+            borderBottom -
+            totalOverflow;
+        const tabsHeight = tabsRef.current.clientHeight;
+        const languageSelectionHeight =
+            languageSelectionRef.current.clientHeight;
+
+        console.log(
+            "Total height: ",
+            totalHeight,
+            " Tabs height: ",
+            tabsHeight,
+            " Language selection height: ",
+            languageSelectionHeight,
+        );
+
+        const remaining = Math.max(
+            totalHeight - tabsHeight - languageSelectionHeight,
+            0,
+        );
+
+        console.log("Remaining space: ", remaining);
+
+        spacerRef.current.style.height = `${remaining}px`;
+    }, [screenSize, visible]);
 
     return (
         <AnimatePresence>
             {visible || screenSize > 640 ? (
-                <FadeInFromLeft className="flex flex-col border-r border-r-black/15 dark:border-r-white/15 h-full gap-1 px-2 z-97 py-2 lg:min-w-60 sm:min-w-fit min-w-75 fixed sm:relative sm:w-fit w-75 bg-white dark:bg-zinc-800 transition-colors duration-300">
-                    {TABS.map((tab) => {
-                        return (
-                            <SideNavigationButton
-                                key={tab.id}
-                                icon={tab.icon}
-                                text={
-                                    language === "fr"
-                                        ? ({
-                                              Home: "Accueil",
-                                              Subforums: "Sous-forums",
-                                              Discover: "Découvrir",
-                                              Trending: "Tendances",
-                                          }[tab.text] ?? tab.text)
-                                        : tab.text
-                                }
-                                selected={
-                                    (pathWithoutLanguage.startsWith(tab.navgiateTo) && tab.navgiateTo != "/") ||
-                                    pathWithoutLanguage == tab.navgiateTo
-                                }
-                                navigateTo={localizePath(tab.navgiateTo, language)}
-                                filledIcon={tab.filledIcon}
-                            ></SideNavigationButton>
-                        );
-                    })}
+                <FadeInFromLeft
+                    className="flex flex-col h-full max-h-full border-r border-r-black/15 dark:border-r-white/15 h-full px-2 z-97 py-2 lg:min-w-60 sm:min-w-fit min-w-75 fixed sm:relative sm:w-fit w-75 bg-white dark:bg-zinc-800 transition-colors duration-300"
+                    ref={totalRef}
+                >
+                    <div
+                        className="flex flex-col gap-1 overflow-y-auto h-fit"
+                        ref={tabsRef}
+                    >
+                        {TABS.map((tab) => {
+                            return (
+                                <SideNavigationButton
+                                    key={tab.id}
+                                    icon={tab.icon}
+                                    text={
+                                        language === "fr"
+                                            ? ({
+                                                  Home: "Accueil",
+                                                  Subforums: "Sous-forums",
+                                                  Discover: "Découvrir",
+                                                  Trending: "Tendances",
+                                              }[tab.text] ?? tab.text)
+                                            : tab.text
+                                    }
+                                    selected={
+                                        (pathWithoutLanguage.startsWith(
+                                            tab.navgiateTo,
+                                        ) &&
+                                            tab.navgiateTo != "/") ||
+                                        pathWithoutLanguage == tab.navgiateTo
+                                    }
+                                    navigateTo={localizePath(
+                                        tab.navgiateTo,
+                                        language,
+                                    )}
+                                    filledIcon={tab.filledIcon}
+                                    onClick={() => {
+                                        useSideNavigationVisibility.setState({
+                                            visible: false,
+                                        });
+                                    }}
+                                ></SideNavigationButton>
+                            );
+                        })}
+                    </div>
+                    <div ref={spacerRef}></div>
+                    <div
+                        className="flex sm:hidden flex-col gap-1"
+                        ref={languageSelectionRef}
+                    >
+                        <div className="flex flex-col gap-2">
+                            <LanguageSelection></LanguageSelection>
+                            <div className="cursor-pointer flex items-center gap-2 border-t border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 px-2 transition-colors">
+                                <div
+                                    className="flex-grow-1 py-2 flex gap-3 items-center"
+                                    onClick={() => {
+                                        navigate(
+                                            localizePath("/profile", language),
+                                        );
+                                        useSideNavigationVisibility.setState({
+                                            visible: false,
+                                        });
+                                    }}
+                                >
+                                    <div>
+                                        {resolvedProfileImage != null ? (
+                                            <img
+                                                src={resolvedProfileImage}
+                                                alt={
+                                                    language === "fr"
+                                                        ? "Image de profil"
+                                                        : "Profile image"
+                                                }
+                                                className="w-9 h-9 rounded-full object-cover border border-black/15 dark:border-white/15"
+                                            />
+                                        ) : (
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                height="36px"
+                                                viewBox="0 -960 960 960"
+                                                width="36px"
+                                                fill="currentColor"
+                                            >
+                                                <path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 59 19.5 111t54.5 93Zm146.5-204.5Q340-521 340-580t40.5-99.5Q421-720 480-720t99.5 40.5Q620-639 620-580t-40.5 99.5Q539-440 480-440t-99.5-40.5ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm100-95.5q47-15.5 86-44.5-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160q53 0 100-15.5ZM523-537q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm-43-43Zm0 360Z" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold">
+                                            {username}
+                                        </span>
+                                        <span className="text-xs text-black/50 dark:text-white/50">
+                                            Logged in
+                                        </span>
+                                    </div>
+                                </div>
+                                <DarkModeToggleButton></DarkModeToggleButton>
+                            </div>
+                        </div>
+                    </div>
                 </FadeInFromLeft>
             ) : null}
         </AnimatePresence>

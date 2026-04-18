@@ -3,7 +3,7 @@ import { Button } from "../components/Button";
 import { TransparentIconButton } from "../components/TransparentIconButton";
 import { useScreenSizeState } from "../stores/ScreenSizeState";
 import { useSideNavigationVisibility } from "../stores/SideNavigationVisibilityStore";
-import { Dropdown } from "../components/Dropdown";
+import { AccountDropdown } from "../components/Dropdown";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
     autoUpdate,
@@ -14,7 +14,6 @@ import {
 } from "@floating-ui/react-dom";
 import { useAuthenticationStore } from "../stores/AuthenticationStore";
 import { storeAccessToken, storeRefreshToken } from "../auth/Authentication";
-import { useDarkModeStore } from "../stores/DarkModeStore";
 import { createPortal } from "react-dom";
 import { SearchDropdown } from "./SearchDropdown";
 import clsx from "clsx";
@@ -26,7 +25,9 @@ import {
     stripLanguagePrefix,
     type AppLanguage,
 } from "../i18n";
-import { extractFirstImageUrl, normalizeAttachedImageUrl } from "../contentFilter";
+import { LanguageSelection } from "./LanguageSelection";
+import { resolveProfileImageInput } from "../Utils";
+import { DarkModeToggleButton } from "./DarkModeToggleButton";
 
 function SignedOutButtons({ language }: { language: AppLanguage }) {
     const navigate = useNavigate();
@@ -66,19 +67,7 @@ function getCurrentSubforumSlug(pathname: string): string | null {
     return decodeURIComponent(match[1]);
 }
 
-function resolveProfileImageInput(value: string): string | null {
-    const trimmed = value.trim();
-    if (trimmed.length === 0) {
-        return null;
-    }
 
-    const markdownImage = extractFirstImageUrl(trimmed);
-    if (markdownImage != null) {
-        return markdownImage;
-    }
-
-    return normalizeAttachedImageUrl(trimmed);
-}
 
 function SignedInProfile({ language }: { language: AppLanguage }) {
     const [dropdownVisible, setDropdownVisible] = useState<boolean>(false);
@@ -86,7 +75,7 @@ function SignedInProfile({ language }: { language: AppLanguage }) {
     const referenceRef = useRef<HTMLButtonElement>(null);
 
     const navigate = useNavigate();
-    const username = useAuthenticationStore((state) => state.username);
+    const username = useAuthenticationStore(state => state.username);
     const profileImage = useAuthenticationStore((state) => state.profileImage);
     const resolvedProfileImage = resolveProfileImageInput(profileImage);
 
@@ -118,7 +107,7 @@ function SignedInProfile({ language }: { language: AppLanguage }) {
     };
 
     return (
-        <div className="flex items-center gap-2">
+        <div className="items-center gap-2 hidden sm:flex">
             <TransparentIconButton
                 icon={
                     resolvedProfileImage != null ? (
@@ -144,11 +133,7 @@ function SignedInProfile({ language }: { language: AppLanguage }) {
                     setDropdownVisible(!dropdownVisible);
                 }}
             ></TransparentIconButton>
-            <Button
-                text={`${language === "fr" ? "Bonjour" : "Hello"}, ${username || "user"}`}
-                onClick={onEditProfileClicked}
-            ></Button>
-            <Dropdown
+            <AccountDropdown
                 options={[
                     {
                         icon: (
@@ -186,14 +171,16 @@ function SignedInProfile({ language }: { language: AppLanguage }) {
                 y={y}
                 strategy={strategy}
                 visible={dropdownVisible}
-            ></Dropdown>
+                accountUsername={username}
+                resolvedProfileImage={resolvedProfileImage ?? ""}
+                language={language}
+            ></AccountDropdown>
         </div>
     );
 }
 
 export function Navbar() {
     const screenSize = useScreenSizeState((state) => state.width);
-    const isDarkMode = useDarkModeStore((state) => state.isDarkMode);
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -281,49 +268,7 @@ export function Navbar() {
         return () => resizeObserver.disconnect();
     }, [refs.reference]);
 
-    const modeToggleSwitchToggleIcon = isDarkMode ? (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            height="30px"
-            viewBox="0 -960 960 960"
-            width="30px"
-            fill="currentColor"
-        >
-            <path d="M565-395q35-35 35-85t-35-85q-35-35-85-35t-85 35q-35 35-35 85t35 85q35 35 85 35t85-35Zm-226.5 56.5Q280-397 280-480t58.5-141.5Q397-680 480-680t141.5 58.5Q680-563 680-480t-58.5 141.5Q563-280 480-280t-141.5-58.5ZM200-440H40v-80h160v80Zm720 0H760v-80h160v80ZM440-760v-160h80v160h-80Zm0 720v-160h80v160h-80ZM256-650l-101-97 57-59 96 100-52 56Zm492 496-97-101 53-55 101 97-57 59Zm-98-550 97-101 59 57-100 96-56-52ZM154-212l101-97 55 53-97 101-59-57Zm326-268Z" />
-        </svg>
-    ) : (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            height="30px"
-            viewBox="0 -960 960 960"
-            width="30px"
-            fill="currentColor"
-        >
-            <path d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q14 0 27.5 1t26.5 3q-41 29-65.5 75.5T444-660q0 90 63 153t153 63q55 0 101-24.5t75-65.5q2 13 3 26.5t1 27.5q0 150-105 255T480-120Zm0-80q88 0 158-48.5T740-375q-20 5-40 8t-40 3q-123 0-209.5-86.5T364-660q0-20 3-40t8-40q-78 32-126.5 102T200-480q0 116 82 198t198 82Zm-10-270Z" />
-        </svg>
-    );
 
-    const modeToggleSwitchToggleIconFilled = isDarkMode ? (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            height="30px"
-            viewBox="0 -960 960 960"
-            width="30px"
-            fill="currentColor"
-        >
-            <path d="M338.5-338.5Q280-397 280-480t58.5-141.5Q397-680 480-680t141.5 58.5Q680-563 680-480t-58.5 141.5Q563-280 480-280t-141.5-58.5ZM200-440H40v-80h160v80Zm720 0H760v-80h160v80ZM440-760v-160h80v160h-80Zm0 720v-160h80v160h-80ZM256-650l-101-97 57-59 96 100-52 56Zm492 496-97-101 53-55 101 97-57 59Zm-98-550 97-101 59 57-100 96-56-52ZM154-212l101-97 55 53-97 101-59-57Z" />
-        </svg>
-    ) : (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            height="30px"
-            viewBox="0 -960 960 960"
-            width="30px"
-            fill="currentColor"
-        >
-            <path d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q14 0 27.5 1t26.5 3q-41 29-65.5 75.5T444-660q0 90 63 153t153 63q55 0 101-24.5t75-65.5q2 13 3 26.5t1 27.5q0 150-105 255T480-120Z" />
-        </svg>
-    );
 
     return (
         <header className="px-4 gap-4 w-[100vw] h-16 bg-white dark:bg-zinc-800 border-b border-b-black/15 dark:border-b-white/15 flex justify-between items-center px-2 py-2 transition-colors duration-300">
@@ -425,37 +370,14 @@ export function Navbar() {
             </div>
 
             <div className="w-fit h-full flex items-center gap-1">
-                <select
-                    className="h-9 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-zinc-800 px-2 text-sm transition-colors duration-300"
-                    value={activeLanguage}
-                    onChange={(event) => {
-                        const basePath = stripLanguagePrefix(location.pathname);
-                        const nextPath = localizePath(
-                            basePath,
-                            event.target.value === "fr" ? "fr" : "en",
-                        );
-                        navigate({
-                            pathname: nextPath,
-                            search: location.search,
-                        });
-                    }}
-                    aria-label="Language"
-                >
-                    <option value="en">English</option>
-                    <option value="fr">Français</option>
-                </select>
-                <TransparentIconButton
-                    icon={modeToggleSwitchToggleIcon}
-                    filledIcon={modeToggleSwitchToggleIconFilled}
-                    onClick={() => {
-                        if (isDarkMode) {
-                            document.documentElement.classList.remove("dark");
-                        } else {
-                            document.documentElement.classList.add("dark");
-                        }
-                        useDarkModeStore.setState({ isDarkMode: !isDarkMode });
-                    }}
-                ></TransparentIconButton>
+                <div className="hidden sm:block">
+                    <LanguageSelection></LanguageSelection>
+                </div>
+                <div className="hidden sm:block">
+                    <DarkModeToggleButton></DarkModeToggleButton>
+                </div>
+                
+
                 {isLoggedIn ? (
                     <SignedInProfile language={activeLanguage}></SignedInProfile>
                 ) : (
