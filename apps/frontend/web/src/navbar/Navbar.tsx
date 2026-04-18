@@ -107,14 +107,14 @@ function SignedInProfile({ language }: { language: AppLanguage }) {
     };
 
     return (
-        <div className="items-center gap-2 hidden sm:flex">
+        <div className="flex items-center gap-2">
             <TransparentIconButton
                 icon={
                     resolvedProfileImage != null ? (
                         <img
                             src={resolvedProfileImage}
                             alt={language === "fr" ? "Image de profil" : "Profile image"}
-                            className="w-9 h-9 rounded-full object-cover border border-black/15 dark:border-white/15"
+                            className="w-9 h-9 min-w-9 min-h-9 rounded-full object-cover border border-black/15 dark:border-white/15"
                         />
                     ) : (
                         <svg
@@ -268,6 +268,7 @@ export function Navbar() {
         return () => resizeObserver.disconnect();
     }, [refs.reference]);
 
+    const searchInputRef = useRef<HTMLInputElement | null>(null);
 
 
     return (
@@ -303,7 +304,7 @@ export function Navbar() {
                     refs.setReference(node);
                 }}
             >
-                <div className="rounded-full border border-black/15 px-4 dark:border-white/15 flex items-center gap-3 transition-colors duration-300">
+                <div className="rounded-full border border-black/15 px-4 dark:border-white/15 flex items-center gap-3 transition-colors duration-300 cursor-text" onClick={() => searchInputRef.current?.focus()}>
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         height="24px"
@@ -332,6 +333,7 @@ export function Navbar() {
                             setBarContent(event.currentTarget.value);
                         }}
                         value={searchBarFocused ? searchBarContent : locationSearchValue}
+                        ref={searchInputRef}
                     ></input>
                     <span
                         className={clsx(
