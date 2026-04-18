@@ -12,7 +12,6 @@ const Profile = React.lazy(() => import("./pages/editProfile/Profile"));
 const PostPage = React.lazy(() => import("./pages/postPage/PostPage"));
 const SubforumList = React.lazy(() => import("./pages/subforums/SubforumList"));
 const SubforumDetail = React.lazy(() => import("./pages/subforums/SubforumDetail"));
-const FrenchPage = React.lazy(() => import("./pages/custom/FrenchPage"));
 
 export function MainArea() {
     const sideNavigationOpen = useSideNavigationVisibility(
@@ -103,7 +102,55 @@ export function MainArea() {
                     path="fr"
                     element={
                         <Suspense fallback={<LoadingPageFallback />}>
-                            <FrenchPage />
+                            <Home />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="fr/discover"
+                    element={
+                        <Suspense fallback={<LoadingPageFallback />}>
+                            <Discover />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="fr/trending"
+                    element={
+                        <Suspense fallback={<LoadingPageFallback />}>
+                            <Trending />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="fr/profile"
+                    element={
+                        <Suspense fallback={<LoadingPageFallback />}>
+                            <Profile />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="fr/post/:id"
+                    element={
+                        <Suspense fallback={<LoadingPageFallback />}>
+                            <PostPage></PostPage>
+                        </Suspense>
+                    }
+                ></Route>
+                <Route
+                    path="fr/subforums"
+                    element={
+                        <Suspense fallback={<LoadingPageFallback />}>
+                            <SubforumList></SubforumList>
+                        </Suspense>
+                    }
+                ></Route>
+                <Route
+                    path="fr/subforums/:slug"
+                    element={
+                        <Suspense fallback={<LoadingPageFallback />}>
+                            <SubforumDetail></SubforumDetail>
                         </Suspense>
                     }
                 />

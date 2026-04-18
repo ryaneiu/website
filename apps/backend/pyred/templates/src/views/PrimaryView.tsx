@@ -3,11 +3,13 @@ import { Button } from "../components/Button";
 import { MainArea } from "../MainArea";
 import { Navbar } from "../navbar/Navbar";
 import { SideNavigation } from "../navbar/sideNavigation";
+import { getAppLanguageFromPath } from "../i18n";
 
 export default function PrimaryView() {
 
     const navigate = useNavigate();
     const location = useLocation();
+    const language = getAppLanguageFromPath(location.pathname);
 
     
     return (
@@ -26,7 +28,7 @@ export default function PrimaryView() {
             <div className="fixed bottom-4 right-4">
                 <Button
                     isPrimary={true}
-                    text="Post"
+                    text={language === "fr" ? "Publier" : "Post"}
                     icon={
                         <svg
                             xmlns="http://www.w3.org/2000/svg"

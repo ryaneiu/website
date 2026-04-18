@@ -1,19 +1,57 @@
 import { create } from "zustand";
 import { API_ENDPOINT } from "../Config";
-import { getStoredRefreshToken } from "../auth/Authentication";
+import { getStoredAccessToken, getStoredRefreshToken } from "../auth/Authentication";
 import { notifyErrorDefault } from "./NotificationsStore";
 
 interface AuthenticationStore {
     isLoggedIn: boolean;
+    username: string;
+    bio: string;
     setLoggedIn: (v: boolean) => void;
+    setProfile: (username: string, bio: string) => void;
 }
 
 export const useAuthenticationStore = create<AuthenticationStore>((set) => {
     return {
         isLoggedIn: false,
+        username: "",
+        bio: "",
         setLoggedIn: (v: boolean) => set({ isLoggedIn: v }),
+        setProfile: (username: string, bio: string) =>
+            set({ username, bio }),
     };
 });
+
+export async function fetchCurrentProfile() {
+    try {
+        const accessToken = await getStoredAccessToken();
+
+        const response = await fetch(`${API_ENDPOINT}/api/profile/me/`, {
+            method: "GET",
+            credentials: "include",
+            headers:
+                accessToken != null
+                    ? {
+                          Authorization: `Bearer ${accessToken}`,
+                      }
+                    : {},
+        });
+
+        if (!response.ok) {
+            return false;
+        }
+
+        const profile = await response.json();
+        useAuthenticationStore.setState({
+            username:
+                typeof profile?.username === "string" ? profile.username : "",
+            bio: typeof profile?.bio === "string" ? profile.bio : "",
+        });
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 export async function verifyIsLoggedIn() {
     // Very crude way to check if a user is logged in

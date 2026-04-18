@@ -1,24 +1,136 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FadeUp } from "../../components/AnimatedPresenceDiv";
 import { ElementWithLabel } from "../../components/ElementWithLabel";
 import { InputWithLabel } from "../../components/GenericInputWithLabel";
 import { SectionSeparator } from "../../components/SectionSeparator";
 import { Label } from "../../components/Label";
 import { Button } from "../../components/Button";
+import { API_ENDPOINT } from "../../Config";
+import { getStoredAccessToken } from "../../auth/Authentication";
+import {
+    notifyErrorDefault,
+    notifySuccessDefault,
+} from "../../stores/NotificationsStore";
+import { useAuthenticationStore } from "../../stores/AuthenticationStore";
+import { getAppLanguageFromPath } from "../../i18n";
 
 export default function Profile() {
     const [isProfilePicHovered, sethovered] = useState(false);
+    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
+    const [bio, setBio] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const language = getAppLanguageFromPath(window.location.pathname);
+
+    useEffect(() => {
+        const loadProfile = async () => {
+            const token = await getStoredAccessToken();
+            if (!token) {
+                notifyErrorDefault("You need to login first.");
+                setIsLoading(false);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_ENDPOINT}/api/profile/me/`, {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to load profile");
+                }
+
+                const payload = await response.json();
+                setUsername(payload.username ?? "");
+                setEmail(payload.email ?? "");
+                setBio(payload.bio ?? "");
+            } catch {
+                notifyErrorDefault(
+                    language === "fr"
+                        ? "Impossible de charger le profil."
+                        : "Failed to load profile.",
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadProfile();
+    }, [language]);
+
+    const onSaveClicked = async () => {
+        if (isSaving) return;
+
+        const emailValue = email.trim().toLowerCase();
+        if (!emailValue.includes("@") || !emailValue.split("@")[1]?.includes(".")) {
+            notifyErrorDefault(
+                language === "fr"
+                    ? "Veuillez entrer un e-mail avec un vrai domaine."
+                    : "Please enter an email with a real domain.",
+            );
+            return;
+        }
+
+        const token = await getStoredAccessToken();
+        if (!token) {
+            notifyErrorDefault("You need to login first.");
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const response = await fetch(`${API_ENDPOINT}/api/profile/me/`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    username,
+                    email: emailValue,
+                    bio,
+                }),
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                notifyErrorDefault(payload.detail ?? "Failed to update profile");
+                return;
+            }
+
+            setUsername(payload.username ?? username);
+            setEmail(payload.email ?? emailValue);
+            setBio(payload.bio ?? bio);
+            useAuthenticationStore.setState({
+                username: payload.username ?? username,
+                bio: payload.bio ?? bio,
+            });
+            notifySuccessDefault(
+                language === "fr"
+                    ? "Profil mis à jour."
+                    : "Profile updated successfully.",
+            );
+        } catch {
+            notifyErrorDefault(
+                language === "fr"
+                    ? "Échec de la mise à jour du profil."
+                    : "Failed to update profile.",
+            );
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     return (
         <FadeUp className="flex flex-col gap-4 items-center px-4 py-4 w-full">
-            <h1 className="text-3xl font-bold ">Edit Profile</h1>
-
-            <div className="px-2 py-2 w-full border border-orange-500/35 bg-orange-500/15 rounded-md">
-                <span className="font-bold ">
-                    Note: Temporary edit profile UI. Not the final version.<br></br>
-                    Features are not implemented
-                </span>
-            </div>
+            <h1 className="text-3xl font-bold ">
+                {language === "fr" ? "Modifier le profil" : "Edit Profile"}
+            </h1>
 
             <div className="flex gap-4 items-center w-full">
                 <div
@@ -54,18 +166,34 @@ export default function Profile() {
 
                 <div className="flex flex-col gap-2 flex-grow-1">
                     <InputWithLabel
-                        label="Name"
-                        placeholder="Your name..."
+                        label={language === "fr" ? "Nom d'utilisateur" : "Username"}
+                        placeholder={
+                            language === "fr"
+                                ? "Votre nom d'utilisateur..."
+                                : "Your username..."
+                        }
                         className="w-full"
+                        value={username}
+                        onChange={(event) => {
+                            setUsername(event.currentTarget.value);
+                        }}
                     ></InputWithLabel>
                     <ElementWithLabel
-                        label="Bio"
+                        label={language === "fr" ? "Bio" : "Bio"}
                         element={
                             <textarea
                                 className="w-full px-2 py-2 rounded-md border border-black/15 dark:border-white/15 focus:outline-none focus:border-black/35 dark:focus:border-white/35 resize-none transition-colors duration-300"
                                 rows={2}
-                                placeholder="Tell others a bit about yourself"
+                                placeholder={
+                                    language === "fr"
+                                        ? "Parlez un peu de vous"
+                                        : "Tell others a bit about yourself"
+                                }
                                 draggable={false}
+                                value={bio}
+                                onChange={(event) => {
+                                    setBio(event.currentTarget.value);
+                                }}
                             ></textarea>
                         }
                     ></ElementWithLabel>
@@ -75,20 +203,27 @@ export default function Profile() {
             <div className="flex flex-col gap-4">
                 <SectionSeparator sectionName="Security"></SectionSeparator>
                 <section>
-                    <Label text="Password"></Label>
+                    <Label text={language === "fr" ? "Mot de passe" : "Password"}></Label>
                     <p className="">
-                        For your own safety, your password is not shown here.{" "}
+                        {language === "fr"
+                            ? "Pour votre sécurité, votre mot de passe n'est pas affiché ici."
+                            : "For your own safety, your password is not shown here."}{" "}
                         <a className="underline cursor-pointer">
-                            Change Password
+                            {language === "fr" ? "Changer le mot de passe" : "Change Password"}
                         </a>
                     </p>
                 </section>
                 <section>
-                    <Label text="Email"></Label>
-                    <p>
-                        Your email is ********@gmail.com (not real).{" "}
-                        <a className="underline cursor-pointer">Change Email</a>
-                    </p>
+                    <InputWithLabel
+                        label="Email"
+                        placeholder="you@example.com"
+                        className="w-full"
+                        value={email}
+                        type="email"
+                        onChange={(event) => {
+                            setEmail(event.currentTarget.value);
+                        }}
+                    ></InputWithLabel>
                 </section>
             </div>
             <div className="w-full mt-10 py-2 border-b border-b-black/35">
@@ -106,8 +241,22 @@ export default function Profile() {
                                 <path d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM565-275q35-35 35-85t-35-85q-35-35-85-35t-85 35q-35 35-35 85t35 85q35 35 85 35t85-35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z" />
                             </svg>
                         }
-                        text="Save"
+                        text={
+                            isLoading
+                                ? language === "fr"
+                                    ? "Chargement..."
+                                    : "Loading..."
+                                : isSaving
+                                  ? language === "fr"
+                                      ? "Enregistrement..."
+                                      : "Saving..."
+                                  : language === "fr"
+                                    ? "Enregistrer"
+                                    : "Save"
+                        }
                         isPrimary={true}
+                        onClick={onSaveClicked}
+                        disabled={isLoading || isSaving}
                     ></Button>
                 </span>
             </div>

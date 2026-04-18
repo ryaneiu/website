@@ -96,6 +96,8 @@ class PostSerializer(serializers.ModelSerializer):
     votes = serializers.SerializerMethodField()
     can_delete = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
+    author_username = serializers.CharField(source="author.username", read_only=True)
+    author_bio = serializers.CharField(source="author.last_name", read_only=True)
     subforum = serializers.SlugRelatedField(
         slug_field="slug",
         queryset=Subforum.objects.all(),
@@ -197,6 +199,8 @@ class PostSerializer(serializers.ModelSerializer):
             "content",
             "content_markdown",
             "author",
+            "author_username",
+            "author_bio",
             "published",
             "created_at",
             "subforum",

@@ -20,21 +20,27 @@ import { SearchDropdown } from "./SearchDropdown";
 import clsx from "clsx";
 import { notifyWarningDefault } from "../stores/NotificationsStore";
 import type { SearchScope } from "./searchScopes";
+import {
+    getAppLanguageFromPath,
+    localizePath,
+    stripLanguagePrefix,
+    type AppLanguage,
+} from "../i18n";
 
-function SignedOutButtons() {
+function SignedOutButtons({ language }: { language: AppLanguage }) {
     const navigate = useNavigate();
 
     return (
         <>
             <Button
-                text="Login"
+                text={language === "fr" ? "Connexion" : "Login"}
                 onClick={() => {
                     navigate("/auth?action=login");
                 }}
             ></Button>
             <span className="md:block hidden">
                 <Button
-                    text="Sign up"
+                    text={language === "fr" ? "Inscription" : "Sign up"}
                     isPrimary={true}
                     onClick={() => {
                         navigate("/auth?action=signup");
@@ -51,7 +57,7 @@ function getSearchQueryValue(search: string) {
 }
 
 function getCurrentSubforumSlug(pathname: string): string | null {
-    const match = pathname.match(/^\/subforums\/([^/]+)\/?$/);
+    const match = stripLanguagePrefix(pathname).match(/^\/subforums\/([^/]+)\/?$/);
     if (!match?.[1]) {
         return null;
     }
@@ -59,12 +65,20 @@ function getCurrentSubforumSlug(pathname: string): string | null {
     return decodeURIComponent(match[1]);
 }
 
-function SignedInProfile() {
+function toTitleCaseUsername(value: string): string {
+    return value
+        .toLowerCase()
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function SignedInProfile({ language }: { language: AppLanguage }) {
     const [dropdownVisible, setDropdownVisible] = useState<boolean>(false);
 
     const referenceRef = useRef<HTMLButtonElement>(null);
 
     const navigate = useNavigate();
+    const username = useAuthenticationStore((state) => state.username);
+    const usernameTitleCase = toTitleCaseUsername(username || "user");
 
     const { refs, x, y, strategy } = useFloating({
         middleware: [offset(6), flip(), shift({ padding: 8 })],
@@ -90,11 +104,11 @@ function SignedInProfile() {
 
     const onEditProfileClicked = () => {
         setDropdownVisible(false);
-        navigate("/profile");
+        navigate(localizePath("/profile", language));
     };
 
     return (
-        <div>
+        <div className="flex items-center gap-2">
             <TransparentIconButton
                 icon={
                     <svg
@@ -112,6 +126,10 @@ function SignedInProfile() {
                     setDropdownVisible(!dropdownVisible);
                 }}
             ></TransparentIconButton>
+            <Button
+                text={`${language === "fr" ? "Bonjour" : "Hello"}, ${usernameTitleCase}`}
+                onClick={onEditProfileClicked}
+            ></Button>
             <Dropdown
                 options={[
                     {
@@ -126,7 +144,7 @@ function SignedInProfile() {
                                 <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z" />
                             </svg>
                         ),
-                        text: "Edit Profile",
+                        text: language === "fr" ? "Modifier le profil" : "Edit Profile",
                         onClick: onEditProfileClicked,
                     },
                     {
@@ -141,7 +159,7 @@ function SignedInProfile() {
                                 <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z" />
                             </svg>
                         ),
-                        text: "Logout",
+                        text: language === "fr" ? "Déconnexion" : "Logout",
                         onClick: onLogoutClicked,
                     },
                 ]}
@@ -173,7 +191,7 @@ export function Navbar() {
     const isLoggedIn = useAuthenticationStore((state) => state.isLoggedIn);
     const locationSearchValue = getSearchQueryValue(location.search);
     const currentSubforumSlug = getCurrentSubforumSlug(location.pathname);
-    const activeLanguage = location.pathname.startsWith("/fr") ? "fr" : "en";
+    const activeLanguage = getAppLanguageFromPath(location.pathname);
 
     const [searchBarFocused, setBarFocused] = useState<boolean>(false);
     const [searchBarContent, setBarContent] = useState<string>(() =>
@@ -191,7 +209,7 @@ export function Navbar() {
 
         if (trimmed.length === 0) {
             navigate({
-                pathname: "/",
+                pathname: localizePath("/", activeLanguage),
                 search: "",
             });
             return;
@@ -217,7 +235,7 @@ export function Navbar() {
         }
 
         navigate({
-            pathname: targetPathname,
+            pathname: localizePath(targetPathname, activeLanguage),
             search: `?${params.toString()}`,
         });
     };
@@ -335,7 +353,7 @@ export function Navbar() {
                     </svg>
                     <input
                         className="focus:outline-none flex-grow-1 py-2 h-full w-full"
-                        placeholder="Search"
+                        placeholder={activeLanguage === "fr" ? "Rechercher" : "Search"}
                         onFocus={() => {
                             setBarContent(locationSearchValue);
                             setBarFocused(true);
@@ -390,10 +408,18 @@ export function Navbar() {
 
             <div className="w-fit h-full flex items-center gap-1">
                 <select
-                    className="h-9 rounded-md border border-black/15 dark:border-white/15 bg-white dark:bg-zinc-800 px-2 text-sm transition-colors duration-300"
+                    className="h-9 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-zinc-800 px-2 text-sm transition-colors duration-300"
                     value={activeLanguage}
                     onChange={(event) => {
-                        navigate(event.target.value === "fr" ? "/fr" : "/");
+                        const basePath = stripLanguagePrefix(location.pathname);
+                        const nextPath = localizePath(
+                            basePath,
+                            event.target.value === "fr" ? "fr" : "en",
+                        );
+                        navigate({
+                            pathname: nextPath,
+                            search: location.search,
+                        });
                     }}
                     aria-label="Language"
                 >
@@ -413,9 +439,9 @@ export function Navbar() {
                     }}
                 ></TransparentIconButton>
                 {isLoggedIn ? (
-                    <SignedInProfile></SignedInProfile>
+                    <SignedInProfile language={activeLanguage}></SignedInProfile>
                 ) : (
-                    <SignedOutButtons></SignedOutButtons>
+                    <SignedOutButtons language={activeLanguage}></SignedOutButtons>
                 )}
             </div>
         </header>

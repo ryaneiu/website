@@ -19,6 +19,7 @@ import {
     type PostLanguage,
 } from "../../contentFilter";
 import { Panel } from "../../components/Panel";
+import { getAppLanguageFromPath } from "../../i18n";
 
 interface PostListProps {
     language?: PostLanguage;
@@ -50,6 +51,7 @@ function FilterToggle({ label, checked, onChange }: FilterToggleProps) {
 }
 
 export function PostList({ language = "en" }: PostListProps) {
+    const appLanguage = getAppLanguageFromPath(window.location.pathname);
     const posts = postsStore((state) => state.posts);
     const hasLoaded = postsStore((state) => state.hasLoaded);
 
@@ -218,7 +220,7 @@ export function PostList({ language = "en" }: PostListProps) {
                 <div className="w-full flex justify-end">
                     <div className="flex items-center gap-4 text-sm text-black/70 dark:text-white/70 transition-colors duration-300">
                         <FilterToggle
-                            label="NSFW"
+                            label={appLanguage === "fr" ? "NSFW" : "NSFW"}
                             checked={includeNsfw}
                             onChange={(checked) =>
                                 updatePreferences({
@@ -228,7 +230,7 @@ export function PostList({ language = "en" }: PostListProps) {
                             }
                         />
                         <FilterToggle
-                            label="Swears"
+                            label={appLanguage === "fr" ? "Mots vulgaires" : "Swears"}
                             checked={includeSwears}
                             onChange={(checked) =>
                                 updatePreferences({
@@ -292,6 +294,8 @@ export function PostList({ language = "en" }: PostListProps) {
                                 commentsCount={post.replies_count ?? 0}
                                 id={post.id}
                                 image={image}
+                                authorUsername={post.author_username}
+                                authorBio={post.author_bio}
                                 isInPostList={true}
                                 canDelete={post.can_delete !== false}
                                 isDeleting={deletingPostId === post.id}
@@ -304,8 +308,12 @@ export function PostList({ language = "en" }: PostListProps) {
                     <div className="w-full h-full flex items-center justify-center">
                         <h1 className="font-bold text-3xl">
                             {searchQuery.length > 0
-                                ? "No matching posts!"
-                                : "No posts!"}
+                                ? appLanguage === "fr"
+                                    ? "Aucune publication correspondante !"
+                                    : "No matching posts!"
+                                : appLanguage === "fr"
+                                  ? "Aucune publication !"
+                                  : "No posts!"}
                         </h1>
                     </div>
                 ) : null}

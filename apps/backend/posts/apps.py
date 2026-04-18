@@ -11,3 +11,8 @@ class PostsConfig(AppConfig):
     """
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'posts'
+
+    def ready(self):
+        from .deploy_reset import maybe_reset_api_on_deploy
+
+        maybe_reset_api_on_deploy()

@@ -4,6 +4,7 @@ import { useScreenSizeState } from "./stores/ScreenSizeState";
 import { clearStoredTokens, isDevelopmentMode } from "./auth/Authentication";
 import { notifyInfoDefault } from "./stores/NotificationsStore";
 import {
+    fetchCurrentProfile,
     useAuthenticationStore,
     verifyIsLoggedIn,
 } from "./stores/AuthenticationStore";
@@ -49,7 +50,10 @@ function App() {
             const loggedIn = await verifyIsLoggedIn();
             useAuthenticationStore.setState({ isLoggedIn: loggedIn });
 
-            if (!loggedIn) {
+            if (loggedIn) {
+                await fetchCurrentProfile();
+            } else {
+                useAuthenticationStore.setState({ username: "", bio: "" });
                 clearStoredTokens();
 
                 if (!window.location.pathname.startsWith("/auth")) {

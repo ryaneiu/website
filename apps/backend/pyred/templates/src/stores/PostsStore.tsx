@@ -8,6 +8,8 @@ export type Post = {
     content: string;
     content_markdown?: string;
     author: number;
+    author_username?: string;
+    author_bio?: string;
     created_at: string;
     votes?: number;
     likes_count?: number;

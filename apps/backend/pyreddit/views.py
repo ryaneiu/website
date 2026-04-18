@@ -8,7 +8,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -280,6 +280,77 @@ class UserSearchAPIView(APIView):
         ]
 
         return Response(payload, status=status.HTTP_200_OK)
+
+
+class CurrentUserProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response(
+            {
+                "username": user.username,
+                "email": user.email,
+                "bio": user.last_name or "",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def patch(self, request):
+        user = request.user
+        username = request.data.get("username")
+        email = request.data.get("email")
+        bio = request.data.get("bio")
+
+        if username is not None:
+            normalized_username = str(username).strip()
+            if not normalized_username:
+                return Response(
+                    {"detail": "Username is required."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if User.objects.filter(username=normalized_username).exclude(id=user.id).exists():
+                return Response(
+                    {"detail": "Username taken"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            user.username = normalized_username
+
+        if email is not None:
+            normalized_email, email_error = normalize_and_validate_email(str(email))
+            if email_error is not None or normalized_email is None:
+                return Response(
+                    {"detail": email_error},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if User.objects.filter(email=normalized_email).exclude(id=user.id).exists():
+                return Response(
+                    {"detail": "Email already registered"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            user.email = normalized_email
+
+        if bio is not None:
+            normalized_bio = str(bio).strip()
+            if len(normalized_bio) > 150:
+                return Response(
+                    {"detail": "Bio cannot exceed 150 characters."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            user.last_name = normalized_bio
+
+        user.save()
+
+        return Response(
+            {
+                "username": user.username,
+                "email": user.email,
+                "bio": user.last_name or "",
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 

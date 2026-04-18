@@ -150,3 +150,9 @@ class Reply(models.Model):
     content = models.TextField(blank=True, default="")
     content_markdown = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class DeploymentResetMarker(models.Model):
+    name = models.CharField(max_length=64, unique=True)
+    value = models.CharField(max_length=255, blank=True, default="")
+    updated_at = models.DateTimeField(auto_now=True)

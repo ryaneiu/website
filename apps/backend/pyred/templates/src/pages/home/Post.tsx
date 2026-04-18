@@ -11,6 +11,7 @@ import { LoadableButton } from "../../components/LoadableButton";
 import { Panel } from "../../components/Panel";
 import type { PostImage } from "../../contentFilter";
 import { BlurredImage } from "../../components/BlurredImage";
+import { getAppLanguageFromPath, localizePath } from "../../i18n";
 
 const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/gi;
 
@@ -28,12 +29,15 @@ interface Props {
     subforumText?: string;
     subforumControl?: ReactNode;
     image?: PostImage | null;
+    authorUsername?: string;
+    authorBio?: string;
 
     isInPostList: boolean;
 }
 
 export function Post(props: Props) {
     const [expanded, setExpanded] = useState(!props.isInPostList);
+    const [showAuthorBio, setShowAuthorBio] = useState(false);
     const descriptionWithoutImage = props.description
         .replace(MARKDOWN_IMAGE_PATTERN, "")
         .replace(/\n{3,}/g, "\n\n")
@@ -48,6 +52,7 @@ export function Post(props: Props) {
         : props.title;
 
     const navigate = useNavigate();
+    const language = getAppLanguageFromPath(window.location.pathname);
 
     const onPostClicked = () => {
         if (!props.isInPostList) return;
@@ -61,7 +66,7 @@ export function Post(props: Props) {
             postId: props.id,
         });
 
-        navigate(`/post/${props.id}`);
+        navigate(localizePath(`/post/${props.id}`, language));
     };
 
     const postClasses = clsx(
@@ -93,7 +98,15 @@ export function Post(props: Props) {
                                 <path d="M280-120q-33 0-56.5-23.5T200-200v-560h-40v-80h200v-40h240v40h200v80h-40v560q0 33-23.5 56.5T680-120H280Zm400-640H280v560h400v-560ZM360-280h80v-400h-80v400Zm160 0h80v-400h-80v400ZM280-760v560-560Z" />
                             </svg>
                         }
-                        text={props.isDeleting ? "Deleting..." : "Delete"}
+                        text={
+                            props.isDeleting
+                                ? language === "fr"
+                                    ? "Suppression..."
+                                    : "Deleting..."
+                                : language === "fr"
+                                  ? "Supprimer"
+                                  : "Delete"
+                        }
                         onClick={() => props.onDeleteClick?.()}
                         isPrimary={true}
                         disabled={props.isDeleting}
@@ -128,10 +141,45 @@ export function Post(props: Props) {
                             setExpanded(!expanded);
                         }}
                     >
-                        {expanded ? "Show less" : "Show more"}
+                        {expanded
+                            ? language === "fr"
+                                ? "Afficher moins"
+                                : "Show less"
+                            : language === "fr"
+                              ? "Afficher plus"
+                              : "Show more"}
                     </button>
                 )}
             </div>
+
+            {props.authorUsername && (
+                <div className="flex items-center gap-2 text-sm text-black/70 dark:text-white/70 transition-colors duration-300">
+                    <span>u/{props.authorUsername}</span>
+                    <button
+                        className="px-2 py-1 rounded-mb border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-300 cursor-pointer"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            setShowAuthorBio((v) => !v);
+                        }}
+                    >
+                        {showAuthorBio
+                            ? language === "fr"
+                                ? "Masquer la bio"
+                                : "Hide bio"
+                            : "Bio"}
+                    </button>
+                </div>
+            )}
+            {props.authorUsername && showAuthorBio && (
+                <Panel className="w-full">
+                    <p className="text-black/80 dark:text-white/80 transition-colors duration-300 whitespace-pre-wrap break-words">
+                        {props.authorBio?.trim() ||
+                            (language === "fr"
+                                ? "Aucune bio pour cet utilisateur."
+                                : "No bio available for this user.")}
+                    </p>
+                </Panel>
+            )}
 
             {!props.isInPostList &&
                 (props.subforumText || props.subforumControl) && (
@@ -204,7 +252,7 @@ export function Post(props: Props) {
                 ></ReactionButton>
             </div>
             <span className="text-black/50 dark:text-white/50 text-sm transition-colors duration-300">
-                Posted {timeAgo(props.created_at)}
+                {language === "fr" ? "Publié" : "Posted"} {timeAgo(props.created_at)}
             </span>
         </Panel>
     );

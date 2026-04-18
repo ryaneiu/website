@@ -14,6 +14,7 @@ import {
 import { Panel } from "../../components/Panel";
 import { PostSkeletonLoader } from "../home/PostSkeletonLoader";
 import { notifyErrorDefault } from "../../stores/NotificationsStore";
+import { getAppLanguageFromPath } from "../../i18n";
 
 type DiscoverScope = "users" | "everywhere";
 
@@ -34,7 +35,7 @@ function getScope(search: string): DiscoverScope {
 
 export default function Discover() {
     const location = useLocation();
-    const activeLanguage = location.pathname.startsWith("/fr") ? "fr" : "en";
+    const activeLanguage = getAppLanguageFromPath(location.pathname);
     const searchQuery = useMemo(() => getSearchQuery(location.search), [
         location.search,
     ]);
@@ -140,13 +141,19 @@ export default function Discover() {
             <main className="flex flex-col gap-4">
                 <h1 className="text-2xl font-bold">
                     {scope === "users"
-                        ? "User search results"
-                        : "Search everywhere"}
+                        ? activeLanguage === "fr"
+                            ? "Résultats de recherche utilisateurs"
+                            : "User search results"
+                        : activeLanguage === "fr"
+                          ? "Recherche globale"
+                          : "Search everywhere"}
                 </h1>
 
                 {searchQuery.length === 0 && (
                     <span className="text-black/50 dark:text-white/50 transition-colors duration-300">
-                        Use the navbar search to find posts and users.
+                        {activeLanguage === "fr"
+                            ? "Utilisez la recherche de la barre de navigation pour trouver des publications et des utilisateurs."
+                            : "Use the navbar search to find posts and users."}
                     </span>
                 )}
 
@@ -159,17 +166,17 @@ export default function Discover() {
                             </>
                         )}
                         <span className="text-black/50 dark:text-white/50 transition-colors duration-300">
-                            Searching...
+                            {activeLanguage === "fr" ? "Recherche..." : "Searching..."}
                         </span>
                     </>
                 )}
 
                 {!loading && searchQuery.length > 0 && scope === "everywhere" && (
                     <section className="flex flex-col gap-3">
-                        <h2 className="text-lg font-semibold">Posts</h2>
+                        <h2 className="text-lg font-semibold">{activeLanguage === "fr" ? "Publications" : "Posts"}</h2>
                         {posts.length === 0 && (
                             <span className="text-black/50 dark:text-white/50 transition-colors duration-300">
-                                No matching posts.
+                                {activeLanguage === "fr" ? "Aucune publication correspondante." : "No matching posts."}
                             </span>
                         )}
                         {posts.map((post) => {
@@ -217,6 +224,8 @@ export default function Discover() {
                                     commentsCount={post.replies_count ?? 0}
                                     id={post.id}
                                     image={image}
+                                    authorUsername={post.author_username}
+                                    authorBio={post.author_bio}
                                     isInPostList={true}
                                 />
                             );
@@ -226,10 +235,10 @@ export default function Discover() {
 
                 {!loading && searchQuery.length > 0 && (
                     <section className="flex flex-col gap-3">
-                        <h2 className="text-lg font-semibold">Users</h2>
+                        <h2 className="text-lg font-semibold">{activeLanguage === "fr" ? "Utilisateurs" : "Users"}</h2>
                         {users.length === 0 && (
                             <span className="text-black/50 dark:text-white/50 transition-colors duration-300">
-                                No matching users.
+                                {activeLanguage === "fr" ? "Aucun utilisateur correspondant." : "No matching users."}
                             </span>
                         )}
                         {users.map((user) => (

@@ -22,6 +22,7 @@ import {
     resolvePostImage,
     type PostImage,
 } from "../../contentFilter";
+import { getAppLanguageFromPath, localizePath } from "../../i18n";
 
 type PostResponse = {
     id: number;
@@ -30,6 +31,8 @@ type PostResponse = {
     content: string;
     content_markdown?: string;
     author: number;
+    author_username?: string;
+    author_bio?: string;
     likes_count?: number;
     votes?: number;
     replies_count?: number;
@@ -69,6 +72,7 @@ export default function PostPage() {
     const postId = id != null ? Number.parseInt(id) : selectedPostId;
     const canDisplay = Number.isFinite(postId) && postId > 0;
     const canDeletePost = postData?.can_delete === true;
+    const language = getAppLanguageFromPath(window.location.pathname);
     const filterPreferences = useMemo(
         () => getStoredContentFilterPreferences(),
         [],
@@ -370,7 +374,7 @@ export default function PostPage() {
                 ...prev,
                 posts: prev.posts.filter((post) => post.id !== postId),
             }));
-            navigate("/");
+            navigate(localizePath("/", language));
         } finally {
             setIsDeletingPost(false);
         }
@@ -461,6 +465,8 @@ export default function PostPage() {
                                     commentsCount={postData.replies_count ?? 0}
                                     id={postData.id}
                                     image={renderedPostImage}
+                                    authorUsername={postData.author_username}
+                                    authorBio={postData.author_bio}
                                     onLikeClick={onPostLikeClick}
                                     subforumText={`Subforum: ${postData.subforum || "general"}`}
                                     subforumControl={
@@ -490,8 +496,12 @@ export default function PostPage() {
                                             <Button
                                                 text={
                                                     isAssigningSubforum
-                                                        ? "Updating..."
-                                                        : "Add to Subforum"
+                                                        ? language === "fr"
+                                                            ? "Mise à jour..."
+                                                            : "Updating..."
+                                                        : language === "fr"
+                                                          ? "Ajouter au sous-forum"
+                                                          : "Add to Subforum"
                                                 }
                                                 onClick={onAssignSubforumClicked}
                                                 disabled={
@@ -530,8 +540,12 @@ export default function PostPage() {
                                         }
                                         text={
                                             isDeletingPost
-                                                ? "Deleting..."
-                                                : "Delete Post"
+                                                ? language === "fr"
+                                                    ? "Suppression..."
+                                                    : "Deleting..."
+                                                : language === "fr"
+                                                  ? "Supprimer la publication"
+                                                  : "Delete Post"
                                         }
                                         onClick={onDeletePostClicked}
                                         disabled={isDeletingPost}
@@ -565,7 +579,7 @@ export default function PostPage() {
                                                 <path d="M440-400h80v-120h120v-80H520v-120h-80v120H320v80h120v120ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z" />
                                             </svg>
                                         }
-                                        text="Reply"
+                                        text={language === "fr" ? "Répondre" : "Reply"}
                                         onClick={() => setReplyingToPost(true)}
                                         isPrimary={true}
                                     ></Button>

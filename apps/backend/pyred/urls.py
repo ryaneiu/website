@@ -7,6 +7,7 @@ from rest_framework.routers import DefaultRouter
 from pyreddit.views import (
     CookieTokenObtainPairView,
     CookieTokenRefreshView,
+    CurrentUserProfileAPIView,
     LoginAPIView,
     SignupView,
     UserSearchAPIView,
@@ -27,6 +28,7 @@ urlpatterns += [
     path('api/posts/', include('posts.urls')),
     path("api/", include(router.urls)),
     path("api/users/search/", UserSearchAPIView.as_view(), name="user-search"),
+    path("api/profile/me/", CurrentUserProfileAPIView.as_view(), name="profile-me"),
     path("api/signup/", SignupView.as_view(), name="signup"),
     path("api/login/", LoginAPIView.as_view(), name="login"),
 ]

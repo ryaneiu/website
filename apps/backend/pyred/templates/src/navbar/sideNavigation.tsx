@@ -5,6 +5,7 @@ import { useSideNavigationVisibility } from "../stores/SideNavigationVisibilityS
 import { useScreenSizeState } from "../stores/ScreenSizeState";
 import { AnimatePresence } from "framer-motion";
 import { FadeInFromLeft } from "../components/AnimatedPresenceDiv";
+import { getAppLanguageFromPath, localizePath, stripLanguagePrefix } from "../i18n";
 
 type TabInfo = {
     id: number;
@@ -127,6 +128,8 @@ const TABS: TabInfo[] = [
 
 export function SideNavigation() {
     const screenSize = useScreenSizeState((state) => state.width);
+    const language = getAppLanguageFromPath(window.location.pathname);
+    const pathWithoutLanguage = stripLanguagePrefix(window.location.pathname);
 
     const visible = useSideNavigationVisibility((state) => state.visible);
 
@@ -139,12 +142,21 @@ export function SideNavigation() {
                             <SideNavigationButton
                                 key={tab.id}
                                 icon={tab.icon}
-                                text={tab.text}
-                                selected={
-                                    (window.location.pathname.startsWith(tab.navgiateTo) && tab.navgiateTo != "/") ||
-                                    window.location.pathname == tab.navgiateTo
+                                text={
+                                    language === "fr"
+                                        ? ({
+                                              Home: "Accueil",
+                                              Subforums: "Sous-forums",
+                                              Discover: "Découvrir",
+                                              Trending: "Tendances",
+                                          }[tab.text] ?? tab.text)
+                                        : tab.text
                                 }
-                                navigateTo={tab.navgiateTo}
+                                selected={
+                                    (pathWithoutLanguage.startsWith(tab.navgiateTo) && tab.navgiateTo != "/") ||
+                                    pathWithoutLanguage == tab.navgiateTo
+                                }
+                                navigateTo={localizePath(tab.navgiateTo, language)}
                                 filledIcon={tab.filledIcon}
                             ></SideNavigationButton>
                         );
