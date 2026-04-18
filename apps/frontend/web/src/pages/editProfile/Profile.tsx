@@ -16,8 +16,12 @@ import { getAppLanguageFromPath } from "../../i18n";
 import {
     extractFirstImageUrl,
     extractImageReferenceFromClipboardData,
+    getStoredContentFilterPreferences,
     normalizeAttachedImageUrl,
+    persistContentFilterPreferences,
+    type ContentFilterPreferences,
 } from "../../contentFilter";
+import { FilterToggle } from "../../components/FilterToggle";
 
 function resolveProfileImageInput(value: string): string | null {
     const trimmed = value.trim();
@@ -44,7 +48,23 @@ export default function Profile() {
     const language = getAppLanguageFromPath(window.location.pathname);
     const resolvedProfileImage = resolveProfileImageInput(profileImageInput);
 
-    const onProfileImagePaste = async (event: ClipboardEvent<HTMLInputElement>) => {
+    const [preferences, setPreferences] = useState<ContentFilterPreferences>(
+        () => getStoredContentFilterPreferences(),
+    );
+
+    const includeNsfw = preferences.includeNsfw;
+    const includeSwears = preferences.includeSwears;
+
+    const appLanguage = getAppLanguageFromPath(window.location.pathname);
+
+    const updatePreferences = (next: ContentFilterPreferences) => {
+        setPreferences(next);
+        persistContentFilterPreferences(next);
+    };
+
+    const onProfileImagePaste = async (
+        event: ClipboardEvent<HTMLInputElement>,
+    ) => {
         const pastedImage = await extractImageReferenceFromClipboardData(
             event.clipboardData,
         );
@@ -66,12 +86,15 @@ export default function Profile() {
             }
 
             try {
-                const response = await fetch(`${API_ENDPOINT}/api/profile/me/`, {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
+                const response = await fetch(
+                    `${API_ENDPOINT}/api/profile/me/`,
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
                     },
-                });
+                );
 
                 if (!response.ok) {
                     throw new Error("Failed to load profile");
@@ -100,7 +123,10 @@ export default function Profile() {
         if (isSaving) return;
 
         const emailValue = email.trim().toLowerCase();
-        if (!emailValue.includes("@") || !emailValue.split("@")[1]?.includes(".")) {
+        if (
+            !emailValue.includes("@") ||
+            !emailValue.split("@")[1]?.includes(".")
+        ) {
             notifyErrorDefault(
                 language === "fr"
                     ? "Veuillez entrer un e-mail avec un vrai domaine."
@@ -109,7 +135,10 @@ export default function Profile() {
             return;
         }
 
-        if (profileImageInput.trim().length > 0 && resolvedProfileImage == null) {
+        if (
+            profileImageInput.trim().length > 0 &&
+            resolvedProfileImage == null
+        ) {
             notifyErrorDefault(
                 language === "fr"
                     ? "L'image de profil doit être une image markdown valide ou une URL d'image directe."
@@ -143,7 +172,9 @@ export default function Profile() {
             const payload = await response.json().catch(() => ({}));
 
             if (!response.ok) {
-                notifyErrorDefault(payload.detail ?? "Failed to update profile");
+                notifyErrorDefault(
+                    payload.detail ?? "Failed to update profile",
+                );
                 return;
             }
 
@@ -187,7 +218,11 @@ export default function Profile() {
                     {resolvedProfileImage != null ? (
                         <img
                             src={resolvedProfileImage}
-                            alt={language === "fr" ? "Image de profil" : "Profile image"}
+                            alt={
+                                language === "fr"
+                                    ? "Image de profil"
+                                    : "Profile image"
+                            }
                             className="w-[128px] h-[128px] md:w-[256px] md:h-[256px] rounded-full object-cover border border-black/15 dark:border-white/15"
                         />
                     ) : (
@@ -220,7 +255,9 @@ export default function Profile() {
 
                 <div className="flex flex-col gap-2 flex-grow-1">
                     <InputWithLabel
-                        label={language === "fr" ? "Nom d'utilisateur" : "Username"}
+                        label={
+                            language === "fr" ? "Nom d'utilisateur" : "Username"
+                        }
                         placeholder={
                             language === "fr"
                                 ? "Votre nom d'utilisateur..."
@@ -252,7 +289,11 @@ export default function Profile() {
                         }
                     ></ElementWithLabel>
                     <InputWithLabel
-                        label={language === "fr" ? "Image de profil" : "Profile image"}
+                        label={
+                            language === "fr"
+                                ? "Image de profil"
+                                : "Profile image"
+                        }
                         placeholder={
                             language === "fr"
                                 ? "![Avatar](https://exemple.com/avatar.png)"
@@ -274,15 +315,44 @@ export default function Profile() {
             </div>
 
             <div className="flex flex-col gap-4">
+                <SectionSeparator sectionName="Filtering and preferences"></SectionSeparator>
+                <section className="flex gap-3">
+                    <FilterToggle
+                        label={appLanguage === "fr" ? "NSFW" : "NSFW"}
+                        checked={includeNsfw}
+                        onChange={(checked) =>
+                            updatePreferences({
+                                includeNsfw: checked,
+                                includeSwears,
+                            })
+                        }
+                    />
+                    <FilterToggle
+                        label={
+                            appLanguage === "fr" ? "Mots vulgaires" : "Swears"
+                        }
+                        checked={includeSwears}
+                        onChange={(checked) =>
+                            updatePreferences({
+                                includeNsfw,
+                                includeSwears: checked,
+                            })
+                        }
+                    />
+                </section>
                 <SectionSeparator sectionName="Security"></SectionSeparator>
                 <section>
-                    <Label text={language === "fr" ? "Mot de passe" : "Password"}></Label>
+                    <Label
+                        text={language === "fr" ? "Mot de passe" : "Password"}
+                    ></Label>
                     <p className="">
                         {language === "fr"
                             ? "Pour votre sécurité, votre mot de passe n'est pas affiché ici."
                             : "For your own safety, your password is not shown here."}{" "}
                         <a className="underline cursor-pointer">
-                            {language === "fr" ? "Changer le mot de passe" : "Change Password"}
+                            {language === "fr"
+                                ? "Changer le mot de passe"
+                                : "Change Password"}
                         </a>
                     </p>
                 </section>
