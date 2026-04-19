@@ -48,7 +48,41 @@ export default defineConfig({
     assetsInclude: ["**/*.wasm"],
     build: {
         rollupOptions: {
-            external: ["@jsquash/avif"] // fix build
+            external: ["@jsquash/avif"], // fix build
+            treeshake: {
+                moduleSideEffects: false,
+                propertyReadSideEffects: false,
+                unknownGlobalSideEffects: false
+            }
+        },
+        minify: 'terser',
+        terserOptions: {
+            compress: {
+                passes: Infinity,              // stronger optimization
+                dead_code: true,
+                unused: true,
+                conditionals: true,
+                comparisons: true,
+                evaluate: true,
+                booleans: true,
+                loops: true,
+
+                if_return: true,
+                join_vars: true,
+                reduce_vars: true,
+                collapse_vars: true,
+
+                sequences: true,
+                side_effects: true,
+                drop_debugger: true,
+                arguments: true
+            },
+            mangle: {
+                toplevel: true,         // safe size win
+            },
+            format: {
+                comments: false
+            }
         }
     }
     // DO NOT REPLACE THIS LINE WITH AN

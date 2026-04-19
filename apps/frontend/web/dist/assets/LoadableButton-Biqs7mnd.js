@@ -1,0 +1,1 @@
+import{j as i,B as s,S as n}from"./index-BEMaUv7P.js";function t(t){const o=t.isLoading?i.jsx(n,{isWhite:t.isWhiteSpinner}):t.icon;return i.jsx(s,{icon:o,iconAtRight:t.iconAtRight,isPrimary:t.isPrimary,onClick:t.onClick,text:t.text,disabled:t.isLoading||t.disabled})}export{t as L};
