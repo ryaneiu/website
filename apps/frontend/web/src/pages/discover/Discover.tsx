@@ -12,7 +12,7 @@ import {
     resolvePostImage,
 } from "../../contentFilter";
 import { Panel } from "../../components/Panel";
-import { PostSkeletonLoader } from "../home/PostSkeletonLoader";
+import { PostSkeletonLoader } from "../../components/PostSkeletonLoader";
 import { notifyErrorDefault } from "../../stores/NotificationsStore";
 import { getAppLanguageFromPath } from "../../i18n";
 

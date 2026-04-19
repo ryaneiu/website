@@ -9,6 +9,7 @@ export interface ButtonProps {
     iconAtRight?: boolean;
     disabled?: boolean;
     additionalClasses?: string;
+    alignText?: boolean;
 }
 
 export function Button(props: ButtonProps) {
@@ -22,12 +23,19 @@ export function Button(props: ButtonProps) {
         props.additionalClasses
     );
 
+    const textClasses = clsx(
+        props.alignText && "text-center flex-grow-1"
+    )
+
     return (
         <button className={buttonClasses} onClick={props.onClick} disabled={props.disabled}>
             {props.icon != null && !props.iconAtRight ? (
                 <span>{props.icon}</span>
             ) : null}
-            {props.text}
+            <span className={textClasses}>
+                {props.text}
+            </span>
+            
             {props.icon != null && props.iconAtRight ? (
                 <span>{props.icon}</span>
             ) : null}

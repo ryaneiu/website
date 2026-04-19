@@ -10,6 +10,7 @@ import {
     PostCreationModal,
     type SubforumDto,
 } from "../../components/subforums/CreationModal";
+import { useSubforumsListStore } from "../../stores/SubforumsListStore";
 
 interface Props {
     onCreated: (s: SubforumDto) => void;
@@ -71,6 +72,7 @@ export function CreateSubforumForm(props: Props) {
             setTitle("");
             setDescription("");
             notifySuccessDefault("Subforum created");
+            useSubforumsListStore.getState().forceUpdate();
             props.onHide();
         } catch (e) {
             throw new Error("Error: " + e);

@@ -23,6 +23,7 @@ import {
 import { useImageProgressStore } from "../stores/ImageEncodingProgress";
 import { Progress } from "../stores/ImageEncodingProgressState";
 import { canLoadImage, dataToAvif } from "../ImageProcessing";
+import { postsStore } from "../stores/PostsStore";
 
 export default function CreatePostView() {
     const navigate = useNavigate();
@@ -232,6 +233,7 @@ export default function CreatePostView() {
                 setTitle("");
                 setContent("");
                 setImageUrl("");
+                postsStore.getState().forceUpdate();
                 navigate(postLanguage === "fr" ? "/fr" : "/");
             } catch (err) {
                 const message =

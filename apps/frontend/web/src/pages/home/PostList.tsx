@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Post } from "./Post";
 import { postsStore, type Post as PostDto } from "../../stores/PostsStore";
 import { API_ENDPOINT } from "../../Config";
@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { getStoredAccessToken } from "../../auth/Authentication";
 import { notifyErrorDefault } from "../../stores/NotificationsStore";
 import { useAuthenticationStore } from "../../stores/AuthenticationStore";
-import { PostSkeletonLoader } from "./PostSkeletonLoader";
+import { PostSkeletonLoader } from "../../components/PostSkeletonLoader";
 import { extractDetailFromErrorResponse } from "../../Utils";
 import {
     buildContentFilterQuery,
@@ -40,9 +40,18 @@ export function PostList({ language = "en" }: PostListProps) {
     const location = useLocation();
     const includeNsfw = preferences.includeNsfw;
     const includeSwears = preferences.includeSwears;
-    const searchQuery = useMemo(() => {
+
+    const [searchQuery, setSearchQuery] = useState("");
+
+    useEffect(() => {
         const params = new URLSearchParams(location.search);
-        return (params.get("q") ?? "").trim();
+        const nextQuery = (params.get("q") ?? "").trim();
+
+        setSearchQuery((prev) => {
+            if (prev === nextQuery) return prev; // no change means no rerender
+            console.log("Search query has changed from: ", prev, nextQuery);
+            return nextQuery;
+        });
     }, [location.search]);
 
     const onDeletePost = async (postId: number) => {
@@ -68,7 +77,7 @@ export function PostList({ language = "en" }: PostListProps) {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
-                    credentials: "omit"
+                    credentials: "omit",
                 },
             );
 
@@ -87,11 +96,34 @@ export function PostList({ language = "en" }: PostListProps) {
         }
     };
 
+    // prevent useEffect() from reloading posts when nothing actually changed
+    // this is a temporary fix
+    const lastFetchKey = useRef<string | null>(null);
+
+    const hashUpdateKey = postsStore(state => state.hashUpdateKey);
+
+
+
     useEffect(() => {
+
+        const fetchKey = `${includeNsfw}-${includeSwears}-${searchQuery}-${language}-${hashUpdateKey}`;
+
+
+
+        if (postsStore.getState().fetchKeyHash == fetchKey) {
+            console.log("Skipping duplicate render");
+            return;
+        }
+        console.log("Allowing duplicate render: different key: B:", lastFetchKey.current, "B2:", fetchKey);
+        console.log(lastFetchKey.current);
+        console.log(fetchKey);
+        postsStore.setState({fetchKeyHash: fetchKey});
+
         const loadPosts = async () => {
             setErrorOccurred(false);
             postsStore.setState({
                 hasLoaded: false,
+                posts: [],
             });
 
             try {
@@ -206,8 +238,16 @@ export function PostList({ language = "en" }: PostListProps) {
             }
         };
 
+        console.log(
+            "Load post triggered in useEffect: values: ",
+            navigate,
+            includeNsfw,
+            includeSwears,
+            searchQuery,
+            language,
+        );
         loadPosts();
-    }, [navigate, includeNsfw, includeSwears, searchQuery, language]);
+    }, [navigate, includeNsfw, includeSwears, searchQuery, language, hashUpdateKey]);
 
     return (
         <>

@@ -5,12 +5,15 @@ import { Navbar } from "../navbar/Navbar";
 import { SideNavigation } from "../navbar/sideNavigation";
 import { getAppLanguageFromPath } from "../i18n";
 import { useEffect } from "react";
+import { useAuthenticationStore } from "../stores/AuthenticationStore";
 
 export default function PrimaryView() {
 
     const navigate = useNavigate();
     const location = useLocation();
     const language = getAppLanguageFromPath(location.pathname);
+
+    const loggedIn = useAuthenticationStore(state => state.isLoggedIn);
 
     useEffect(() => {
         
@@ -32,7 +35,7 @@ export default function PrimaryView() {
                 </div>
             </div>
 
-            <div className="fixed bottom-4 right-4">
+            {loggedIn && <div className="fixed bottom-4 right-4">
                 <Button
                     isPrimary={true}
                     text={language === "fr" ? "Publier" : "Post"}
@@ -54,7 +57,7 @@ export default function PrimaryView() {
                     }}
                     additionalClasses="shadow-lg/20"
                 ></Button>
-            </div>
+            </div>}
         </div>
     );
 }

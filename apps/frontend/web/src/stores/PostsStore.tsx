@@ -24,12 +24,22 @@ export type Post = {
 
 interface PostsStore {
     posts: Post[],
-    hasLoaded: boolean
+    hasLoaded: boolean,
+    fetchKeyHash: string // used for checking if the state actually needs to change
+    hashUpdateKey: number // triggers a rerender on post list
+
+    forceUpdate: () => void; // Please call this if you want to force the post list to update, such as after publishing a post
 }
 
-export const postsStore = create<PostsStore>(() => {
+export const postsStore = create<PostsStore>((set) => {
     return {
         posts: [],
-        hasLoaded: false
+        hasLoaded: false,
+        fetchKeyHash: "",
+        hashUpdateKey: 0,
+        
+        forceUpdate: () => {
+            set({hashUpdateKey: Math.random() * 99999999})
+        }
     }
 });

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_ENDPOINT } from "../../Config";
 import {
@@ -13,19 +13,19 @@ import { UpdateSubforumForm } from "../../components/subforums/UpdateSubforumFor
 import { CreateSubforumForm } from "./CreateSubforumForm";
 import { FadeUp } from "../../components/AnimatedPresenceDiv";
 import { Panel } from "../../components/Panel";
+import { SubforumSkeletonLoader } from "./SubforumSkeletonLoader";
+import { useSubforumsListStore, type SubforumWithPosts } from "../../stores/SubforumsListStore";
 
-type SubforumWithPosts = SubforumDto & {
-    posts: {
-        id: number;
-        title: string;
-        created_at: string;
-    }[];
-};
+
 
 export default function SubforumList() {
     const navigate = useNavigate();
-    const [subforums, setSubforums] = useState<SubforumWithPosts[]>([]);
-    const [loading, setLoading] = useState(true);
+    const subforums = useSubforumsListStore(state => state.subforums);
+    const setSubforums = useSubforumsListStore(state => state.setSubforums);
+    const loading = useSubforumsListStore(state => state.loading);
+    const setLoading = useSubforumsListStore(state => state.setLoading);
+    const fetchKey = useSubforumsListStore(state => state.fetchKey);
+
     const [updatingSlug, setUpdatingSlug] = useState<string | null>(null);
     const [deletingSlug, setDeletingSlug] = useState<string | null>(null);
     const [token, setToken] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export default function SubforumList() {
         [token],
     );
 
-    const loadSubforums = async () => {
+    const loadSubforums = useCallback(async () => {
         setLoading(true);
         try {
             const tokenValue = await getStoredAccessToken();
@@ -68,11 +68,22 @@ export default function SubforumList() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [setLoading, setSubforums]);
 
     useEffect(() => {
+
+        const lastFetchKey = useSubforumsListStore.getState().lastFetchKey;
+        const currentFetchKey = useSubforumsListStore.getState().fetchKey;
+        if (lastFetchKey == currentFetchKey) {
+            console.log("Skipped reloading subforums list, not forced to update");
+            return;
+        }
+        console.log("Reloading subforums list, forced to update: from ", lastFetchKey, "to", currentFetchKey)
+        useSubforumsListStore.setState({lastFetchKey: currentFetchKey});
+        console.log("Set lastFetchKey to: ", currentFetchKey)
+
         loadSubforums();
-    }, []);
+    }, [fetchKey, loadSubforums]);
 
     const onDeleteSubforum = async (slug: string) => {
         if (deletingSlug != null) return;
@@ -97,7 +108,7 @@ export default function SubforumList() {
                     headers: {
                         Authorization: `Bearer ${tokenValue}`,
                     },
-                    credentials: "omit"
+                    credentials: "omit",
                 },
             );
 
@@ -117,7 +128,7 @@ export default function SubforumList() {
 
     return (
         <FadeUp>
-            <main className="flex flex-col gap-4 w-full">
+            <main className="flex flex-col gap-4 w-full pb-30">
                 <h1 className="text-2xl font-bold">Subforums</h1>
 
                 <Button
@@ -152,7 +163,15 @@ export default function SubforumList() {
                 )}
 
                 {loading && (
-                    <span className="text-black/50">Loading subforums...</span>
+                    <>  
+                        <SubforumSkeletonLoader></SubforumSkeletonLoader>
+                        <SubforumSkeletonLoader></SubforumSkeletonLoader>
+                        <SubforumSkeletonLoader></SubforumSkeletonLoader>
+                        <SubforumSkeletonLoader></SubforumSkeletonLoader>
+                        <SubforumSkeletonLoader></SubforumSkeletonLoader>
+                        <SubforumSkeletonLoader></SubforumSkeletonLoader>
+                        <SubforumSkeletonLoader></SubforumSkeletonLoader>
+                    </>
                 )}
 
                 {!loading && subforums.length === 0 && (

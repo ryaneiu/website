@@ -23,6 +23,7 @@ import {
     type PostImage,
 } from "../../contentFilter";
 import { getAppLanguageFromPath, localizePath } from "../../i18n";
+import { PostSkeletonLoader } from "../../components/PostSkeletonLoader";
 
 type PostResponse = {
     id: number;
@@ -123,7 +124,7 @@ export default function PostPage() {
             `${API_ENDPOINT}/api/posts/${postId}/replies/`,
             {
                 method: "GET",
-                credentials: "omit"
+                credentials: "omit",
             },
         );
 
@@ -141,10 +142,13 @@ export default function PostPage() {
 
             try {
                 const [postResponse] = await Promise.all([
-                    fetch(`${API_ENDPOINT}/api/posts/${postId}/?${filterQuery}`, {
-                        method: "GET",
-                        credentials: "omit"
-                    }),
+                    fetch(
+                        `${API_ENDPOINT}/api/posts/${postId}/?${filterQuery}`,
+                        {
+                            method: "GET",
+                            credentials: "omit",
+                        },
+                    ),
                     fetchReplies(),
                 ]);
 
@@ -182,14 +186,23 @@ export default function PostPage() {
         };
 
         loadPostPage();
-    }, [canDisplay, fetchReplies, filterPreferences.includeSwears, filterQuery, postId]);
+    }, [
+        canDisplay,
+        fetchReplies,
+        filterPreferences.includeSwears,
+        filterQuery,
+        postId,
+    ]);
 
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
 
     useEffect(() => {
-        fetch(`${API_ENDPOINT}/api/posts/subforums/`, { method: "GET", credentials: "omit"})
+        fetch(`${API_ENDPOINT}/api/posts/subforums/`, {
+            method: "GET",
+            credentials: "omit",
+        })
             .then(async (res) => {
                 if (!res.ok) {
                     throw new Error("Failed to load subforums");
@@ -281,7 +294,7 @@ export default function PostPage() {
                     content_markdown: textContent,
                     parent_reply: parentReplyId,
                 }),
-                credentials: "omit"
+                credentials: "omit",
             },
         );
 
@@ -318,7 +331,7 @@ export default function PostPage() {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
-                credentials: "omit"
+                credentials: "omit",
             },
         );
 
@@ -365,7 +378,7 @@ export default function PostPage() {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
-                    credentials: "omit"
+                    credentials: "omit",
                 },
             );
 
@@ -405,7 +418,7 @@ export default function PostPage() {
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({ subforum: subforumToAssign }),
-                    credentials: "omit"
+                    credentials: "omit",
                 },
             );
 
@@ -434,7 +447,9 @@ export default function PostPage() {
         postData == null
             ? ""
             : censorText(
-                  postData.body || postData.content_markdown || postData.content,
+                  postData.body ||
+                      postData.content_markdown ||
+                      postData.content,
                   filterPreferences.includeSwears,
               );
     const renderedPostImage =
@@ -442,7 +457,9 @@ export default function PostPage() {
             ? null
             : resolvePostImage(
                   postData.image,
-                  postData.body || postData.content_markdown || postData.content,
+                  postData.body ||
+                      postData.content_markdown ||
+                      postData.content,
                   filterPreferences.includeNsfw,
                   postData.is_nsfw,
               );
@@ -453,7 +470,25 @@ export default function PostPage() {
 
     return (
         <FadeUp>
-            <div className="flex flex-col items-center px-2 py-2">
+            <div className="flex flex-col items-center px-2 py-2 gap-3">
+                <div className="w-full">
+                    <Button
+                        text="Back"
+                        icon={
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                height="24px"
+                                viewBox="0 -960 960 960"
+                                width="24px"
+                                fill="currentColor"
+                            >
+                                <path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z" />
+                            </svg>
+                        }
+                        onClick={() => navigate("/")}
+                    />
+                </div>
+
                 <div className="flex flex-col gap-2 w-full">
                     {!canDisplay && (
                         <span className="text-black/50">Invalid post id.</span>
@@ -466,7 +501,9 @@ export default function PostPage() {
                                     description={renderedPostDescription}
                                     created_at={postData.created_at}
                                     votes={
-                                        postData.likes_count ?? postData.votes ?? 0
+                                        postData.likes_count ??
+                                        postData.votes ??
+                                        0
                                     }
                                     commentsCount={postData.replies_count ?? 0}
                                     id={postData.id}
@@ -509,7 +546,9 @@ export default function PostPage() {
                                                           ? "Ajouter au sous-forum"
                                                           : "Add to Subforum"
                                                 }
-                                                onClick={onAssignSubforumClicked}
+                                                onClick={
+                                                    onAssignSubforumClicked
+                                                }
                                                 disabled={
                                                     !canDeletePost ||
                                                     isAssigningSubforum
@@ -560,6 +599,7 @@ export default function PostPage() {
                             )}
                         </>
                     )}
+                    {!loaded && <PostSkeletonLoader></PostSkeletonLoader>}
 
                     {canDisplay && replyingToPost && (
                         <CommentReplySection
@@ -585,7 +625,11 @@ export default function PostPage() {
                                                 <path d="M440-400h80v-120h120v-80H520v-120h-80v120H320v80h120v120ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z" />
                                             </svg>
                                         }
-                                        text={language === "fr" ? "Répondre" : "Reply"}
+                                        text={
+                                            language === "fr"
+                                                ? "Répondre"
+                                                : "Reply"
+                                        }
                                         onClick={() => setReplyingToPost(true)}
                                         isPrimary={true}
                                     ></Button>
@@ -617,6 +661,7 @@ export default function PostPage() {
                             {skeletonLoaderComments.map((v) => {
                                 return (
                                     <SkeletonLoaderComment
+                                    key={v.id}
                                         comment={v}
                                     ></SkeletonLoaderComment>
                                 );
