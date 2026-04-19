@@ -53,7 +53,12 @@ export default defineConfig({
                 moduleSideEffects: false,
                 propertyReadSideEffects: false,
                 unknownGlobalSideEffects: false
-            }
+            },
+            output: {
+                chunkFileNames: "assets/chunk-[hash].js",
+                entryFileNames: "assets/[hash].js",
+                assetFileNames: "assets/[hash][extname]",
+            },
         },
         minify: 'terser',
         terserOptions: {
