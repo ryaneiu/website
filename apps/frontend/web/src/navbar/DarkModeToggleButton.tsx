@@ -53,12 +53,9 @@ export function DarkModeToggleButton() {
             icon={modeToggleSwitchToggleIcon}
             filledIcon={modeToggleSwitchToggleIconFilled}
             onClick={() => {
-                if (isDarkMode) {
-                    document.documentElement.classList.remove("dark");
-                } else {
-                    document.documentElement.classList.add("dark");
-                }
+                console.log("Setting to dark mode = ", !isDarkMode);
                 useDarkModeStore.setState({ isDarkMode: !isDarkMode });
+                localStorage.setItem("color-scheme", !isDarkMode ? "dark" : "light");
             }}
         ></TransparentIconButton>
     );

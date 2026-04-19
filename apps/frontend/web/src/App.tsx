@@ -1,8 +1,4 @@
-import {
-    BrowserRouter,
-    Route,
-    Routes
-} from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import React, { Suspense, useEffect } from "react";
 import { useScreenSizeState } from "./stores/ScreenSizeState";
 import { clearStoredTokens, isDevelopmentMode } from "./auth/Authentication";
@@ -14,6 +10,7 @@ import {
 } from "./stores/AuthenticationStore";
 import { NotificationList } from "./components/Notify";
 import { LoadingPageFallbackFS } from "./components/LoadingPageFallback";
+import { useDarkModeStore } from "./stores/DarkModeStore";
 
 function hasShownDebugTip() {
     if (!isDevelopmentMode()) return true;
@@ -49,7 +46,67 @@ function App() {
         }
     }, []);
 
+    useEffect(() => {
+        const localStorageData = localStorage.getItem("color-scheme");
 
+        if (localStorageData != "dark" && localStorageData != "light") {
+            console.warn("Stored color scheme is invalid. Clearing");
+            localStorage.removeItem("color-sceheme");
+        }
+
+        const isDarkMode = window.matchMedia(
+            "(prefers-color-scheme: dark)",
+        ).matches;
+        const isLightMode = window.matchMedia(
+            "(prefers-color-scheme: light)",
+        ).matches;
+
+        if (!isDarkMode && !isLightMode) {
+            console.log("No color scheme preference found");
+        }
+
+        if (localStorageData) {
+            switch (localStorageData) {
+                case "dark":
+                    console.log("Set color scheme to dark mode");
+                    useDarkModeStore.setState({ isDarkMode: true });
+                    break;
+                case "light":
+                    console.log("Set color scheme to light mode");
+                    useDarkModeStore.setState({ isDarkMode: false });
+                    break;
+                default:
+                    console.warn("Unknown scheme: ", localStorageData);
+                    break;
+            }
+        } else {
+            if (isDarkMode) {
+                useDarkModeStore.setState({ isDarkMode: true });
+                localStorage.setItem("color-scheme", "dark");
+                console.log("Device prefers dark mode");
+            } else if (isLightMode) {
+                useDarkModeStore.setState({ isDarkMode: false });
+                localStorage.setItem("color-scheme", "light");
+                console.log("Device prefers light mode");
+            } else {
+                console.log("No preference found, defaulting to light mode");
+                localStorage.setItem("color-scheme", "light");
+                useDarkModeStore.setState({ isDarkMode: false });
+            }
+        }
+    }, []);
+
+    const darkMode = useDarkModeStore((state) => state.isDarkMode);
+
+    useEffect(() => {
+        if (darkMode) {
+            console.log("Switching to dark mode, adding class 'dark'")
+            document.documentElement.classList.add("dark");
+        } else {
+            console.log("Switching to light mode, removing class 'dark'")
+            document.documentElement.classList.remove("dark");
+        }
+    }, [darkMode]);
 
     useEffect(() => {
         const f = async () => {
