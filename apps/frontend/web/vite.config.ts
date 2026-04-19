@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { createHtmlPlugin } from "vite-plugin-html";
 
 /*
 ******************************************************
@@ -32,7 +33,15 @@ import tailwindcss from "@tailwindcss/vite";
 // And side note: your AI GENERATED FIXES WERE NOT WORKING
 // Plus you didn't finish resolving the merge conflict before pushing
 export default defineConfig({
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), createHtmlPlugin({
+        minify: {
+            collapseWhitespace: true,
+            removeComments: true,
+            removeAttributeQuotes: true,
+            minifyJS: true,   // minifies core script
+            minifyCSS: true,
+        },
+    }),],
     optimizeDeps: {
         exclude: ["@ffmpeg/ffmpeg", "@ffmpeg/util"],
     },

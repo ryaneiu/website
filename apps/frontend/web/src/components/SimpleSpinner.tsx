@@ -1,15 +1,18 @@
 import clsx from "clsx";
 
 interface Props {
-    isWhite?: boolean;
+  isWhite?: boolean;
 }
 
-export function Spinner(props: Props) {
-    const classes = clsx(
-        "w-5 h-5 border-3 border-t-transparent rounded-full animate-spin",
-        props.isWhite ? "border-white dark:border-black transition-colors duration-300" : "border-black dark:border-white transition-colors duration-300"
-    )
-    return (
-        <div className={classes}></div>
-    );
+export function Spinner({ isWhite }: Props) {
+  return (
+    <div
+      className={clsx(
+        "w-6 h-6 rounded-full border-3 border-solid border-t-transparent animate-spin",
+        isWhite
+          ? "border-white dark:border-black border-t-transparent dark:border-t-transparent"
+          : "border-black dark:border-white border-t-transparent dark:border-t-transparent"
+      )}
+    />
+  );
 }

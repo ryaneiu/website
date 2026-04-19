@@ -1,4 +1,3 @@
-
 <!--
 🚨 AUTO-GENERATED / TEMPLATE WARNING 🚨
 
@@ -21,16 +20,116 @@ You have been warned.
 
 <!doctype html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LT-Forum</title>
 
-  </head>
+    <!-- Core styles for basic loading screen -->
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
 
-  <body>
+        }
+
+        .dark-background {
+            background-color: #18181b;
+        }
+
+        .spinner-container {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            top: 0;
+            left: 0;
+            z-index: 99;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            width: 20px;
+            /* w-5 */
+            height: 20px;
+            /* h-5 */
+
+            border-width: 3px;
+            border-style: solid;
+
+            border-color: black;
+            /* border-black */
+            border-top-color: transparent;
+
+            border-radius: 9999px;
+            /* rounded-full */
+
+            animation: spin 1s linear infinite;
+        }
+
+        .spinner-dark {
+            border-color: white !important;
+            border-top-color: transparent !important;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+
+    <script>
+        // core script
+        (function () {
+            const storedIsDarkMode = localStorage.getItem("color-scheme");
+            const systemIsDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            const isDark = storedIsDarkMode === "dark" || (!storedIsDarkMode && systemIsDarkMode);
+
+            if (isDark) {
+                // Apply classes to documentElement so it's ready before <body> exists
+                document.documentElement.classList.add("dark-background");
+            }
+        })();
+    </script>
+
+</head>
+
+<body>
+
+    <div class="spinner-container" id="core-spinner-container">
+        <div class="spinner" id="core-spinner"></div>
+    </div>
+
     <!-- React root -->
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+    <script type="module" src="/src/main.tsx" onerror="window.__BUNDLE_FAILED__ = true;"></script>
+
+    <script>
+        (function () {
+            const isDark = document.documentElement.classList.contains("dark-background");
+            if (isDark) {
+                document.getElementById("core-spinner").classList.add("spinner-dark");
+                document.body.classList.add("dark-background");
+            }
+        })();
+    </script>
+    <script>
+        setTimeout(() => {
+            if (window.__BUNDLE_FAILED__) {
+                const hostname = window.location.hostname;
+                const port = window.location.port;
+                const isViteDevServer =
+                    (hostname === "localhost" || hostname === "127.0.0.1") &&
+                    (port === "5173" || port === "5174" || port === "4173" || port === "8001");
+                alert(!isViteDevServer ? `Application failed to load. Please refresh.` : "Application failed to load. Please check the developer console to see if the bundle can be found and laoded.");
+            }
+        }, 3000);
+    </script>
+</body>
+
 </html>

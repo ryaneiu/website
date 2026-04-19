@@ -294,7 +294,7 @@ export function Navbar() {
             )}
 
             <div className="block md:hidden"></div>
-            <h1 className="font-bold text-2xl md:block hidden ml-4">
+            <h1 className="font-bold text-2xl sm:block hidden ml-4 whitespace-nowrap">
                 LT-Forum
             </h1>
 

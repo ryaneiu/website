@@ -1,5 +1,5 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
-import React, { Suspense, useEffect } from "react";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import React, { Suspense, useEffect, useLayoutEffect, useMemo } from "react";
 import { useScreenSizeState } from "./stores/ScreenSizeState";
 import { clearStoredTokens, isDevelopmentMode } from "./auth/Authentication";
 import { notifyInfoDefault } from "./stores/NotificationsStore";
@@ -20,6 +20,31 @@ function hasShownDebugTip() {
 const PrimaryView = React.lazy(() => import("./views/PrimaryView"));
 const CreatePostView = React.lazy(() => import("./views/CreatePostView"));
 const AuthView = React.lazy(() => import("./views/AuthView"));
+
+function getRootRoute(pathname: string) {
+    if (pathname.startsWith("/auth")) return "auth";
+    if (pathname.startsWith("/create")) return "create";
+    return "primary";
+}
+
+export function AppRoutes() {
+
+    const location = useLocation();
+
+    const rootKey = useMemo(() => {
+        return getRootRoute(location.pathname);
+    }, [location.pathname]);
+
+    return (
+        <Suspense key={rootKey} fallback={<LoadingPageFallbackFS></LoadingPageFallbackFS>}>
+            <Routes>
+                <Route path="/*" element={<PrimaryView />} />
+                <Route path="/create" element={<CreatePostView />} />
+                <Route path="/auth" element={<AuthView />} />
+            </Routes>
+        </Suspense>
+    );
+}
 
 function App() {
     const setSize = useScreenSizeState((state) => state.setSize);
@@ -47,6 +72,13 @@ function App() {
     }, []);
 
     useEffect(() => {
+        const spinnerContainer = document.querySelector(
+            "#core-spinner-container",
+        );
+        spinnerContainer?.remove();
+    }, []);
+
+    useLayoutEffect(() => {
         const localStorageData = localStorage.getItem("color-scheme");
 
         if (localStorageData != "dark" && localStorageData != "light") {
@@ -100,10 +132,10 @@ function App() {
 
     useEffect(() => {
         if (darkMode) {
-            console.log("Switching to dark mode, adding class 'dark'")
+            console.log("Switching to dark mode, adding class 'dark'");
             document.documentElement.classList.add("dark");
         } else {
-            console.log("Switching to light mode, removing class 'dark'")
+            console.log("Switching to light mode, removing class 'dark'");
             document.documentElement.classList.remove("dark");
         }
     }, [darkMode]);
@@ -135,32 +167,7 @@ function App() {
         <div className="w-[100vw] h-[100vh] text-black dark:text-white bg-white dark:bg-zinc-900 transition-colors duration-300">
             <NotificationList></NotificationList>
             <BrowserRouter>
-                <Routes>
-                    <Route
-                        path="/*"
-                        element={
-                            <Suspense fallback={<LoadingPageFallbackFS />}>
-                                <PrimaryView />
-                            </Suspense>
-                        }
-                    />
-                    <Route
-                        path="/create"
-                        element={
-                            <Suspense fallback={<LoadingPageFallbackFS />}>
-                                <CreatePostView />
-                            </Suspense>
-                        }
-                    />
-                    <Route
-                        path="/auth"
-                        element={
-                            <Suspense fallback={<LoadingPageFallbackFS />}>
-                                <AuthView />
-                            </Suspense>
-                        }
-                    />
-                </Routes>
+                <AppRoutes></AppRoutes>
             </BrowserRouter>
         </div>
     );

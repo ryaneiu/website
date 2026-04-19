@@ -11,7 +11,9 @@ const Trending = React.lazy(() => import("./pages/trending/Trending"));
 const Profile = React.lazy(() => import("./pages/editProfile/Profile"));
 const PostPage = React.lazy(() => import("./pages/postPage/PostPage"));
 const SubforumList = React.lazy(() => import("./pages/subforums/SubforumList"));
-const SubforumDetail = React.lazy(() => import("./pages/subforums/SubforumDetail"));
+const SubforumDetail = React.lazy(
+    () => import("./pages/subforums/SubforumDetail"),
+);
 
 export function MainArea() {
     const sideNavigationOpen = useSideNavigationVisibility(
@@ -29,7 +31,10 @@ export function MainArea() {
     }, [location]);
 
     return (
-        <div className="flex-grow-1 h-full pb-60 p-6 sm:p-8 md:p-10 lg:p-16 relative overflow-y-auto dark:bg-zinc-900 transition-colors duration-300" ref={mainContainer}>
+        <div
+            className="flex-grow-1 h-full pb-60 p-6 sm:p-8 md:p-10 lg:p-16 relative overflow-y-auto dark:bg-zinc-900 transition-colors duration-300"
+            ref={mainContainer}
+        >
             <AnimatePresence>
                 {sideNavigationOpen && screenSize < 640 && (
                     <Fade
@@ -41,120 +46,80 @@ export function MainArea() {
                 )}
             </AnimatePresence>
 
-            <Routes>
-                <Route
-                    index
-                    element={
-                        <Suspense fallback={<LoadingPageFallback />}>
-                            <Home />
-                        </Suspense>
-                    }
-                />
-                <Route
-                    path="discover"
-                    element={
-                        <Suspense fallback={<LoadingPageFallback />}>
-                            <Discover />
-                        </Suspense>
-                    }
-                />
-                <Route
-                    path="trending"
-                    element={
-                        <Suspense fallback={<LoadingPageFallback />}>
-                            <Trending />
-                        </Suspense>
-                    }
-                />
-                <Route
-                    path="profile"
-                    element={
-                        <Suspense fallback={<LoadingPageFallback />}>
-                            <Profile />
-                        </Suspense>
-                    }
-                />
-                <Route
-                    path="post/:id"
-                    element={
-                        <Suspense fallback={<LoadingPageFallback/>}>
-                            <PostPage></PostPage>
-                        </Suspense>
-                    }
-                ></Route>
-                <Route
-                    path="subforums"
-                    element={
-                        <Suspense fallback={<LoadingPageFallback/>}>
-                            <SubforumList></SubforumList>
-                        </Suspense>
-                    }
-                ></Route>
-                <Route
-                    path="subforums/:slug"
-                    element={
-                        <Suspense fallback={<LoadingPageFallback/>}>
-                            <SubforumDetail></SubforumDetail>
-                        </Suspense>
-                    }
-                ></Route>
-                <Route
-                    path="fr"
-                    element={
-                        <Suspense fallback={<LoadingPageFallback />}>
-                            <Home />
-                        </Suspense>
-                    }
-                />
-                <Route
-                    path="fr/discover"
-                    element={
-                        <Suspense fallback={<LoadingPageFallback />}>
-                            <Discover />
-                        </Suspense>
-                    }
-                />
-                <Route
-                    path="fr/trending"
-                    element={
-                        <Suspense fallback={<LoadingPageFallback />}>
-                            <Trending />
-                        </Suspense>
-                    }
-                />
-                <Route
-                    path="fr/profile"
-                    element={
-                        <Suspense fallback={<LoadingPageFallback />}>
-                            <Profile />
-                        </Suspense>
-                    }
-                />
-                <Route
-                    path="fr/post/:id"
-                    element={
-                        <Suspense fallback={<LoadingPageFallback />}>
-                            <PostPage></PostPage>
-                        </Suspense>
-                    }
-                ></Route>
-                <Route
-                    path="fr/subforums"
-                    element={
-                        <Suspense fallback={<LoadingPageFallback />}>
-                            <SubforumList></SubforumList>
-                        </Suspense>
-                    }
-                ></Route>
-                <Route
-                    path="fr/subforums/:slug"
-                    element={
-                        <Suspense fallback={<LoadingPageFallback />}>
-                            <SubforumDetail></SubforumDetail>
-                        </Suspense>
-                    }
-                />
-            </Routes>
+            <Suspense key={location.key} fallback={<LoadingPageFallback></LoadingPageFallback>}>
+                <Routes>
+                    <Route
+                        index
+                        element={<Home />
+                        }
+                    />
+                    <Route
+                        path="discover"
+                        element={<Discover />
+                        }
+                    />
+                    <Route
+                        path="trending"
+                        element={<Trending />
+                        }
+                    />
+                    <Route
+                        path="profile"
+                        element={<Profile />
+                        }
+                    />
+                    <Route
+                        path="post/:id"
+                        element={<PostPage></PostPage>
+                        }
+                    ></Route>
+                    <Route
+                        path="subforums"
+                        element={<SubforumList></SubforumList>
+                        }
+                    ></Route>
+                    <Route
+                        path="subforums/:slug"
+                        element={<SubforumDetail></SubforumDetail>
+                        }
+                    ></Route>
+                    <Route
+                        path="fr"
+                        element={<Home />
+                        }
+                    />
+                    <Route
+                        path="fr/discover"
+                        element={<Discover />
+                        }
+                    />
+                    <Route
+                        path="fr/trending"
+                        element={<Trending />
+                        }
+                    />
+                    <Route
+                        path="fr/profile"
+                        element={<Profile />
+                        }
+                    />
+                    <Route
+                        path="fr/post/:id"
+                        element={<PostPage></PostPage>
+                        }
+                    ></Route>
+                    <Route
+                        path="fr/subforums"
+                        element={<SubforumList></SubforumList>
+                        }
+                    ></Route>
+                    <Route
+                        path="fr/subforums/:slug"
+                        element={<SubforumDetail></SubforumDetail>
+                        }
+                    />
+                </Routes>
+            </Suspense>
         </div>
     );
 }
