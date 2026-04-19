@@ -15,7 +15,7 @@ import {
     notifySuccessDefault,
 } from "../stores/NotificationsStore";
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function signUp(username: string, password: string, email: string) {
     try {
@@ -310,6 +310,7 @@ export default function AuthView() {
                 onClick={async () => {
 
                     setIsLoading(true);
+                    // gives the feeling that something actually happened
                     await sleep(150);
 
                     const valid = areInputsValid(true, loginEmailRef.current!, loginPasswordRef.current!);

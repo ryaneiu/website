@@ -1,4 +1,8 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import {
+    BrowserRouter,
+    Route,
+    Routes
+} from "react-router-dom";
 import React, { Suspense, useEffect } from "react";
 import { useScreenSizeState } from "./stores/ScreenSizeState";
 import { clearStoredTokens, isDevelopmentMode } from "./auth/Authentication";
@@ -44,6 +48,8 @@ function App() {
             localStorage.setItem("debugTipShown", "true");
         }
     }, []);
+
+
 
     useEffect(() => {
         const f = async () => {

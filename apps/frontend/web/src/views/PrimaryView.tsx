@@ -4,6 +4,7 @@ import { MainArea } from "../MainArea";
 import { Navbar } from "../navbar/Navbar";
 import { SideNavigation } from "../navbar/sideNavigation";
 import { getAppLanguageFromPath } from "../i18n";
+import { useEffect } from "react";
 
 export default function PrimaryView() {
 
@@ -11,7 +12,13 @@ export default function PrimaryView() {
     const location = useLocation();
     const language = getAppLanguageFromPath(location.pathname);
 
-    
+    useEffect(() => {
+        
+        if (location.pathname === "/*") {
+            // Replace: true prevents the "/*" from staying in browser history
+            navigate("/", { replace: true });
+        }
+    }, [location, navigate]);
     return (
         <div className="text-black dark:text-white transition-colors duration-300">
             <div className="w-[100vw] h-[100vh] fixed flex flex-col">
