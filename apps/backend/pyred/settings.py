@@ -51,7 +51,7 @@ PYTHONANYWHERE_HOST = (
     else ""
 )
 
-default_allowed_hosts = ["localhost", "127.0.0.1"]
+default_allowed_hosts = ["localhost", "127.0.0.1", "www.lt-forum.ca"]
 if PYTHONANYWHERE_HOST:
     default_allowed_hosts.append(PYTHONANYWHERE_HOST)
 
