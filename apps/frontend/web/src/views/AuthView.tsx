@@ -7,13 +7,15 @@ import { storeAccessToken, storeRefreshToken } from "../auth/Authentication";
 import { FadeUp } from "../components/AnimatedPresenceDiv";
 import { useAuthenticationStore } from "../stores/AuthenticationStore";
 import { LoadableButton } from "../components/LoadableButton";
-import { FullWidthInput } from "../components/FullWidthInput";
+import { FullWidthInputWithLabel } from "../components/FullWidthInput";
 import clsx from "clsx";
 import {
     notify,
     notifyErrorDefault,
     notifySuccessDefault,
 } from "../stores/NotificationsStore";
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function signUp(username: string, password: string, email: string) {
     try {
@@ -27,7 +29,7 @@ async function signUp(username: string, password: string, email: string) {
             headers: {
                 "Content-Type": "application/json",
             },
-            credentials: "include"
+            credentials: "include",
         });
 
         if (response.status != 201 && response.status != 200) {
@@ -74,7 +76,7 @@ async function login(username: string, password: string): Promise<boolean> {
             headers: {
                 "Content-Type": "application/json",
             },
-            credentials: "include"
+            credentials: "include",
         });
 
         if (response.status != 200) {
@@ -126,52 +128,115 @@ async function login(username: string, password: string): Promise<boolean> {
 
 type ValidityResult = {
     isValid: boolean;
-    message: string;
+    errors: Partial<Errors>
 };
 
-function areInputsValid(
-    isLogin: boolean,
-    inputEmail: HTMLInputElement,
-    inputPassword: HTMLInputElement,
-): ValidityResult {
-    if (isLogin) {
-        const isValidSyntax =
-            inputEmail.checkValidity() && inputPassword.checkValidity();
+type Errors = {
+    loginUsername: string;
+    loginPassword: string;
+    signUpUsername: string;
+    signUpEmail: string;
+    signUpPassword: string;
+    SignUpConfirmPassword: string;
+};
 
-        return {
-            isValid: isValidSyntax,
-            message: !isValidSyntax ? "Email not valid" : "",
-        };
-    } else {
-        const isValidSyntax =
-            inputEmail.checkValidity() && inputPassword.checkValidity();
-
-        const passwordLengthCheck = inputPassword.value.length >= 8;
-
-        console.log("Valid: ", isValidSyntax);
-        console.log("Password length: ", passwordLengthCheck);
-
-        const messagePasswordLength = !passwordLengthCheck
-            ? "Password must be at least 8 characters long"
-            : "";
-
-        let message = "";
-        if (!passwordLengthCheck && isValidSyntax) {
-            message = messagePasswordLength;
-        } else if (!isValidSyntax) {
-            message = "Email not valid";
-        } else if (!(passwordLengthCheck && isValidSyntax)) {
-            message = "One or more inputs are not valid";
-        }
-
-        return {
-            isValid: isValidSyntax && passwordLengthCheck,
-            message: message,
-        };
-    }
-}
+type ErrorKey = keyof Errors;
 
 export default function AuthView() {
+    const [formErrors, setErrors] = useState<Errors>({
+        loginUsername: "",
+        loginPassword: "",
+        signUpUsername: "",
+        signUpEmail: "",
+        signUpPassword: "",
+        SignUpConfirmPassword: "",
+    });
+
+    const updateErrors = (partial: Partial<Errors>) => {
+
+        console.log("Update errors to: ", partial);
+
+        setErrors((prev) => ({
+            ...prev,
+            ...partial,
+        }));
+    };
+
+    const forgiveError = (k: ErrorKey) => {
+        console.log("forgive: ", k);
+        updateErrors({[k]: ""});
+    }
+
+    const areInputsValid = function (
+        isLogin: boolean,
+        usernameInput: HTMLInputElement,
+        passwordInput: HTMLInputElement,
+        signUpEmailInput?: HTMLInputElement,
+        signUpConfirmPassword?: HTMLInputElement,
+    ): ValidityResult {
+
+        const errors: Partial<Errors> = {}
+
+        if (!isLogin) {
+            if (!signUpEmailInput || !signUpConfirmPassword) {
+                throw new Error("No email input and confirm password inputs provided!");
+            }
+
+            const isUsernameValidSyntax = usernameInput.value != "";
+            const isEmailValidSyntax = signUpEmailInput.checkValidity() && signUpEmailInput.value != "";
+
+            console.log(signUpEmailInput.value);
+
+            if (!isEmailValidSyntax) {
+                errors.signUpEmail = "Please enter a valid email address";
+            }
+
+            if (!isUsernameValidSyntax) {
+                errors.signUpUsername = "Please enter a valid username";
+            }
+
+            const isPasswordTooShort = passwordInput.value.length < 8;
+            if (isPasswordTooShort) {
+                errors.signUpPassword = "Password must be at least 8 characters long";
+            }
+
+            const doPasswordsMatch =
+                signUpConfirmPassword.value == passwordInput.value;
+
+            if (!doPasswordsMatch) {
+                errors.SignUpConfirmPassword = "Passwords do not match";
+            }
+
+            const valid =
+                isUsernameValidSyntax &&
+                isEmailValidSyntax &&
+                !isPasswordTooShort &&
+                doPasswordsMatch;
+
+            return {
+                isValid: valid,
+                errors: errors
+            };
+        } else {
+            const isUsernameValid = usernameInput.value != "";
+
+            if (!isUsernameValid) {
+                errors.loginUsername = "Please enter your username";
+            }
+
+            const isPasswordValid = passwordInput.value != "";
+            if (!isPasswordValid) {
+                errors.loginPassword = "Please enter your password";
+            }
+
+            const inputsValid = isUsernameValid && isPasswordValid;
+            return {
+                isValid: inputsValid,
+                errors: errors
+            };
+        }
+    };
+
     const navigate = useNavigate();
 
     const params = new URLSearchParams(window.location.search);
@@ -198,33 +263,65 @@ export default function AuthView() {
         useRef(null);
     const signUpPasswordRef: React.RefObject<HTMLInputElement | null> =
         useRef(null);
+    const signUpConfirmPasswordRef: React.RefObject<HTMLInputElement | null> =
+        useRef(null);
 
     const linkClass = clsx(
         "text-underline text-md",
         isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
     );
 
+    const toggleMode = () => {
+        setErrors({
+            loginPassword: "",
+            loginUsername: "",
+            signUpEmail: "",
+            signUpPassword: "",
+            signUpUsername: "",
+            SignUpConfirmPassword: ""
+        })
+    }
+
     const loginUi = (
         <FadeUp className="flex flex-col gap-3 items-center" key="login">
             <h1 className="text-3xl font-bold">Login</h1>
-            <FullWidthInput
-                placeholder="Username"
+            <FullWidthInputWithLabel
+                placeholder="e.g. john_doe"
                 type="text"
                 name="username"
                 ref={loginEmailRef}
                 disabled={isLoading}
-            ></FullWidthInput>
-            <FullWidthInput
-                placeholder="Password"
+                labelName="Username"
+                currentError={formErrors.loginUsername}
+                onChange={() => forgiveError("loginUsername")}
+            ></FullWidthInputWithLabel>
+            <FullWidthInputWithLabel
+                placeholder=""
                 type="password"
                 name="password"
                 ref={loginPasswordRef}
                 disabled={isLoading}
-            ></FullWidthInput>
+                labelName="Password"
+                currentError={formErrors.loginPassword}
+                onChange={() => forgiveError("loginPassword")}
+            ></FullWidthInputWithLabel>
             <LoadableButton
                 text="Login"
                 onClick={async () => {
+
                     setIsLoading(true);
+                    await sleep(150);
+
+                    const valid = areInputsValid(true, loginEmailRef.current!, loginPasswordRef.current!);
+
+                    updateErrors(valid.errors);
+
+                    if (!valid.isValid) {
+                        setIsLoading(false);
+                        return;
+                    }
+
+                    
                     const success = await login(
                         loginEmailRef.current!.value,
                         loginPasswordRef.current!.value,
@@ -241,6 +338,7 @@ export default function AuthView() {
                 className={linkClass}
                 onClick={() => {
                     setIsLogin(false);
+                    toggleMode();
                 }}
             >
                 No account? Sign up!
@@ -248,48 +346,75 @@ export default function AuthView() {
         </FadeUp>
     );
 
+
+    
     const signUpUi = (
         <FadeUp className="flex flex-col gap-3 items-center " key="signup">
             <h1 className="text-3xl font-bold">Sign up</h1>
             <div className="h-5"></div>
 
-            <FullWidthInput
-                placeholder="Username"
+            <FullWidthInputWithLabel
+                placeholder="e.g. john_doe"
+                labelName="Username"
                 type="text"
                 name="username"
                 ref={signUpUsernameRef}
                 disabled={isLoading}
-            ></FullWidthInput>
-            <FullWidthInput
-                placeholder="Email"
+                currentError={formErrors.signUpUsername}
+                onChange={() => forgiveError("signUpUsername")}
+            ></FullWidthInputWithLabel>
+            <FullWidthInputWithLabel
+                placeholder="example@example.com"
                 type="email"
                 name="email"
                 ref={signUpEmailRef}
                 disabled={isLoading}
-            ></FullWidthInput>
-            <FullWidthInput
-                placeholder="Password"
+                labelName="Email"
+                currentError={formErrors.signUpEmail}
+                onChange={() => forgiveError("signUpEmail")}
+            ></FullWidthInputWithLabel>
+            <FullWidthInputWithLabel
+                placeholder="At least 8 characters"
                 type="password"
                 name="password"
                 ref={signUpPasswordRef}
                 disabled={isLoading}
-            ></FullWidthInput>
+                labelName="Password"
+                currentError={formErrors.signUpPassword}
+                onChange={() => forgiveError("signUpPassword")}
+            ></FullWidthInputWithLabel>
+            <FullWidthInputWithLabel
+                placeholder=""
+                type="password"
+                name="password"
+                ref={signUpConfirmPasswordRef}
+                disabled={isLoading}
+                labelName="Confirm Password"
+                currentError={formErrors.SignUpConfirmPassword}
+                onChange={() => forgiveError("SignUpConfirmPassword")}
+            ></FullWidthInputWithLabel>
             <LoadableButton
                 text="Signup"
                 onClick={async () => {
+
+                    setIsLoading(true);
+                    await sleep(150);
+
                     const validityResult = areInputsValid(
                         isLogin,
-                        signUpEmailRef.current!,
+                        signUpUsernameRef.current!,
                         signUpPasswordRef.current!,
+                        signUpEmailRef.current!,
+                        signUpConfirmPasswordRef.current!,
                     );
 
+                    updateErrors(validityResult.errors);
+
                     if (!validityResult.isValid) {
-                        notifyErrorDefault(
-                            `Invalid input: ${validityResult.message}`,
-                        );
+                        setIsLoading(false);
                         return;
                     }
-                    setIsLoading(true);
+                    
                     await signUp(
                         signUpUsernameRef.current!.value,
                         signUpPasswordRef.current!.value,
@@ -304,6 +429,7 @@ export default function AuthView() {
                 className={linkClass}
                 onClick={() => {
                     setIsLogin(true);
+                    toggleMode();
                 }}
             >
                 Already have an account?
