@@ -7,7 +7,8 @@ interface Props {
     name: string;
     placeholder: string;
     hasError?: boolean;
-    onChange?: () => void;
+    onChange?: (v: string) => void;
+    value?: string;
 }
 
 interface PropsWithLabel extends Props {
@@ -25,20 +26,20 @@ export const FullWidthInput = forwardRef<HTMLInputElement, Props>(
                 : "border-black/35 dark:border-white/35",
         );
 
+        const {onChange, ...rest} = props;
+
         return (
             <input
                 className={classes}
-                placeholder={props.placeholder}
-                type={props.type}
-                name={props.name}
                 ref={ref}
-                onChange={() => {
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     console.log("CHANGED");
-                    if (props.onChange) {
+                    if (onChange) {
                         
-                        props.onChange();
+                        onChange(e.target.value);
                     }
                 }}
+                {...rest}
             ></input>
         );
     },
@@ -55,20 +56,23 @@ export const FullWidthInputWithLabel = forwardRef<
         props.currentError.length,
     );
 
+    const labelClasses = clsx(
+        "text-xs text-black/75 dark:text-white/75",
+        props.disabled && "opacity-50"
+    )
+
     return (
         <div className="flex flex-col w-full gap-1">
-            <label className="text-xs text-black/75 dark:text-white/75">
+            <label className={labelClasses}>
                 {props.labelName}
             </label>
             <FullWidthInput
-                type={props.type}
-                name={props.name}
-                placeholder={props.placeholder}
                 ref={ref}
                 hasError={
                     props.currentError != "" && props.currentError != null
                 }
                 onChange={props.onChange}
+                {...props}
             ></FullWidthInput>
             {props.currentError && (
                 <span className="text-red-700 text-xs">

@@ -152,9 +152,6 @@ export function PostList({ language = "en" }: PostListProps) {
                     console.log(
                         "dbg: received unauthorized; need to login. Redirecting",
                     );
-                    notifyErrorDefault(
-                        "You need to login before you can view the posts",
-                    );
                     postsStore.setState({
                         posts: [],
                         hasLoaded: true,
@@ -162,7 +159,7 @@ export function PostList({ language = "en" }: PostListProps) {
                     useAuthenticationStore.setState({
                         isLoggedIn: false,
                     });
-                    navigate("/auth?action=login");
+                    navigate("/auth?action=signup");
                     return;
                 }
 

@@ -10,5 +10,5 @@ export function LoadableButton(props: LoadableButtonProps) {
 
     const icon = props.isLoading ? <Spinner isWhite={props.isWhiteSpinner}></Spinner> : props.icon;
 
-    return <Button icon={icon} iconAtRight={props.iconAtRight} isPrimary={props.isPrimary} onClick={props.onClick} text={props.text} disabled={props.isLoading || props.disabled}></Button>
+    return <Button icon={icon} iconAtRight={props.iconAtRight} isPrimary={props.isPrimary} onClick={props.onClick} disabled={props.isLoading || props.disabled} {...props}></Button>
 }

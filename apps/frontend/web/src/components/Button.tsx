@@ -10,11 +10,12 @@ export interface ButtonProps {
     disabled?: boolean;
     additionalClasses?: string;
     alignText?: boolean;
+    absoluteCentering?: boolean;
 }
 
 export function Button(props: ButtonProps) {
     const buttonClasses = clsx(
-        "px-4 py-2 font-bold rounded-full border transition-colors",
+        "px-4 py-2 font-bold rounded-full border transition-colors relative",
         "flex items-center gap-2",
         props.isPrimary
             ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black hover:bg-black/80 dark:hover:bg-white/80"
@@ -24,7 +25,8 @@ export function Button(props: ButtonProps) {
     );
 
     const textClasses = clsx(
-        props.alignText && "text-center flex-grow-1"
+        (props.alignText && !props.absoluteCentering) && "text-center flex-grow-1",
+        (props.alignText && props.absoluteCentering) && "absolute left-1/2 -translate-x-1/2 whitespace-nowrap"
     )
 
     return (
@@ -35,6 +37,8 @@ export function Button(props: ButtonProps) {
             <span className={textClasses}>
                 {props.text}
             </span>
+
+            {(props.absoluteCentering && props.alignText) && <div className="flex-grow-1 h-6"></div>}
             
             {props.icon != null && props.iconAtRight ? (
                 <span>{props.icon}</span>

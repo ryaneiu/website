@@ -156,7 +156,7 @@ function App() {
                 clearStoredTokens();
 
                 if (!window.location.pathname.startsWith("/auth")) {
-                    window.location.replace("/auth?action=login");
+                    window.location.replace("/auth?action=signup");
                 }
             }
         };

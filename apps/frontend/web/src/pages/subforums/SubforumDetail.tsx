@@ -24,6 +24,9 @@ import {
     getStoredContentFilterPreferences,
     resolvePostImage,
 } from "../../contentFilter";
+import { SubforumSkeletonLoader } from "./SubforumSkeletonLoader";
+import { PostSkeletonLoader } from "../../components/PostSkeletonLoader";
+import { ButtonSkeletonLOader } from "../../components/ButtonSkeletonLoader";
 
 type SubforumDetailDto = SubforumDto & {
     posts: SubforumPostDto[];
@@ -126,7 +129,7 @@ export default function SubforumDetail() {
                     headers: {
                         Authorization: `Bearer ${tokenValue}`,
                     },
-                    credentials: "omit"
+                    credentials: "omit",
                 },
             );
 
@@ -145,13 +148,6 @@ export default function SubforumDetail() {
     return (
         <FadeUp>
             <main className="flex flex-col gap-4 w-full">
-                {loading && (
-                    <span className="text-black/50">Loading subforum...</span>
-                )}
-
-                {!loading && subforum == null && (
-                    <span className="text-black/50">Subforum not found.</span>
-                )}
 
                 <div>
                     <Button
@@ -170,6 +166,35 @@ export default function SubforumDetail() {
                         onClick={() => navigate("/subforums")}
                     />
                 </div>
+
+                {loading && (
+                    <>
+                        <div className="flex flex-col gap-5">
+                            <SubforumSkeletonLoader></SubforumSkeletonLoader>
+                            <div>  
+                                <ButtonSkeletonLOader additionalClasses="w-25 h-6"></ButtonSkeletonLOader>
+
+                            </div>
+                            
+                            <div className="flex flex-col gap-3">
+                                <PostSkeletonLoader></PostSkeletonLoader>
+                                <PostSkeletonLoader></PostSkeletonLoader>
+                                <PostSkeletonLoader></PostSkeletonLoader>
+                                <PostSkeletonLoader></PostSkeletonLoader>
+                                <PostSkeletonLoader></PostSkeletonLoader>
+                            </div>
+                        </div>
+                    </>
+                )}
+                {loading && (
+                    <span className="text-black/50">Loading subforum...</span>
+                )}
+
+                {!loading && subforum == null && (
+                    <span className="text-black/50">Subforum not found.</span>
+                )}
+
+
 
                 {subforum != null && (
                     <>
