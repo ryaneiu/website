@@ -32,7 +32,6 @@ import { postsStore } from "../stores/PostsStore";
 import clsx from "clsx";
 import { Spinner } from "../components/SimpleSpinner";
 
-
 export default function CreatePostView() {
     const cancelRef = useRef<(() => void) | null>(null);
 
@@ -373,12 +372,12 @@ export default function CreatePostView() {
         isEncoding
             ? "blur-sm brightness-50 scale-105"
             : "blur-0 brightness-100 scale-100",
-        "rounded-md duration-500 ease-in-out",
+        "rounded-md duration-500 ease-in-out max-h-[40vh]",
     );
 
     return (
         <FadeUp className="w-full h-[100vh] flex justify-center items-center dark:bg-zinc-900 text-black dark:text-white transition-colors duration-300">
-            <Panel className="flex flex-col gap-3 items-center relative shadow-lg max-h-[95vh] overflow-auto bg-white dark:bg-zinc-800 h-fit transition-colors duration-300">
+            <Panel className="flex flex-col gap-3 items-center relative shadow-lg max-h-[95vh] overflow-y-auto bg-white dark:bg-zinc-800 h-fit transition-colors duration-300">
                 {/* Close button */}
                 <div className="absolute top-0 right-0 m-1">
                     <TransparentIconButton
@@ -443,12 +442,14 @@ export default function CreatePostView() {
 
                 {imagePreviewUrl != null && (
                     <div className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] relative">
-                        <div className="w-fit h-fit overflow-hidden rounded-md">
-                            <img
-                                className={imageClasses}
-                                src={imagePreviewUrl}
-                                alt="Attached Image"
-                            ></img>
+                        <div className="flex flex-col items-center">
+                            <div className="w-fit h-fit overflow-hidden rounded-md flex">
+                                <img
+                                    className={imageClasses}
+                                    src={imagePreviewUrl}
+                                    alt="Attached Image"
+                                ></img>
+                            </div>
                         </div>
 
                         {isEncoding && (
@@ -471,7 +472,7 @@ export default function CreatePostView() {
 
                 {/* Content textarea */}
                 <TextAreaInput
-                    className="px-2 py-2 w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] h-[50vh] rounded-md border border-black/15 dark:border-white/15 focus:outline-none focus:border-black/35 dark:focus:border-white/35 transition-colors duration-300"
+                    className="px-2 py-2 w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] h-[50vh] min-h-20 rounded-md border border-black/15 dark:border-white/15 focus:outline-none focus:border-black/35 dark:focus:border-white/35 transition-colors duration-300"
                     placeholder="Your random thoughts... (paste images directly)"
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
