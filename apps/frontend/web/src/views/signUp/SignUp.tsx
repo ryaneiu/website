@@ -9,6 +9,8 @@ import { useNavigate } from "react-router-dom";
 import { GoogleIcon, MicrosoftIcon } from "./OAuth2ProviderIcons";
 import { FadeUpLeaveUp } from "../../components/AnimatedPresenceDiv";
 import { AnimatePresence } from "framer-motion";
+import { OauthAvailable } from "./OAuthFeatureReady";
+import { TransparentIconButton } from "../../components/TransparentIconButton";
 
 export function SignUpStage0() {
     const updateErrors = useSignUpStore((state) => state.updateErrors);
@@ -41,9 +43,14 @@ export function SignUpStage0() {
 
     return (
         <FadeUpLeaveUp className="flex flex-col gap-6">
-            <h1 className="text-3xl font-bold tracking-tight w-full text-center">
-                Sign Up
-            </h1>
+            <div className="flex flex-col gap-2 items-center">
+                <h1 className="text-3xl font-bold tracking-tight w-full text-center">
+                    Create Account
+                </h1>
+                <span className="opacity-50 text-center">
+                    Get started by choosing a username
+                </span>
+            </div>
 
             <div className="flex flex-col items-center gap-4">
                 <FullWidthInputWithLabel
@@ -90,34 +97,24 @@ export function SignUpStage0() {
                     alignText={true}
                 ></Button>
             </div>
-            <div className="flex flex-col gap-3">
-                <SectionSeparator sectionName="OR"></SectionSeparator>
-                <div className="flex flex-col gap-2">
-                    {/* OAuth 2 to be implemented */}
-                    <Button
-                        icon={GoogleIcon}
-                        text=""
-                        disabled={true}
-                        content={
-                            <div className="flex flex-col items-start">
-                                <span className="font-semibold">Continue with Google</span>
-                                <span className="font-normal text-xs opacity-50">Not available yet</span>
-                            </div>
-                        }
-                    ></Button>
-                    <Button
-                        icon={MicrosoftIcon}
-                        text=""
-                        disabled={true}
-                        content={
-                            <div className="flex flex-col items-start">
-                                <span className="font-semibold">Continue with Microsoft</span>
-                                <span className="font-normal text-xs opacity-50">Not available yet</span>
-                            </div>
-                        }
-                    ></Button>
+            {OauthAvailable && (
+                <div className="flex flex-col gap-3">
+                    <SectionSeparator sectionName="OR"></SectionSeparator>
+                    <div className="flex flex-col gap-2">
+                        {/* OAuth 2 to be implemented */}
+                        <Button
+                            icon={GoogleIcon}
+                            text="Continue with Google"
+                            disabled={true}
+                        ></Button>
+                        <Button
+                            icon={MicrosoftIcon}
+                            text="Continue with Microsoft"
+                            disabled={true}
+                        ></Button>
+                    </div>
                 </div>
-            </div>
+            )}
         </FadeUpLeaveUp>
     );
 }
@@ -198,26 +195,58 @@ export function SignUpStage1() {
 
     return (
         <FadeUpLeaveUp className="flex flex-col gap-6">
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 items-center">
                 <h1 className="font-bold text-3xl tracking-tight">
-                    Create your account
+                    Secure your Account
                 </h1>
 
-                <p className="opacity-50 w-full text-center">
-                    Choose a secure password.
+                <p className="opacity-50 text-center">
+                    Choose a secure password for your account
                 </p>
             </div>
 
             <div className="flex flex-col gap-3">
-                <FullWidthInputWithLabel
-                    labelName="Username"
-                    currentError=""
-                    type="text"
-                    name=""
-                    placeholder=""
-                    disabled={true}
-                    value={values.signUpUsername}
-                ></FullWidthInputWithLabel>
+                <div className="flex flex-col gap-1">
+                    <label className="text-xs text-black/75 dark:text-white/75">
+                        Username
+                    </label>
+                    <div className="w-full flex items-center justify-between rounded-md">
+                        <div className="w-full h-fit text-black/50 dark:text-white/50 px-2 py-2">
+                            <span>{values.signUpUsername}</span>
+                        </div>
+                        <div className="flex gap-2 items-center cursor-pointer" onClick={() => {
+                            setScreenStage(0);
+                        }}>
+                            <span className="text-sm underline text-black/50 dark:text-white/50">
+                                Edit
+                            </span>
+                            <TransparentIconButton
+                                icon={
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        height="20px"
+                                        viewBox="0 -960 960 960"
+                                        width="20px"
+                                        fill="currentColor"
+                                    >
+                                        <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z" />
+                                    </svg>
+                                }
+                                filledIcon={
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        height="20px"
+                                        viewBox="0 -960 960 960"
+                                        width="20px"
+                                        fill="currentColor"
+                                    >
+                                        <path d="M120-120v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm584-528 56-56-56-56-56 56 56 56Z" />
+                                    </svg>
+                                }
+                            ></TransparentIconButton>
+                        </div>
+                    </div>
+                </div>
 
                 <FullWidthInputWithLabel
                     labelName="Email Address"
@@ -256,7 +285,7 @@ export function SignUpStage1() {
 
             <div className="flex flex-col gap-2">
                 <LoadableButton
-                    text="Sign Up"
+                    text="Create Account"
                     isLoading={isLoading}
                     isPrimary={true}
                     alignText={true}

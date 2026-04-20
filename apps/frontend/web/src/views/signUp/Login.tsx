@@ -8,6 +8,7 @@ import { login } from "./AuthHandlers";
 import { useNavigate } from "react-router-dom";
 import { LoadableButton } from "../../components/LoadableButton";
 import { FadeUpLeaveUp } from "../../components/AnimatedPresenceDiv";
+import { OauthAvailable } from "./OAuthFeatureReady";
 
 export function Login() {
     const formErrors = useSignUpStore((state) => state.formErrors);
@@ -120,41 +121,23 @@ export function Login() {
                     onClick={onLoginClicked}
                 ></LoadableButton>
             </div>
-            <div className="flex flex-col gap-3">
+            {OauthAvailable && <div className="flex flex-col gap-3">
                 <SectionSeparator sectionName="OR"></SectionSeparator>
                 <div className="flex flex-col gap-2">
                     <Button
-                        text=""
+                        text="Continue with Google"
                         icon={GoogleIcon}
                         disabled={true}
-                        content={
-                            <div className="flex flex-col items-start">
-                                <span className="font-semibold">
-                                    Continue with Google
-                                </span>
-                                <span className="font-normal text-xs opacity-50">
-                                    Not available yet
-                                </span>
-                            </div>
-                        }
+                        
                     ></Button>
                     <Button
-                        text=""
+                        text="Continue with Microsoft"
                         icon={MicrosoftIcon}
                         disabled={true}
-                        content={
-                            <div className="flex flex-col items-start">
-                                <span className="font-semibold">
-                                    Continue with Microsoft
-                                </span>
-                                <span className="font-normal text-xs opacity-50">
-                                    Not available yet
-                                </span>
-                            </div>
-                        }
+                        
                     ></Button>
                 </div>
-            </div>
+            </div>}
         </FadeUpLeaveUp>
     );
 }
