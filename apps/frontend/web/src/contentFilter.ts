@@ -203,7 +203,7 @@ export function normalizeAttachedImageUrl(rawUrl: string): string | null {
         return null;
     }
 
-    return isSafeImageUrl(trimmedUrl) ? trimmedUrl : null;
+    return isSafeImageUrl(trimmedUrl) ? trimmedUrl : "invalid";
 }
 
 export async function extractImageReferenceFromClipboardData(
@@ -273,7 +273,7 @@ export function appendAttachedImageToContent(
     imageUrl: string | null,
 ): string {
     const trimmedContent = content.trim();
-    if (imageUrl == null) {
+    if (imageUrl == null || imageUrl == '') {
         return trimmedContent;
     }
 

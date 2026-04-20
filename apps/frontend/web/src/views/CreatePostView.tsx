@@ -235,7 +235,7 @@ export default function CreatePostView() {
                 return;
             }
 
-            if (imageUrl.trim().length > 0 && processedImage == null) {
+            /* if (imageUrl.trim().length > 0 && processedImage == null) {
                 notifyErrorDefault(
                     "Please paste an image or enter a valid image URL",
                 );
@@ -246,13 +246,13 @@ export default function CreatePostView() {
                 notifyErrorDefault("Please attach a valid image");
                 setLoading(false);
                 return;
-            }
+            } */
 
             setLoading(true);
             setPublishingText("Verifying source...");
             const loadable = await canLoadImage(processedImage);
 
-            if (!loadable) {
+            if (!loadable && (processedImage || imagePreviewUrl)) {
                 notifyErrorDefault(
                     "Image source cannot be loaded, possibly due to cross-origin restrictions or the target image could not be found. Try copying the actual image instead of the image URL.",
                 );
