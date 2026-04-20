@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState, type ClipboardEvent } from "react";
+import {
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    type ClipboardEvent,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { TransparentIconButton } from "../components/TransparentIconButton";
 import { FadeUp } from "../components/AnimatedPresenceDiv";
@@ -14,7 +20,6 @@ import { extractDetailFromErrorResponse } from "../Utils";
 import { API_ENDPOINT } from "../Config";
 import { Panel } from "../components/Panel";
 import { Button } from "../components/Button";
-import { BlurredImage } from "../components/BlurredImage";
 import {
     appendAttachedImageToContent,
     extractImageReferenceFromClipboardData,
@@ -22,10 +27,15 @@ import {
 } from "../contentFilter";
 import { useImageProgressStore } from "../stores/ImageEncodingProgress";
 import { Progress } from "../stores/ImageEncodingProgressState";
-import { canLoadImage, dataToAvif } from "../ImageProcessing";
+import { canLoadImage, dataToAvif, killEncoding } from "../ImageProcessing";
 import { postsStore } from "../stores/PostsStore";
+import clsx from "clsx";
+import { Spinner } from "../components/SimpleSpinner";
+
 
 export default function CreatePostView() {
+    const cancelRef = useRef<(() => void) | null>(null);
+
     const navigate = useNavigate();
     const location = useLocation();
     const postLanguage = useMemo(() => {
@@ -35,6 +45,10 @@ export default function CreatePostView() {
         }
         return location.pathname.startsWith("/fr") ? "fr" : "en";
     }, [location.pathname, location.search]);
+
+    // encoding progress
+    const [processedImage, setProcessedImage] = useState<string>("");
+    const [isEncoding, setIsEncoding] = useState<boolean>(false);
 
     // Post state
     const [title, setTitle] = useState("");
@@ -50,6 +64,68 @@ export default function CreatePostView() {
     const [plublishingText, setPublishingText] =
         useState<string>("Publishing...");
 
+    const processImage = async (urlToProcess: string) => {
+        try {
+            console.log("Schedule for processing: ", urlToProcess);
+
+            const ownImagePreviewUrl =
+                normalizeAttachedImageUrl(urlToProcess) ?? "";
+
+            if (isEncoding) {
+                console.log("Killing previous encoding process");
+                killEncoding();
+                if (cancelRef.current) {
+                    cancelRef.current();
+                    cancelRef.current = null;
+                }
+                setIsEncoding(false);
+            }
+
+            if (!ownImagePreviewUrl.startsWith("data:image/")) {
+                console.log("No work to be done: ", ownImagePreviewUrl);
+                // no work to be done, not a data URL
+                setProcessedImage(ownImagePreviewUrl);
+                return;
+            }
+
+            console.log("Starting encoding");
+            setIsEncoding(true);
+
+            const cancelPromise = new Promise((resolve) => {
+                cancelRef.current = () => resolve("cancelled");
+            });
+
+            const result: string = (await Promise.race([
+                dataToAvif(ownImagePreviewUrl),
+                cancelPromise,
+            ])) as string;
+            if (result === "cancelled") {
+                console.log("Task cancelled");
+                return;
+            }
+
+            console.log("Task successful");
+            setIsEncoding(false);
+            setProcessedImage(result);
+
+            console.log(
+                "Size reduction from compression: ",
+                ownImagePreviewUrl.length,
+                result.length,
+                result.length / ownImagePreviewUrl.length,
+            );
+        } catch (e) {
+            console.error("encoding failed: ", e);
+            notifyErrorDefault(
+                "Failed to process your image. Please try another image.",
+            );
+            setImageUrl("");
+            setProcessedImage("");
+            setIsEncoding(false);
+            return;
+        }
+    };
+
     const onImagePaste = async (event: ClipboardEvent<HTMLInputElement>) => {
         const pastedImageUrl = await extractImageReferenceFromClipboardData(
             event.clipboardData,
@@ -60,6 +136,8 @@ export default function CreatePostView() {
 
         event.preventDefault();
         setImageUrl(pastedImageUrl);
+
+        await processImage(pastedImageUrl);
     };
 
     const onContentPaste = async (
@@ -74,10 +152,15 @@ export default function CreatePostView() {
 
         event.preventDefault();
         setImageUrl(pastedImageUrl);
+
+        await processImage(pastedImageUrl);
     };
 
     useEffect(() => {
-        fetch(`${API_ENDPOINT}/api/posts/subforums/`, { method: "GET", credentials: "omit"})
+        fetch(`${API_ENDPOINT}/api/posts/subforums/`, {
+            method: "GET",
+            credentials: "omit",
+        })
             .then(async (res) => {
                 if (!res.ok) {
                     throw new Error("Failed to load subforums");
@@ -131,7 +214,6 @@ export default function CreatePostView() {
         try {
             const trimmedTitle = title.trim();
             const trimmedContent = content.trim();
-            const normalizedImageUrl = imagePreviewUrl;
             const availableSubforumSlugs = new Set(
                 subforums.map((v) => v.slug),
             );
@@ -144,14 +226,24 @@ export default function CreatePostView() {
                 return;
             }
 
-            if (imageUrl.trim().length > 0 && normalizedImageUrl == null) {
+            if (
+                (imagePreviewUrl && isEncoding) ||
+                (imagePreviewUrl && !processedImage)
+            ) {
+                notifyErrorDefault(
+                    "Please wait for the image to finish processing",
+                );
+                return;
+            }
+
+            if (imageUrl.trim().length > 0 && processedImage == null) {
                 notifyErrorDefault(
                     "Please paste an image or enter a valid image URL",
                 );
                 return;
             }
 
-            if (!normalizedImageUrl) {
+            if (!processedImage) {
                 notifyErrorDefault("Please attach a valid image");
                 setLoading(false);
                 return;
@@ -159,7 +251,7 @@ export default function CreatePostView() {
 
             setLoading(true);
             setPublishingText("Verifying source...");
-            const loadable = await canLoadImage(normalizedImageUrl);
+            const loadable = await canLoadImage(processedImage);
 
             if (!loadable) {
                 notifyErrorDefault(
@@ -171,20 +263,9 @@ export default function CreatePostView() {
 
             setPublishingText("Publishing...");
 
-            const encodedImage = await dataToAvif(normalizedImageUrl, true);
-
-            console.log(
-                "Size reduction from reencoding and compression: original: ",
-                normalizedImageUrl.length,
-                " new: ",
-                encodedImage.length,
-                " ratio: ",
-                encodedImage.length / normalizedImageUrl.length,
-            );
-
             const composedContent = appendAttachedImageToContent(
                 trimmedContent,
-                encodedImage,
+                processedImage,
             );
 
             if (!composedContent) {
@@ -214,7 +295,7 @@ export default function CreatePostView() {
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify(payload),
-                    credentials: "omit"
+                    credentials: "omit",
                 });
 
                 if (!res.ok) {
@@ -244,7 +325,7 @@ export default function CreatePostView() {
             }
         } catch (err) {
             console.error("Error during publishing: ", err);
-            notifyErrorDefault("An error occurred during publishing")
+            notifyErrorDefault("An error occurred during publishing");
             setLoading(false);
             return;
         }
@@ -269,7 +350,7 @@ export default function CreatePostView() {
                 Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({ title, description }),
-            credentials: "omit"
+            credentials: "omit",
         });
 
         if (!res.ok) {
@@ -287,6 +368,13 @@ export default function CreatePostView() {
         setSelectedSubforum(created.slug);
         notifySuccessDefault("Subforum created!");
     };
+
+    const imageClasses = clsx(
+        isEncoding
+            ? "blur-sm brightness-50 scale-105"
+            : "blur-0 brightness-100 scale-100",
+        "rounded-md duration-500 ease-in-out",
+    );
 
     return (
         <FadeUp className="w-full h-[100vh] flex justify-center items-center dark:bg-zinc-900 text-black dark:text-white transition-colors duration-300">
@@ -341,9 +429,12 @@ export default function CreatePostView() {
                     className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw]"
                     placeholder="Paste image or image URL (optional)"
                     value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
+                    onChange={(e) => {
+                        setImageUrl(e.target.value);
+                        processImage(e.target.value);
+                    }}
                     onPaste={onImagePaste}
-                    disabled={loading}
+                    disabled={loading || isEncoding}
                 />
                 <p className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] text-sm text-black/60 dark:text-white/60 transition-colors duration-300">
                     Copy an image and press Ctrl+V in the image field or post
@@ -351,12 +442,30 @@ export default function CreatePostView() {
                 </p>
 
                 {imagePreviewUrl != null && (
-                    <div className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw]">
-                        <BlurredImage
-                            src={imagePreviewUrl}
-                            alt={title || "Attached image"}
-                            isBlurred={false}
-                        />
+                    <div className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] relative">
+                        <div className="w-fit h-fit overflow-hidden rounded-md">
+                            <img
+                                className={imageClasses}
+                                src={imagePreviewUrl}
+                                alt="Attached Image"
+                            ></img>
+                        </div>
+
+                        {isEncoding && (
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center items-center pointer-events-none">
+                                <div className="flex flex-col gap-3 items-center">
+                                    <Spinner
+                                        isWhite={true}
+                                        alwaysWhite={true}
+                                    />
+                                    <div className="flex flex-col text-white items-center">
+                                        <span className="font-bold shimmer-text drop-shadow-md">
+                                            Processing
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
