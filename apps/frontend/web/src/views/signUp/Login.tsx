@@ -12,9 +12,9 @@ import { FadeUpLeaveUp } from "../../components/AnimatedPresenceDiv";
 export function Login() {
     const formErrors = useSignUpStore((state) => state.formErrors);
     const forgive = useSignUpStore((state) => state.forgiveError);
-    const updateErrors = useSignUpStore(state => state.updateErrors);
-    const values = useSignUpStore(state => state.values);
-    const setValue = useSignUpStore(state => state.updateValue);
+    const updateErrors = useSignUpStore((state) => state.updateErrors);
+    const values = useSignUpStore((state) => state.values);
+    const setValue = useSignUpStore((state) => state.updateValue);
 
     const navigate = useNavigate();
 
@@ -23,9 +23,8 @@ export function Login() {
     // input elements
     const usernameRef = useRef<HTMLInputElement | null>(null);
     const passwordRef = useRef<HTMLInputElement | null>(null);
-    
 
-    const onLoginClicked =  async () => {
+    const onLoginClicked = async () => {
         if (!usernameRef.current || !passwordRef.current) return;
 
         const toBeUpdated: Partial<Errors> = {};
@@ -58,7 +57,7 @@ export function Login() {
         if (success) {
             navigate("/");
         }
-    }
+    };
 
     return (
         <FadeUpLeaveUp className="flex flex-col gap-6 items-center" key="login">
@@ -81,7 +80,7 @@ export function Login() {
                         placeholder="John Doe"
                         onChange={(v) => {
                             forgive("loginUsername");
-                            setValue({loginUsername: v});
+                            setValue({ loginUsername: v });
                         }}
                         value={values.loginUsername}
                         ref={usernameRef}
@@ -95,7 +94,7 @@ export function Login() {
                         placeholder=""
                         onChange={(v) => {
                             forgive("loginPassword");
-                            setValue({loginPassword: v});
+                            setValue({ loginPassword: v });
                         }}
                         value={values.loginPassword}
                         ref={passwordRef}
@@ -125,14 +124,34 @@ export function Login() {
                 <SectionSeparator sectionName="OR"></SectionSeparator>
                 <div className="flex flex-col gap-2">
                     <Button
-                        text="Continue with Google"
+                        text=""
                         icon={GoogleIcon}
                         disabled={true}
+                        content={
+                            <div className="flex flex-col items-start">
+                                <span className="font-semibold">
+                                    Continue with Google
+                                </span>
+                                <span className="font-normal text-xs opacity-50">
+                                    Not available yet
+                                </span>
+                            </div>
+                        }
                     ></Button>
                     <Button
-                        text="Continue with Microsoft"
+                        text=""
                         icon={MicrosoftIcon}
                         disabled={true}
+                        content={
+                            <div className="flex flex-col items-start">
+                                <span className="font-semibold">
+                                    Continue with Microsoft
+                                </span>
+                                <span className="font-normal text-xs opacity-50">
+                                    Not available yet
+                                </span>
+                            </div>
+                        }
                     ></Button>
                 </div>
             </div>

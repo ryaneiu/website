@@ -96,13 +96,25 @@ export function SignUpStage0() {
                     {/* OAuth 2 to be implemented */}
                     <Button
                         icon={GoogleIcon}
-                        text="Continue with Google"
+                        text=""
                         disabled={true}
+                        content={
+                            <div className="flex flex-col items-start">
+                                <span className="font-semibold">Continue with Google</span>
+                                <span className="font-normal text-xs opacity-50">Not available yet</span>
+                            </div>
+                        }
                     ></Button>
                     <Button
                         icon={MicrosoftIcon}
-                        text="Continue with Microsoft"
+                        text=""
                         disabled={true}
+                        content={
+                            <div className="flex flex-col items-start">
+                                <span className="font-semibold">Continue with Microsoft</span>
+                                <span className="font-normal text-xs opacity-50">Not available yet</span>
+                            </div>
+                        }
                     ></Button>
                 </div>
             </div>

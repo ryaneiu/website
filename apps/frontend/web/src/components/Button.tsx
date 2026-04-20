@@ -11,6 +11,7 @@ export interface ButtonProps {
     additionalClasses?: string;
     alignText?: boolean;
     absoluteCentering?: boolean;
+    content?: ReactNode;
 }
 
 export function Button(props: ButtonProps) {
@@ -34,9 +35,11 @@ export function Button(props: ButtonProps) {
             {props.icon != null && !props.iconAtRight ? (
                 <span>{props.icon}</span>
             ) : null}
-            <span className={textClasses}>
+            {props.text && <span className={textClasses}>
                 {props.text}
-            </span>
+            </span>}
+
+            {props.content}
 
             {(props.absoluteCentering && props.alignText) && <div className="flex-grow-1 h-6"></div>}
             
