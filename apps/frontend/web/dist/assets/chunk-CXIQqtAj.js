@@ -1,1 +1,0 @@
-import{j as i,B as s,S as n}from"./D2eozZzf.js";function o(o){const t=o.isLoading?i.jsx(n,{isWhite:o.isWhiteSpinner}):o.icon;return i.jsx(s,{icon:t,iconAtRight:o.iconAtRight,isPrimary:o.isPrimary,onClick:o.onClick,disabled:o.isLoading||o.disabled,...o})}export{o as L};
