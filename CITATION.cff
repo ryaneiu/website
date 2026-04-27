@@ -9,9 +9,13 @@ authors:
   - family-names: Peng
     given-names: Cari
     alias: CariLT01
+
 abstract: "A Reddit-inspired full-stack web application designed for school use, built with a Django REST backend and a React + Tailwind + Vite frontend."
-repository-code: "https://github.com"
+
 url: "https://lt-forum.ca"
+
+repository-code: "https://github.com"
+
 keywords:
   - reddit-clone
   - forum
