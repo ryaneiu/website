@@ -26,7 +26,6 @@ export const FullWidthInput = forwardRef<HTMLInputElement, Props>(
                 : "border-black/35 dark:border-white/35",
         );
 
-fgdgfdgfs
 
         const {onChange, ...rest} = props;
 
