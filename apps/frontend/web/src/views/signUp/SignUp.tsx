@@ -26,7 +26,35 @@ export function SignUpStage0() {
     const emailInputRef = useRef<HTMLInputElement | null>(null);
 
     const isValidUsername = (value: string): boolean => {
-    return /^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*$/.test(value);
+        return /^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*( [A-Za-z0-9_.]+)*$/.test(
+            value,
+        );
+    };
+
+    const getUsernameError = (value: string): string => {
+        if (!value) return "";
+
+        if (/^\s|\s$/.test(value)) {
+            return "No leading or trailing spaces.";
+        }
+
+        if (/\s{2,}/.test(value)) {
+            return "Only single spaces allowed.";
+        }
+
+        if (/\.{2,}/.test(value)) {
+            return "Periods cannot be repeated.";
+        }
+
+        if (/^\.|\.$/.test(value)) {
+            return "Periods must be in the middle.";
+        }
+
+        if (!/^[A-Za-z0-9_. ]+$/.test(value)) {
+            return "Only letters, numbers, _, ., and spaces allowed.";
+        }
+
+        return "";
     };
 
     const continueClicked = () => {
@@ -42,15 +70,19 @@ export function SignUpStage0() {
         }
 
         if (!isValidUsername(value)) {
-            updateErrors({signUpUsername: "Username can only contain letters, numbers, underscores, and periods. Periods are only allowed in the middle of the username."});
+            const error = getUsernameError(value);
+            updateErrors({
+                signUpUsername: error,
+            });
             return;
         }
 
         if (value.length > 20) {
-            updateErrors({signUpUsername: "Username cannot be longer than 20 characters"});
+            updateErrors({
+                signUpUsername: "Username cannot be longer than 20 characters",
+            });
             return;
         }
-
 
         // is valid
         setScreenStage(1);
@@ -229,9 +261,12 @@ export function SignUpStage1() {
                         <div className="w-full h-fit text-black/50 dark:text-white/50 px-2 py-2">
                             <span>{values.signUpUsername}</span>
                         </div>
-                        <div className="flex gap-2 items-center cursor-pointer" onClick={() => {
-                            setScreenStage(0);
-                        }}>
+                        <div
+                            className="flex gap-2 items-center cursor-pointer"
+                            onClick={() => {
+                                setScreenStage(0);
+                            }}
+                        >
                             <span className="text-sm underline text-black/50 dark:text-white/50">
                                 Edit
                             </span>
