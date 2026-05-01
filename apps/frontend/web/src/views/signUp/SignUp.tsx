@@ -25,6 +25,10 @@ export function SignUpStage0() {
     // -- stage 0
     const emailInputRef = useRef<HTMLInputElement | null>(null);
 
+    const isValidUsername = (value: string): boolean => {
+    return /^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*$/.test(value);
+    };
+
     const continueClicked = () => {
         if (!emailInputRef.current) return;
 
@@ -36,6 +40,17 @@ export function SignUpStage0() {
             updateErrors({ signUpUsername: "Please enter your username" });
             return;
         }
+
+        if (!isValidUsername(value)) {
+            updateErrors({signUpUsername: "Username can only contain letters, numbers, underscores, and periods. Periods are only allowed in the middle of the username."});
+            return;
+        }
+
+        if (value.length > 20) {
+            updateErrors({signUpUsername: "Username cannot be longer than 20 characters"});
+            return;
+        }
+
 
         // is valid
         setScreenStage(1);
