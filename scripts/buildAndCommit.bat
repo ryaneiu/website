@@ -1,4 +1,3 @@
-cd scripts
 call ./buildWeb.bat
 
 git add .
