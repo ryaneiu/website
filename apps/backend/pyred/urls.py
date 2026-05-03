@@ -13,6 +13,7 @@ from pyreddit.views import (
     UserSearchAPIView,
 )
 from pyreddit.views import PostViewSet, CommentViewSet
+from cas_storage.views import FileUploadView
 
 router = DefaultRouter()
 router.register(r'legacy-posts', PostViewSet)
@@ -31,11 +32,12 @@ urlpatterns += [
     path("api/profile/me/", CurrentUserProfileAPIView.as_view(), name="profile-me"),
     path("api/signup/", SignupView.as_view(), name="signup"),
     path("api/login/", LoginAPIView.as_view(), name="login"),
+    path('api/objects/upload', FileUploadView.as_view(), name='cas-upload'),
 ]
 
 urlpatterns += [
     re_path(
-    r'^(?!api/|admin/|token/).*$', 
+    r'^(?!api/|admin/|token/|objects/).*$', 
     TemplateView.as_view(template_name="index.html"), 
     name="spa"
     ),
@@ -45,3 +47,5 @@ urlpatterns += [
 # Serve static files in development
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
+    # CAS objects stuff
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -65,6 +65,9 @@ ALLOWED_HOSTS = list(
     )
 )
 
+MEDIA_URL = '/objects/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'objects')
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -79,6 +82,7 @@ INSTALLED_APPS = [
     "rest_framework",
     'rest_framework_simplejwt.token_blacklist',
     "posts",
+    "cas_storage"
 ]
 INSTALLED_APPS += [
     "django_vite",
