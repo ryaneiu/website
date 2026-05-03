@@ -1,4 +1,4 @@
-call ./buildWeb.bat
+call ./scripts/buildWeb.bat
 
 git add .
 git commit -m "chore: update build output"
