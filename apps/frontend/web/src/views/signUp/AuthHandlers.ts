@@ -42,7 +42,7 @@ export async function signUp(username: string, password: string, email: string) 
             return false;
         }
 
-        notifySuccessDefault("Sign up successfull, please login");
+        notifySuccessDefault("Sign up successful, logging in automatically...");
         return true;
     } catch (e) {
         console.error("Failed: ", e);

@@ -5,7 +5,6 @@ import { SectionSeparator } from "../../components/SectionSeparator";
 import { GoogleIcon, MicrosoftIcon } from "./OAuth2ProviderIcons";
 import { useSignUpStore, type Errors } from "./SignUpStore";
 import { login } from "./AuthHandlers";
-import { useNavigate } from "react-router-dom";
 import { LoadableButton } from "../../components/LoadableButton";
 import { FadeUpLeaveUp } from "../../components/AnimatedPresenceDiv";
 import { OauthAvailable } from "./OAuthFeatureReady";
@@ -16,8 +15,6 @@ export function Login() {
     const updateErrors = useSignUpStore((state) => state.updateErrors);
     const values = useSignUpStore((state) => state.values);
     const setValue = useSignUpStore((state) => state.updateValue);
-
-    const navigate = useNavigate();
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -56,7 +53,9 @@ export function Login() {
         setIsLoading(false);
 
         if (success) {
-            navigate("/");
+            // perform full reload for stability
+            window.location.href = "/"
+
         }
     };
 

@@ -4,7 +4,7 @@ import { FullWidthInputWithLabel } from "../../components/FullWidthInput";
 import { SectionSeparator } from "../../components/SectionSeparator";
 import { useSignUpStore, type Errors } from "./SignUpStore";
 import { LoadableButton } from "../../components/LoadableButton";
-import { signUp } from "./AuthHandlers";
+import { login, signUp } from "./AuthHandlers";
 import { useNavigate } from "react-router-dom";
 import { GoogleIcon, MicrosoftIcon } from "./OAuth2ProviderIcons";
 import { FadeUpLeaveUp } from "../../components/AnimatedPresenceDiv";
@@ -231,12 +231,20 @@ export function SignUpStage1() {
             values.signUpPassword,
             values.signUpEmail,
         );
-
-        setIsLoading(false);
-        if (success) {
-            navigate("/auth?action=login");
-
-            useSignUpStore.setState({ isLogin: true });
+        if (!success) {
+            setIsLoading(false);
+        } else {
+            // attempt to log in directly
+            const success2 = await login(values.signUpUsername, values.signUpPassword);
+            if (success2) {
+                // perform a full-page reload for stability and updating states
+                window.location.href = "/";
+                return;
+            } else {
+                // if it fails, go to login
+                navigate("/auth?action=login");
+                useSignUpStore.setState({ isLogin: true });
+            }
         }
     };
 
