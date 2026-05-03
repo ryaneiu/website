@@ -32,6 +32,12 @@ import { postsStore } from "../stores/PostsStore";
 import clsx from "clsx";
 import { Spinner } from "../components/SimpleSpinner";
 
+const isImageDataUrl = (value: string): boolean => {
+    const imageDataUrlRegex =
+        /^data:image\/(png|jpeg|jpg|gif|webp|avif);base64,([A-Za-z0-9+/=]|[\s])+$/;
+    return imageDataUrlRegex.test(value);
+};
+
 export default function CreatePostView() {
     const cancelRef = useRef<(() => void) | null>(null);
 
@@ -125,6 +131,29 @@ export default function CreatePostView() {
         }
     };
 
+    const dataUrlToBlob = (dataUrl: string): Blob => {
+        const [header, base64Data] = dataUrl.split(",");
+        // Extract mime type (e.g., image/avif)
+        const mimeMatch = header.match(/:(.*?);/);
+        const mimeType = mimeMatch ? mimeMatch[1] : "image/avif";
+
+        // Decode base64 string
+        const byteCharacters = atob(base64Data);
+        const byteArrays = [];
+
+        // Process in chunks for better performance
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+            const slice = byteCharacters.slice(offset, offset + 512);
+            const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+            }
+            byteArrays.push(new Uint8Array(byteNumbers));
+        }
+
+        return new Blob(byteArrays, { type: mimeType });
+    };
+
     const onImagePaste = async (event: ClipboardEvent<HTMLInputElement>) => {
         const pastedImageUrl = await extractImageReferenceFromClipboardData(
             event.clipboardData,
@@ -209,6 +238,33 @@ export default function CreatePostView() {
         }
     }, [imageEncodingProgress]);
 
+    const uploadImage = async (dataUrl: string, token: string) => {
+        const blob = dataUrlToBlob(dataUrl);
+        const formData = new FormData();
+        formData.append("file", blob, "upload.avif");
+
+        const response = await fetch(`${API_ENDPOINT}/api/objects/upload`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const detail = await extractDetailFromErrorResponse(response);
+            if (!detail) {
+                throw new Error("Failed to upload the image!");
+            }
+            throw new Error(detail);
+        }
+
+        const result = await response.json();
+        console.log("Download this later at:", result.file_url);
+
+        return result.file_url as string;
+    };
+
     const onPublishPost = async () => {
         try {
             const trimmedTitle = title.trim();
@@ -260,11 +316,32 @@ export default function CreatePostView() {
                 return;
             }
 
+            setPublishingText("Uploading...");
+
+            let appendedImage = processedImage;
+
+            try {
+                const token = await getStoredAccessToken();
+                if (!token) {
+                    throw new Error("No access token");
+                }
+
+                if (isImageDataUrl(processedImage)) {
+                    appendedImage = await uploadImage(processedImage, token);
+                }
+
+                console.log("Uploading image as: ", appendedImage);
+            } catch (e) {
+                setLoading(false);
+                notifyErrorDefault(`${e}`);
+                return;
+            }
+
             setPublishingText("Publishing...");
 
             const composedContent = appendAttachedImageToContent(
                 trimmedContent,
-                processedImage,
+                appendedImage,
             );
 
             if (!composedContent) {

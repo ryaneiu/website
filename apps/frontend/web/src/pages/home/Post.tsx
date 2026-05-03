@@ -35,6 +35,9 @@ interface Props {
     isInPostList: boolean;
 }
 
+
+
+
 export function Post(props: Props) {
     const [expanded, setExpanded] = useState(!props.isInPostList);
     const [showAuthorBio, setShowAuthorBio] = useState(false);
