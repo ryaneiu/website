@@ -294,7 +294,7 @@ export function Navbar() {
             )}
 
             <div className="block md:hidden"></div>
-            <h1 className="font-bold text-2xl sm:block hidden ml-4 whitespace-nowrap">
+            <h1 className="font-bold text-2xl sm:block hidden ml-4 whitespace-nowrap tracking-tight">
                 LT-Forum
             </h1>
 
@@ -371,7 +371,7 @@ export function Navbar() {
                     )}
             </div>
 
-            <div className="w-fit h-full flex items-center gap-1">
+            <div className="w-fit h-full flex items-center gap-3">
                 <div className="hidden sm:block">
                     <LanguageSelection></LanguageSelection>
                 </div>

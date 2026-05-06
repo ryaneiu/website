@@ -4,37 +4,37 @@ export const MarkdownComponents: React.ComponentProps<
     typeof ReactMarkdown
 >["components"] = {
     h1: ({ children }) => (
-        <h1 className="text-3xl font-bold text-black dark:text-white my-3 whitespace-pre-wrap break-words transition-colors duration-300">
+        <h1 className="tracking-tight text-3xl font-bold text-black dark:text-white my-3 whitespace-pre-wrap break-words transition-colors duration-300">
             {children}
         </h1>
     ),
     h2: ({ children }) => (
-        <h2 className="text-2xl font-bold text-black dark:text-white my-3 whitespace-pre-wrap break-words transition-colors duration-300">
+        <h2 className="tracking-tight text-2xl font-bold text-black dark:text-white my-3 whitespace-pre-wrap break-words transition-colors duration-300">
             {children}
         </h2>
     ),
     h3: ({ children }) => (
-        <h3 className="text-xl font-semibold text-black dark:text-white my-2 whitespace-pre-wrap break-words transition-colors duration-300">
+        <h3 className="tracking-tight text-xl font-semibold text-black dark:text-white my-2 whitespace-pre-wrap break-words transition-colors duration-300">
             {children}
         </h3>
     ),
     h4: ({ children }) => (
-        <h4 className="text-lg font-semibold text-black dark:text-white my-2 whitespace-pre-wrap break-words transition-colors duration-300">
+        <h4 className="tracking-tight text-lg font-semibold text-black dark:text-white my-2 whitespace-pre-wrap break-words transition-colors duration-300">
             {children}
         </h4>
     ),
     h5: ({ children }) => (
-        <h5 className="text-base font-semibold text-black dark:text-white my-2 whitespace-pre-wrap break-words transition-colors duration-300">
+        <h5 className="tracking-tight text-base font-semibold text-black dark:text-white my-2 whitespace-pre-wrap break-words transition-colors duration-300">
             {children}
         </h5>
     ),
     h6: ({ children }) => (
-        <h6 className="text-sm font-semibold text-black/80 dark:text-white/80 my-2 whitespace-pre-wrap break-words transition-colors duration-300">
+        <h6 className="tracking-tight text-sm font-semibold text-black/80 dark:text-white/80 my-2 whitespace-pre-wrap break-words transition-colors duration-300">
             {children}
         </h6>
     ),
     p: ({ children }) => (
-        <p className="text-base text-black dark:text-white my-2 whitespace-pre-wrap break-words transition-colors duration-300">
+        <p className="leading-relaxed text-base text-black dark:text-white my-2 whitespace-pre-wrap break-words transition-colors duration-300">
             {children}
         </p>
     ),

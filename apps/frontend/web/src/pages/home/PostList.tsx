@@ -248,7 +248,7 @@ export function PostList({ language = "en" }: PostListProps) {
 
     return (
         <>
-            <div className="flex flex-col gap-4 items-center w-full">
+            <div className="flex flex-col gap-6 items-center w-full">
                 <div className="w-full flex justify-end">
                     <div className="flex items-center gap-4 text-sm text-black/70 dark:text-white/70 transition-colors duration-300"></div>
                 </div>

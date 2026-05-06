@@ -2,3 +2,6 @@
 apps/backend/db.sqlite3
 # DO NOT REMOVE -- Removing will cause binary merge conflicts!!!
 apps/db.sqlite3 
+
+# ignore objects
+apps/objects

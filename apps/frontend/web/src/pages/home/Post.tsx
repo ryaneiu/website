@@ -118,7 +118,7 @@ export function Post(props: Props) {
                     ></LoadableButton>
                 </div>
             ))}
-            <h1 className="text-3xl font-bold whitespace-pre-wrap break-all">
+            <h1 className="text-3xl font-bold whitespace-pre-wrap break-all tracking-tight">
                 {needsTruncatedTitle && !expanded
                     ? truncatedTitle
                     : props.title}

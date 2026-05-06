@@ -470,7 +470,7 @@ export default function PostPage() {
 
     return (
         <FadeUp>
-            <div className="flex flex-col items-center px-2 py-2 gap-3">
+            <div className="flex flex-col items-center px-2 py-2 gap-4">
                 <div className="w-full">
                     <Button
                         text="Back"
@@ -489,7 +489,7 @@ export default function PostPage() {
                     />
                 </div>
 
-                <div className="flex flex-col gap-2 w-full">
+                <div className="flex flex-col gap-4 w-full">
                     {!canDisplay && (
                         <span className="text-black/50">Invalid post id.</span>
                     )}
