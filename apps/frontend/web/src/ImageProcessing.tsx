@@ -1,16 +1,8 @@
 import { useImageProgressStore } from "./stores/ImageEncodingProgress";
 import { Progress } from "./stores/ImageEncodingProgressState";
 
-let activeWorker: Worker | null = null;
-
-// The actual options accepted by the factory function include Emscripten's `locateFile`
-// FFmpeg imports are no longer required for the new AVIF encoding path.
-// Keep them commented if you plan to revert or use elsewhere.
-// import coreURL from "@ffmpeg/core?url";
-// import wasmURL from "@ffmpeg/core/wasm?url";
-
-// --- NEW IMPORTS FOR SASCHAZAR WASM-AVIF ---
 import defaultOptions from "@saschazar/wasm-avif/options";
+
 const dataImageRegex =
     /^data:image\/(png|jpe?g|webp|bmp|svg\+xml);base64,[A-Za-z0-9+/]+={0,2}$/;
 const supportedExtensions = ["png", "jpg", "jpeg", "gif", "avif", "webp"];
@@ -37,11 +29,71 @@ async function blobDataToUrl(b: Blob): Promise<string> {
     });
 }
 
-export function killEncoding() {
-    if (activeWorker) {
-        console.log("Terminating encoding worker");
-        activeWorker.terminate();
-        activeWorker = null;
+export function killEncoding(activeWorker: Worker) {
+    activeWorker.terminate();
+}
+
+// Singleton background worker for AVIF encoding.
+// Using a single worker with a request queue avoids race conditions
+// in @saschazar/wasm-avif's WASM initialization when multiple
+// workers try to load+compile the module concurrently.
+
+let avifWorker: Worker | null = null;
+let nextRequestId = 0;
+type PendingRequest = {
+    resolve: (url: string) => void;
+    reject: (err: unknown) => void;
+};
+const pendingRequests = new Map<number, PendingRequest>();
+
+function getOrCreateWorker(): Worker {
+    if (!avifWorker) {
+        avifWorker = new Worker(
+            new URL("./workers/AvifEncoding.worker.ts", import.meta.url),
+            { type: "module" },
+        );
+
+        avifWorker.onmessage = async (e) => {
+            const { id, avifData, error } = e.data;
+            const pending = pendingRequests.get(id);
+            if (!pending) return;
+            pendingRequests.delete(id);
+
+            if (error) {
+                pending.reject(new Error(error));
+                return;
+            }
+
+            try {
+                const blob = new Blob([avifData], { type: "image/avif" });
+                const url = await blobDataToUrl(blob);
+                pending.resolve(url);
+            } catch (err) {
+                pending.reject(err);
+            }
+        };
+
+        avifWorker.onerror = (err) => {
+            console.error("AVIF worker error:", err);
+            // Reject all pending requests
+            for (const [, pending] of pendingRequests) {
+                pending.reject(new Error("AVIF worker crashed"));
+            }
+            pendingRequests.clear();
+            avifWorker = null;
+        };
+    }
+    return avifWorker;
+}
+
+export function terminateWorker() {
+    if (avifWorker) {
+        for (const [, pending] of pendingRequests) {
+            pending.reject(new Error("AVIF worker terminated"));
+        }
+        pendingRequests.clear();
+        avifWorker.terminate();
+        avifWorker = null;
     }
 }
 
@@ -95,49 +147,18 @@ export async function dataToAvif(
         ...defaultOptions,
         minQuantizer: 32,
         maxQuantizer: 32,
-        speed: 6, // Optional: Higher speed = faster encode but slightly larger file
+        speed: 6,
     };
 
+    const id = nextRequestId++;
+    const worker = getOrCreateWorker();
+
     return new Promise((resolve, reject) => {
-        killEncoding();
-
-        try {
-            useImageProgressStore.setState({
-                progress: Progress.DOWNLOADING_ENCODER,
-            });
-            activeWorker = new Worker(
-                new URL("./workers/AvifEncoding.worker.ts", import.meta.url),
-                { type: "module" },
-            );
-
-            activeWorker.onmessage = async (e) => {
-                if (e.data.error) {
-                    killEncoding();
-                    return reject(e.data.error);
-                }
-
-                console.log("Received: ", e.data.avifData.length, " length");
-
-                const blob = new Blob([e.data.avifData], {
-                    type: "image/avif",
-                });
-                const url = await blobDataToUrl(blob);
-
-                killEncoding();
-
-                console.log("URL length is: ", url.length);
-                resolve(url);
-            };
-
-            console.log("Posting message to web worker");
-
-            useImageProgressStore.setState({ progress: Progress.ENCODING });
-            activeWorker.postMessage({ rgbaPixels, width, height, customOptions }, [
-                rgbaPixels.buffer,
-            ]);
-        } catch (e) {
-            reject(e);
-        }
+        pendingRequests.set(id, { resolve, reject });
+        worker.postMessage(
+            { id, rgbaPixels, width, height, customOptions },
+            [rgbaPixels.buffer],
+        );
     });
 }
 

@@ -89,6 +89,10 @@ export default defineConfig({
                 comments: false
             }
         }
+    },
+    server: {
+        host: '127.0.0.1',
+        port: 5173
     }
     // DO NOT REPLACE THIS LINE WITH AN
     // AI GENERATED "FIX" THAT DOES NOT WORK!!! 

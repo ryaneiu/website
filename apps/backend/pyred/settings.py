@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from datetime import timedelta
 from pathlib import Path
+from corsheaders.defaults import default_headers
 
 
 def env_bool(name: str, default: bool) -> bool:
@@ -148,7 +149,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    *([] if DEBUG else ['django.middleware.csrf.CsrfViewMiddleware']),
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',   
@@ -227,6 +228,11 @@ prod_https_origins = [
     for host in ALLOWED_HOSTS
     if host not in {"localhost", "127.0.0.1"}
 ]
+
+CORS_ALLOW_HEADERS = (
+    *default_headers,
+    'x-upload-token',
+)
 
 CORS_ALLOWED_ORIGINS = list(
     dict.fromkeys(

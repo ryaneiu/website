@@ -304,13 +304,13 @@ export function PostList({ language = "en" }: PostListProps) {
                             votes={post.likes_count ?? post.votes ?? 0}
                             commentsCount={post.replies_count ?? 0}
                             id={post.id}
-                            image={image}
                             authorUsername={post.author_username}
                             authorBio={post.author_bio}
                             isInPostList={true}
                             canDelete={post.can_delete !== false}
                             isDeleting={deletingPostId === post.id}
                             onDeleteClick={() => onDeletePost(post.id)}
+                            attachments={post.attachments}
                         ></Post>
                     );
                 })}

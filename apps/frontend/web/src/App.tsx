@@ -11,6 +11,7 @@ import {
 import { NotificationList } from "./components/Notify";
 import { LoadingPageFallbackFS } from "./components/LoadingPageFallback";
 import { useDarkModeStore } from "./stores/DarkModeStore";
+import { ImageView } from "./views/ImageView";
 
 function hasShownDebugTip() {
     if (!isDevelopmentMode()) return true;
@@ -41,6 +42,7 @@ export function AppRoutes() {
                 <Route path="/*" element={<PrimaryView />} />
                 <Route path="/create" element={<CreatePostView />} />
                 <Route path="/auth" element={<AuthView />} />
+                <Route path="/view/:id" element={<ImageView></ImageView>}></Route>
             </Routes>
         </Suspense>
     );

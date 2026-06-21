@@ -194,6 +194,14 @@ export function extractFirstImageUrl(text: string): string | null {
         }
     }
 
+    const htmlImgMatch = HTML_IMAGE_SRC_PATTERN.exec(text);
+    if (htmlImgMatch != null) {
+        const candidate = htmlImgMatch[1]?.trim() ?? "";
+        if (candidate.length > 0 && isSafeImageUrl(candidate)) {
+            return candidate;
+        }
+    }
+
     return null;
 }
 

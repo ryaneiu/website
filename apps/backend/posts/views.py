@@ -7,12 +7,21 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied, AuthenticationFailed
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Post, Like, Reply, Subforum
-from .serializers import PostSerializer, ReplySerializer, SubforumSerializer
+from .serializers import PostSerializer, ReplySerializer, SubforumSerializer, SubforumListSerializer, PostAttachmentSerializer
 from .utils.validators import validate_query
+from .permissions import IsAuthor
+import io
+from django.core.files.base import File
+from PIL import Image
+import pillow_avif
+from cas_storage.storage import ContentAdressableStorage
+from cas_storage.services import ObjectStorageTokenService
+from typing import cast
+from pyreddit.authentication import CookieJWTAuthentication
 
 
 class IsAuthorOrReadOnly(permissions.BasePermission):
@@ -51,10 +60,16 @@ def apply_post_search(queryset, search_query: str):
     )
 
 
+def apply_published_filter(queryset, request):
+    """Exclude unpublished posts unless the requester is the author."""
+    if request.user.is_authenticated:
+        return queryset.filter(Q(published=True) | Q(author=request.user))
+    return queryset.filter(published=True)
+
+
 def apply_post_language(queryset, language: str):
     normalized = (language or "en").strip().lower()
     return queryset.filter(language=normalized if normalized in {"en", "fr"} else "en")
-
 
 class FilterPreferencesMixin:
     _filter_preferences: dict[str, bool | str] | None = None
@@ -85,10 +100,10 @@ class PostTemplateListView(APIView):
         search_query = str(filter_preferences.get("q", "")).strip()
         language = str(filter_preferences.get("language", "en")).strip()
 
-        queryset = apply_post_language(
+        queryset = apply_published_filter(apply_post_language(
             apply_post_search(Post.objects.all(), search_query),
             language,
-        ).annotate(
+        ), self.request).annotate(
             likes_count=Count("likes", distinct=True),
             replies_count=Count("replies", distinct=True),
         ).order_by("-created_at")
@@ -120,10 +135,10 @@ class PostListCreateAPIView(FilterPreferencesMixin, generics.ListCreateAPIView):
         search_query = str(filter_preferences.get("q", "")).strip()
         language = str(filter_preferences.get("language", "en")).strip()
 
-        return apply_post_language(
+        return apply_published_filter(apply_post_language(
             apply_post_search(Post.objects.all(), search_query),
             language,
-        ).annotate(
+        ), self.request).annotate(
             likes_count=Count("likes", distinct=True),
             replies_count=Count("replies", distinct=True),
         ).order_by("-created_at")
@@ -155,12 +170,134 @@ class PostRetrieveAPIView(FilterPreferencesMixin, generics.RetrieveDestroyAPIVie
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
     lookup_field = "id"
 
+    def get_queryset(self):
+        return apply_published_filter(super().get_queryset(), self.request)
+
+
+
+class CreatePostAttachmentView(generics.CreateAPIView):
+    
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [CookieJWTAuthentication]
+    
+    # exempt from csrf, cannot get the cookie in dev because of CORS and cross-origin (i love cors so much)
+
+    def create(self, request, *args, **kwargs):
+        
+        upload_token = request.headers.get("X-Upload-Token")
+        if not upload_token:
+            raise PermissionDenied("No upload token specified")
+        
+        payload = ObjectStorageTokenService.check_token(upload_token, "post_attachment_upload")
+        if not payload:
+            raise AuthenticationFailed("Authentication failed")
+        
+        if not ObjectStorageTokenService.claim_one_time_token(payload):
+            raise PermissionDenied("Cannot reuse token")
+        
+        post_id = payload.get("post_id")
+        if not post_id: # todo: will 0 be considered true?
+            raise ValidationError("No post ID in token")
+
+        # Ensure the post still exists before attaching a file to it
+        post = get_object_or_404(Post, id=post_id)
+
+        file_type = payload.get("type")
+        if not file_type:
+            raise ValidationError("No file type in token")
+
+        uploaded_file: "File" = request.FILES.get("file")
+
+        limit = 5 * 1024 * 1024
+        
+        if uploaded_file.size > limit:
+            raise ValidationError("File is too large")
+        
+        w = 0
+        h = 0
+        
+        if file_type == "image":
+            
+            image_bytes = uploaded_file.read()
+            try:
+                image_stream = io.BytesIO(image_bytes)
+                
+                with Image.open(image_stream) as img:
+                    if img.format != "AVIF":
+                        raise ValidationError("Image format must be AVIF")
+                    w = img.width
+                    h = img.height
+            except Exception as e:
+                print(f"Error getting size: {e}")
+                raise ValidationError("Image is not valid") from e
+        else:
+            # todo: support GIF and Videos (maybe?)
+            raise ValidationError("Only images are currently supported!")
+
+        ObjectStorageTokenService.claim_one_time_token(payload)
+
+        
+        
+        # save it!
+        cas_storage = ContentAdressableStorage()
+        object_id = cas_storage.save_cas(uploaded_file.name, uploaded_file).removesuffix(".bin")
+
+        data = {
+            "object_id": object_id,
+            "width": w,
+            "height": h,
+            "post": post.id
+        }
+        
+        serializer = PostAttachmentSerializer(
+            data=data,
+            context={
+                "request": request,
+                "post_id": post_id,
+                "file_type": file_type
+            }
+        )
+        
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    
+
 # Create a post
 class CreatePostView(generics.CreateAPIView):
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
+        attachment_requests = request.data.get("attachments", [])
+        
+        if not isinstance(attachment_requests, list):
+            raise ValidationError("Attachments are invalid")
+        
+        if len(attachment_requests) > 4:
+            raise ValidationError("You can only have up to 4 attachments")
+        
+        for attachment_request in attachment_requests:
+            ObjectStorageTokenService.validate_attachment_request(attachment_request)
+            
+        # check same type
+        if len(attachment_requests) > 0:
+            first_type = attachment_requests[0]["type"]
+            for attachment_request in attachment_requests:
+                if attachment_request["type"] != first_type:
+                    raise ValidationError("All attachments must be of the same type")
+                if attachment_request["type"] != "image":
+                    # todo: add support for GIFs and videos (maybe?)
+                    raise ValidationError("Only image attachments are supported")
+        
+        serializer: PostSerializer = cast(PostSerializer, self.get_serializer(data=request.data))
+        serializer.is_valid(raise_exception=True)
+        
+
+        
         markdown = serializer.validated_data.get("content_markdown", "")
         plain = serializer.validated_data.get("content", "")
         subforum = serializer.validated_data.get("subforum") or get_general_subforum()
@@ -172,16 +309,36 @@ class CreatePostView(generics.CreateAPIView):
             content=plain or markdown,
             language=serializer.validated_data.get("language") or "en",
         )
+        
+        attachment_tokens = []
+
+        for attachment_request in attachment_requests:
+            attachment_tokens.append({
+                "token": ObjectStorageTokenService.generate_post_upload_token(attachment_request, serializer.data["id"]),
+                "request": attachment_request 
+            })
+        
+        response_data = {
+            "post": serializer.data,
+            "upload_attachments": attachment_tokens
+        }
+        
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 # Publish a post
 class PublishPostView(generics.UpdateAPIView):
     serializer_class = PostSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAuthor]
     queryset = Post.objects.all()
     lookup_field = "id"
 
-    def perform_update(self, serializer):
-        serializer.save(published=True)
+    def update(self, request, *args, **kwargs):
+        post = self.get_object()
+        self.check_object_permissions(request, post)
+        post.published = True
+        post.save(update_fields=["published"])
+        serializer = self.get_serializer(post)
+        return Response(serializer.data)
 
 
 class ToggleLikeAPIView(APIView):
@@ -260,6 +417,14 @@ class SubforumRetrieveUpdateDestroyAPIView(FilterPreferencesMixin, generics.Retr
         self.check_object_permissions(request, subforum)
         subforum.delete()
         return Response({"detail": "Subforum deleted."}, status=status.HTTP_200_OK)
+
+
+class SubforumListOnlyAPIView(generics.ListAPIView):
+    queryset = Subforum.objects.annotate(
+        number_of_posts=Count("posts", distinct=True),
+    ).order_by("title")
+    serializer_class = SubforumListSerializer
+    permission_classes = [permissions.AllowAny]
 
 
 class SubforumPostCreateAPIView(generics.CreateAPIView):

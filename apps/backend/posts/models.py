@@ -125,6 +125,32 @@ class Post(models.Model):
     def __str__(self) -> str:
         return self.title
 
+class PostAttachment(models.Model):
+    TYPE_IMAGE = "image"
+    TYPE_VIDEO = "video"
+    TYPE_GIF = "gif"
+    TYPE_CHOICES = [
+        (TYPE_IMAGE, "Image"),
+        (TYPE_VIDEO, "Video"),
+        (TYPE_GIF, "GIF")
+    ]
+    
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name="attachments"
+    )
+    object_id = models.TextField(max_length=500)
+    width = models.PositiveIntegerField(null=True, blank=True)
+    height = models.PositiveIntegerField(null=True, blank=True)
+    type = models.CharField(
+        max_length=20,
+        choices=TYPE_CHOICES,
+        default=TYPE_IMAGE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 
 class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="post_likes")

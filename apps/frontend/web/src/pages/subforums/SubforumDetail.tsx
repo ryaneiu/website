@@ -357,8 +357,8 @@ export default function SubforumDetail() {
                                         votes={0}
                                         commentsCount={0}
                                         id={post.id}
-                                        image={image}
                                         isInPostList={true}
+                                        attachments={post.attachments}
                                     />
                                 );
                             })}

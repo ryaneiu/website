@@ -1,8 +1,14 @@
 from rest_framework import serializers
 from django.db.models import Q
-
-from .models import Post, Reply, Like, Subforum
+from .models import Post, Reply, Like, Subforum, PostAttachment
 from .utils.censor import censor_text, extract_first_image_url, process_image
+
+
+def _apply_published_filter(queryset, request):
+    """Exclude unpublished posts unless the requester is the author."""
+    if request.user.is_authenticated:
+        return queryset.filter(Q(published=True) | Q(author=request.user))
+    return queryset.filter(published=True)
 
 
 DEFAULT_FILTER_PREFERENCES = {"include_nsfw": False, "include_swears": False}
@@ -13,7 +19,10 @@ class SubforumSerializer(serializers.ModelSerializer):
     creator_username = serializers.CharField(source="creator.username", read_only=True)
 
     def get_posts(self, obj):
+        request = self.context.get("request")
         posts = obj.posts.select_related("author").order_by("-created_at")
+        if request is not None:
+            posts = _apply_published_filter(posts, request)
 
         filter_preferences = self.context.get("filter_preferences")
         search_query = ""
@@ -65,6 +74,25 @@ class SubforumSerializer(serializers.ModelSerializer):
         read_only_fields = ["created_at", "slug", "creator", "creator_username", "posts"]
 
 
+class SubforumListSerializer(serializers.ModelSerializer):
+    creator_username = serializers.CharField(source="creator.username", read_only=True)
+    number_of_posts = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Subforum
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "description",
+            "created_at",
+            "creator",
+            "creator_username",
+            "number_of_posts",
+        ]
+        read_only_fields = ["created_at", "slug", "creator", "creator_username", "number_of_posts"]
+
+
 class ReplySerializer(serializers.ModelSerializer):
     author_username = serializers.CharField(source="author.username", read_only=True)
 
@@ -89,7 +117,16 @@ class LikeSerializer(serializers.ModelSerializer):
         fields = ["id", "post", "user", "created_at"]
         read_only_fields = ["user", "created_at"]
 
+class PostAttachmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostAttachment
+        fields = ["id", "object_id", "width", "height", "type", "post"]
+
+
 class PostSerializer(serializers.ModelSerializer):
+    
+    attachments = PostAttachmentSerializer(many=True, read_only=True)
+    
     likes_count = serializers.SerializerMethodField()
     replies_count = serializers.SerializerMethodField()
     body = serializers.SerializerMethodField()
@@ -202,6 +239,7 @@ class PostSerializer(serializers.ModelSerializer):
             "author_username",
             "author_bio",
             "published",
+            "attachments",
             "created_at",
             "subforum",
             "votes",

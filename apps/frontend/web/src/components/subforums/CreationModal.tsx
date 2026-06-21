@@ -14,6 +14,7 @@ export type SubforumDto = {
     description: string;
     creator: number | null;
     created_at: string;
+    number_of_posts: number;
 };
 
 interface Props {

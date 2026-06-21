@@ -1,7 +1,6 @@
 import {
     useEffect,
     useMemo,
-    useRef,
     useState,
     type ClipboardEvent,
 } from "react";
@@ -21,26 +20,31 @@ import { API_ENDPOINT } from "../Config";
 import { Panel } from "../components/Panel";
 import { Button } from "../components/Button";
 import {
-    appendAttachedImageToContent,
     extractImageReferenceFromClipboardData,
     normalizeAttachedImageUrl,
 } from "../contentFilter";
 import { useImageProgressStore } from "../stores/ImageEncodingProgress";
 import { Progress } from "../stores/ImageEncodingProgressState";
-import { canLoadImage, dataToAvif, killEncoding } from "../ImageProcessing";
+import { dataToAvif, terminateWorker } from "../ImageProcessing";
 import { postsStore } from "../stores/PostsStore";
 import clsx from "clsx";
 import { Spinner } from "../components/SimpleSpinner";
 
-const isImageDataUrl = (value: string): boolean => {
-    const imageDataUrlRegex =
-        /^data:image\/(png|jpeg|jpg|gif|webp|avif);base64,([A-Za-z0-9+/=]|[\s])+$/;
-    return imageDataUrlRegex.test(value);
+let nextId = 0;
+
+function nextAttachmentId(): number {
+    return ++nextId;
+}
+
+type Attachment = {
+    id: number;
+    previewUrl: string;
+    encodedData: Blob | null;
+    attachmentType: "image" | "video" | "gif";
+    processingComplete: boolean;
 };
 
 export default function CreatePostView() {
-    const cancelRef = useRef<(() => void) | null>(null);
-
     const navigate = useNavigate();
     const location = useLocation();
     const postLanguage = useMemo(() => {
@@ -51,67 +55,68 @@ export default function CreatePostView() {
         return location.pathname.startsWith("/fr") ? "fr" : "en";
     }, [location.pathname, location.search]);
 
-    // encoding progress
-    const [processedImage, setProcessedImage] = useState<string>("");
-    const [isEncoding, setIsEncoding] = useState<boolean>(false);
-
     // Post state
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
-    const [imageUrl, setImageUrl] = useState("");
+    const [attachments, setAttachments] = useState<Attachment[]>([]);
+
+    const updateAttachment = (id: number, updater: (prev: Attachment) => Attachment) => {
+        setAttachments((prev) =>
+            prev.map((a) => (a.id === id ? updater(a) : a)),
+        );
+    };
+
+    const deleteAttachment = (id: number) => {
+        setAttachments((prev) => {
+            const idx = prev.findIndex((a) => a.id === id);
+            if (idx === -1) return prev;
+            const copy = [...prev];
+            copy.splice(idx, 1);
+            return copy;
+        });
+    };
+
+    const insertAttachment = (attachment: Attachment) => {
+        setAttachments((prev) => [...prev, attachment]);
+    };
+
     const [loading, setLoading] = useState(false);
     const [subforums, setSubforums] = useState<
         { title: string; slug: string }[]
     >([]);
     const [selectedSubforum, setSelectedSubforum] = useState("general");
-    const imagePreviewUrl = normalizeAttachedImageUrl(imageUrl);
+    // const imagePreviewUrl = normalizeAttachedImageUrl(imageUrl);
 
     const [plublishingText, setPublishingText] =
         useState<string>("Publishing...");
 
-    const processImage = async (urlToProcess: string) => {
+    const processImage = async (attachmentId: number, previewUrl: string) => {
+        const ownImagePreviewUrl =
+            normalizeAttachedImageUrl(previewUrl) ?? "";
+
+        // Not a data URL — nothing to encode
+        if (!ownImagePreviewUrl.startsWith("data:image/")) {
+            updateAttachment(attachmentId, (a) => ({
+                ...a,
+                processingComplete: true,
+            }));
+            return;
+        }
+
+        console.log("Starting encoding for", attachmentId);
+
         try {
-            console.log("Schedule for processing: ", urlToProcess);
+            const result: string = await dataToAvif(ownImagePreviewUrl);
 
-            const ownImagePreviewUrl =
-                normalizeAttachedImageUrl(urlToProcess) ?? "";
+            console.log("Task successful for", attachmentId);
 
-            if (isEncoding) {
-                console.log("Killing previous encoding process");
-                killEncoding();
-                if (cancelRef.current) {
-                    cancelRef.current();
-                    cancelRef.current = null;
-                }
-                setIsEncoding(false);
-            }
+            const blob = dataUrlToBlob(result);
 
-            if (!ownImagePreviewUrl.startsWith("data:image/")) {
-                console.log("No work to be done: ", ownImagePreviewUrl);
-                // no work to be done, not a data URL
-                setProcessedImage(ownImagePreviewUrl);
-                return;
-            }
-
-            console.log("Starting encoding");
-            setIsEncoding(true);
-
-            const cancelPromise = new Promise((resolve) => {
-                cancelRef.current = () => resolve("cancelled");
-            });
-
-            const result: string = (await Promise.race([
-                dataToAvif(ownImagePreviewUrl),
-                cancelPromise,
-            ])) as string;
-            if (result === "cancelled") {
-                console.log("Task cancelled");
-                return;
-            }
-
-            console.log("Task successful");
-            setIsEncoding(false);
-            setProcessedImage(result);
+            updateAttachment(attachmentId, (a) => ({
+                ...a,
+                encodedData: blob,
+                processingComplete: true,
+            }));
 
             console.log(
                 "Size reduction from compression: ",
@@ -120,14 +125,12 @@ export default function CreatePostView() {
                 result.length / ownImagePreviewUrl.length,
             );
         } catch (e) {
-            console.error("encoding failed: ", e);
+            console.error("encoding failed for", attachmentId, ":", e);
+
             notifyErrorDefault(
                 "Failed to process your image. Please try another image.",
             );
-            setImageUrl("");
-            setProcessedImage("");
-            setIsEncoding(false);
-            return;
+            deleteAttachment(attachmentId);
         }
     };
 
@@ -163,9 +166,18 @@ export default function CreatePostView() {
         }
 
         event.preventDefault();
-        setImageUrl(pastedImageUrl);
 
-        await processImage(pastedImageUrl);
+        const id = nextAttachmentId();
+        const newAttachment: Attachment = {
+            id,
+            attachmentType: "image",
+            encodedData: null,
+            previewUrl: pastedImageUrl,
+            processingComplete: false,
+        };
+
+        insertAttachment(newAttachment);
+        await processImage(id, pastedImageUrl);
     };
 
     const onContentPaste = async (
@@ -179,13 +191,29 @@ export default function CreatePostView() {
         }
 
         event.preventDefault();
-        setImageUrl(pastedImageUrl);
 
-        await processImage(pastedImageUrl);
+        const id = nextAttachmentId();
+        const newAttachment: Attachment = {
+            id,
+            attachmentType: "image",
+            encodedData: null,
+            previewUrl: pastedImageUrl,
+            processingComplete: false,
+        };
+
+        insertAttachment(newAttachment);
+        await processImage(id, pastedImageUrl);
     };
 
+    // Cleanup singleton worker on unmount
     useEffect(() => {
-        fetch(`${API_ENDPOINT}/api/posts/subforums/`, {
+        return () => {
+            terminateWorker();
+        };
+    }, []);
+
+    useEffect(() => {
+        fetch(`${API_ENDPOINT}/api/posts/subforums/list`, {
             method: "GET",
             credentials: "omit",
         })
@@ -281,12 +309,19 @@ export default function CreatePostView() {
                 return;
             }
 
-            if (
-                (imagePreviewUrl && isEncoding) ||
-                (imagePreviewUrl && !processedImage)
-            ) {
+            // Check if attachments are still processing
+
+            let complete = true;
+            for (const attachment of attachments) {
+                if (!attachment.processingComplete) {
+                    complete = false;
+                    break;
+                }
+            }
+
+            if (!complete) {
                 notifyErrorDefault(
-                    "Please wait for the image to finish processing",
+                    "Please wait for all attachments to finish processing!",
                 );
                 return;
             }
@@ -305,48 +340,14 @@ export default function CreatePostView() {
             } */
 
             setLoading(true);
-            setPublishingText("Verifying source...");
-            const loadable = await canLoadImage(processedImage);
 
-            if (!loadable && (processedImage || imagePreviewUrl)) {
-                notifyErrorDefault(
-                    "Image source cannot be loaded, possibly due to cross-origin restrictions or the target image could not be found. Try copying the actual image instead of the image URL.",
-                );
-                setLoading(false);
-                return;
-            }
+            setPublishingText("Creating post...");
 
-            setPublishingText("Uploading...");
-
-            let appendedImage = processedImage;
-
-            try {
-                const token = await getStoredAccessToken();
-                if (!token) {
-                    throw new Error("No access token");
-                }
-
-                if (isImageDataUrl(processedImage)) {
-                    appendedImage = await uploadImage(processedImage, token);
-                }
-
-                console.log("Uploading image as: ", appendedImage);
-            } catch (e) {
-                setLoading(false);
-                notifyErrorDefault(`${e}`);
-                return;
-            }
-
-            setPublishingText("Publishing...");
-
-            const composedContent = appendAttachedImageToContent(
-                trimmedContent,
-                appendedImage,
-            );
+            const composedContent = trimmedContent;
 
             if (!composedContent) {
                 setLoading(false);
-                notifyErrorDefault("Please enter content or attach an image");
+                notifyErrorDefault("Please enter content");
                 return;
             }
 
@@ -354,6 +355,13 @@ export default function CreatePostView() {
                 const token = await getStoredAccessToken();
                 if (!token) {
                     throw new Error("No access token");
+                }
+
+                const attachmentsPayload = [];
+                for (const attachment of attachments) {
+                    attachmentsPayload.push({
+                        type: attachment.attachmentType,
+                    });
                 }
 
                 const payload = {
@@ -361,8 +369,11 @@ export default function CreatePostView() {
                     content: composedContent,
                     content_markdown: composedContent,
                     language: postLanguage,
+                    attachments: attachmentsPayload,
                     ...(chosenSubforum ? { subforum: chosenSubforum } : {}),
                 };
+
+                setPublishingText("Creating post...");
 
                 const res = await fetch(`${API_ENDPOINT}/api/posts/create/`, {
                     method: "POST",
@@ -384,12 +395,144 @@ export default function CreatePostView() {
                         );
                 }
 
-                await res.json();
+                const response = await res.json();
+                // now extract
+
+                const attachmentUploadTokens = response.upload_attachments;
+                if (!attachmentUploadTokens) {
+                    throw new Error("Invalid response returned by server");
+                }
+
+                const postData = response.post;
+                if (!postData) {
+                    throw new Error("No post data");
+                }
+
+                const postId = postData.id;
+                if (postId == null) {
+                    throw new Error("No Post ID");
+                }
+
+                // each one should have a type value
+
+                const typesUploadTokens: Map<string, string[]> = new Map();
+                for (const uploadToken of attachmentUploadTokens) {
+                    console.log(uploadToken);
+                    const req = uploadToken.request;
+                    if (!req) {
+                        throw new Error("No request");
+                    }
+
+                    const type: string = req.type;
+                    if (!type) {
+                        throw new Error("No type field under upload token");
+                    }
+                    const token: string = uploadToken.token;
+                    if (!token) {
+                        throw new Error("No token for upload token");
+                    }
+
+                    if (typesUploadTokens.get(type) == null) {
+                        typesUploadTokens.set(type, []);
+                    }
+
+                    const arr = typesUploadTokens.get(type)!;
+                    arr.push(token);
+                }
+
+                setPublishingText("Uploading attachments...");
+
+                for (const attachment of attachments) {
+                    if (!attachment.encodedData) {
+                        throw new Error(
+                            "Attachment did not finish processing; no blob stored",
+                        );
+                    }
+
+                    // retrieve one type
+                    const uploadTokensType = typesUploadTokens.get(
+                        attachment.attachmentType,
+                    );
+                    if (!uploadTokensType) {
+                        throw new Error(
+                            `No upload token for attachment type: ${attachment.attachmentType}`,
+                        );
+                    }
+
+                    if (uploadTokensType.length == 0) {
+                        throw new Error(
+                            `No more tokens for attachment type: ${attachment.attachmentType} available`,
+                        );
+                    }
+
+                    const oneToken = uploadTokensType.pop()!;
+                    typesUploadTokens.set(
+                        attachment.attachmentType,
+                        uploadTokensType,
+                    );
+
+                    // try uplaoding it
+                    try {
+                        const formData = new FormData();
+                        formData.append(
+                            "file",
+                            attachment.encodedData,
+                            "upload.bin",
+                        );
+
+                        const response = await fetch(
+                            `${API_ENDPOINT}/api/posts/attachment/upload`,
+                            {
+                                method: "POST",
+                                headers: {
+                                    Authorization: `Bearer ${token}`,
+                                    "X-Upload-Token": oneToken,
+                                },
+                                body: formData,
+                            },
+                        );
+
+                        if (!response.ok) {
+                            const detail =
+                                await extractDetailFromErrorResponse(response);
+
+                            throw new Error(
+                                `Failed to upload attachment: ${detail}`,
+                            );
+                        }
+
+                        console.log("Attachment uploaded successfully");
+                    } catch (e) {
+                        throw new Error(`Upload failed: ${e}`);
+                    }
+                }
+
+                setPublishingText("Publishing...");
+                // Now publish it
+                try {
+                    const response = await fetch(
+                        `${API_ENDPOINT}/api/posts/publish/${postId}/`,
+                        {
+                            method: "PUT",
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                        },
+                    );
+                    if (!response.ok) {
+                        const detail =
+                            await extractDetailFromErrorResponse(response);
+                        throw new Error(`Failed to publish: ${detail}`);
+                    }
+                } catch (e) {
+                    throw new Error(`Publish failed: ${e}`);
+                }
 
                 notifySuccessDefault("Post created!");
                 setTitle("");
                 setContent("");
-                setImageUrl("");
+                setAttachments([]);
+                terminateWorker();
                 postsStore.getState().forceUpdate();
                 navigate(postLanguage === "fr" ? "/fr" : "/");
             } catch (err) {
@@ -445,10 +588,13 @@ export default function CreatePostView() {
         notifySuccessDefault("Subforum created!");
     };
 
-    const imageClasses = clsx(
-        isEncoding
-            ? "blur-sm brightness-50 scale-105"
-            : "blur-0 brightness-100 scale-100",
+    const imageClassesEncoding = clsx(
+        "blur-sm brightness-50 scale-105",
+        "rounded-md duration-500 ease-in-out max-h-[40vh]",
+    );
+
+    const imageClassesNormal = clsx(
+        "blur-0 brightness-100 scale-100",
         "rounded-md duration-500 ease-in-out max-h-[40vh]",
     );
 
@@ -501,51 +647,64 @@ export default function CreatePostView() {
                     disabled={loading}
                 />
 
-                <InputComponent
-                    className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw]"
-                    placeholder="Paste image or image URL (optional)"
-                    value={imageUrl}
-                    onChange={(e) => {
-                        setImageUrl(e.target.value);
-                        processImage(e.target.value);
-                    }}
-                    onPaste={onImagePaste}
-                    disabled={loading || isEncoding}
-                />
-                <p className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] text-sm text-black/60 dark:text-white/60 transition-colors duration-300">
-                    Copy an image and press Ctrl+V in the image field or post
-                    content to attach it.
-                </p>
-
-                {imagePreviewUrl != null && (
-                    <div className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] relative">
-                        <div className="flex flex-col items-center">
-                            <div className="w-fit h-fit overflow-hidden rounded-md flex">
-                                <img
-                                    className={imageClasses}
-                                    src={imagePreviewUrl}
-                                    alt="Attached Image"
-                                ></img>
-                            </div>
-                        </div>
-
-                        {isEncoding && (
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center items-center pointer-events-none">
-                                <div className="flex flex-col gap-3 items-center">
-                                    <Spinner
-                                        isWhite={true}
-                                        alwaysWhite={true}
-                                    />
-                                    <div className="flex flex-col text-white items-center">
-                                        <span className="font-bold shimmer-text drop-shadow-md">
-                                            Processing
-                                        </span>
+                <div className="flex flex-col gap-3 w-full h-fit">
+                    {attachments.map((attachment) => {
+                        return (
+                            <div key={attachment.id} className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] relative">
+                                <div className="flex flex-col items-center">
+                                    <div className="w-fit h-fit overflow-hidden rounded-md flex">
+                                        <img
+                                            className={
+                                                attachment.processingComplete
+                                                    ? imageClassesNormal
+                                                    : imageClassesEncoding
+                                            }
+                                            src={attachment.previewUrl}
+                                            alt="Attached Image"
+                                        ></img>
                                     </div>
                                 </div>
+
+                                {!attachment.processingComplete && (
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center items-center pointer-events-none">
+                                        <div className="flex flex-col gap-3 items-center">
+                                            <Spinner
+                                                isWhite={true}
+                                                alwaysWhite={true}
+                                            />
+                                            <div className="flex flex-col text-white items-center">
+                                                <span className="font-bold shimmer-text drop-shadow-md">
+                                                    Processing
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {attachment.processingComplete && (
+                                    <div className="absolute top-0 right-0 m-2">
+                                        <TransparentIconButton
+                                            icon={
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    height="24px"
+                                                    viewBox="0 -960 960 960"
+                                                    width="24px"
+                                                    fill="#e3e3e3"
+                                                >
+                                                    <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z" />
+                                                </svg>
+                                            }
+                                            filledIcon={<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm80-160h80v-360h-80v360Zm160 0h80v-360h-80v360Z"/></svg>}                                            onClick={() => {
+                                                console.log("Delete! ", attachment.id);
+                                                deleteAttachment(attachment.id);
+                                        }}></TransparentIconButton>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
-                )}
+                        );
+                    })}
+                </div>
 
                 {/* Content textarea */}
                 <TextAreaInput

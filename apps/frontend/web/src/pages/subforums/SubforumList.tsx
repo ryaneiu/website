@@ -44,7 +44,7 @@ export default function SubforumList() {
             setToken(tokenValue);
 
             const response = await fetch(
-                `${API_ENDPOINT}/api/posts/subforums/`,
+                `${API_ENDPOINT}/api/posts/subforums/list`,
                 {
                     method: "GET",
                     credentials: "omit",
@@ -204,7 +204,7 @@ export default function SubforumList() {
                                             "No description"}
                                     </p>
                                     <span className="text-xs text-black/50 dark:text-white/50 transition-colors duration-300">
-                                        {subforum.posts.length} posts
+                                        {(subforum).number_of_posts} posts
                                     </span>
                                 </div>
                                 <div className="flex gap-2">

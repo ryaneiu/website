@@ -13,6 +13,7 @@ import {
     normalizeAttachedImageUrl,
     type PostImage,
 } from "../../contentFilter";
+import type { PostAttachment } from "../../stores/PostsStore";
 
 export type SubforumPostDto = {
     id: number;
@@ -26,6 +27,7 @@ export type SubforumPostDto = {
     is_nsfw?: boolean;
     has_swears?: boolean;
     image?: PostImage | null;
+    attachments: PostAttachment[];
 };
 
 interface Props {

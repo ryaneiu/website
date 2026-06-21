@@ -12,7 +12,7 @@ import { CommentReplySection } from "./CommentReplySection";
 import { extractDetailFromErrorResponse } from "../../Utils";
 import { Button } from "../../components/Button";
 import { Panel } from "../../components/Panel";
-import { postsStore } from "../../stores/PostsStore";
+import { postsStore, type PostAttachment } from "../../stores/PostsStore";
 import { FadeUp } from "../../components/AnimatedPresenceDiv";
 import {
     buildContentFilterQuery,
@@ -42,7 +42,7 @@ type PostResponse = {
     subforum?: string | null;
     is_nsfw?: boolean;
     has_swears?: boolean;
-    image?: PostImage | null;
+    attachments: PostAttachment[];
 };
 
 type ReplyResponse = {
@@ -199,7 +199,7 @@ export default function PostPage() {
     }, []);
 
     useEffect(() => {
-        fetch(`${API_ENDPOINT}/api/posts/subforums/`, {
+        fetch(`${API_ENDPOINT}/api/posts/subforums/list`, {
             method: "GET",
             credentials: "omit",
         })
@@ -452,7 +452,7 @@ export default function PostPage() {
                       postData.content,
                   filterPreferences.includeSwears,
               );
-    const renderedPostImage =
+    /* const renderedPostImage =
         postData == null
             ? null
             : resolvePostImage(
@@ -462,7 +462,7 @@ export default function PostPage() {
                       postData.content,
                   filterPreferences.includeNsfw,
                   postData.is_nsfw,
-              );
+              ); */
     const hiddenPostMessage =
         postData == null
             ? null
@@ -507,7 +507,6 @@ export default function PostPage() {
                                     }
                                     commentsCount={postData.replies_count ?? 0}
                                     id={postData.id}
-                                    image={renderedPostImage}
                                     authorUsername={postData.author_username}
                                     authorBio={postData.author_bio}
                                     onLikeClick={onPostLikeClick}
@@ -558,6 +557,7 @@ export default function PostPage() {
                                         </div>
                                     }
                                     isInPostList={false}
+                                    attachments={postData.attachments}
                                 ></Post>
                             ) : (
                                 <Panel className="flex flex-col gap-2">

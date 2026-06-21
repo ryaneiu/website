@@ -4,6 +4,7 @@ Docstring for apps.backend.posts.urls
 
 #usual django paths
 from django.urls import path
+from django.views.decorators.csrf import csrf_exempt
 from .views import (
     CreatePostView,
     PublishPostView,
@@ -13,9 +14,11 @@ from .views import (
     ToggleLikeAPIView,
     ReplyListCreateAPIView,
     SubforumListCreateAPIView,
+    SubforumListOnlyAPIView,
     SubforumRetrieveUpdateDestroyAPIView,
     SubforumPostCreateAPIView,
     PostSubforumUpdateAPIView,
+    CreatePostAttachmentView
 )
 
 urlpatterns = [
@@ -27,8 +30,10 @@ urlpatterns = [
     path('<int:id>/replies/', ReplyListCreateAPIView.as_view(), name='post-replies'),
     path('<int:id>/subforum/', PostSubforumUpdateAPIView.as_view(), name='post-subforum-update'),
     path('subforums/', SubforumListCreateAPIView.as_view(), name='subforums'),
+    path('subforums/list/', SubforumListOnlyAPIView.as_view(), name='subforums-list'),
     path('subforums/<slug:slug>/', SubforumRetrieveUpdateDestroyAPIView.as_view(), name='subforum-detail'),
     path('subforums/<slug:slug>/posts/', SubforumPostCreateAPIView.as_view(), name='subforum-post-create'),
+    path("attachment/upload", csrf_exempt(CreatePostAttachmentView.as_view()), name="attachment-upload")
 ]
 
 urlpatterns += [

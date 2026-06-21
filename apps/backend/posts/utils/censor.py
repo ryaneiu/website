@@ -48,6 +48,10 @@ DIRECT_IMAGE_URL_PATTERN = re.compile(
     r"(https?://[^\s]+?\.(?:png|jpe?g|gif|webp|avif))",
     re.IGNORECASE,
 )
+HTML_IMG_SRC_PATTERN = re.compile(
+    r'<img[^>]+src="([^"]+)"',
+    re.IGNORECASE,
+)
 
 
 def classify_post_content(title: str, content: str, content_markdown: str) -> tuple[bool, bool]:
@@ -85,6 +89,12 @@ def extract_first_image_url(text: str) -> str | None:
     direct_match = DIRECT_IMAGE_URL_PATTERN.search(text)
     if direct_match:
         candidate = direct_match.group(1).strip()
+        if _is_safe_http_url(candidate):
+            return candidate
+
+    html_match = HTML_IMG_SRC_PATTERN.search(text)
+    if html_match:
+        candidate = html_match.group(1).strip()
         if _is_safe_http_url(candidate):
             return candidate
 

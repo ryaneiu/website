@@ -14,22 +14,19 @@ const modulePromise = wasm_avif({
     locateFile: () => wasmAvifURL,
 } as AVIFModuleOptions);
 
-self.onmessage = async (e) => {
+// Process one message at a time to avoid WASM re-entrancy issues
+let processing = false;
+const queue: Array<{ data: any; id: number }> = [];
 
-    console.log("Web worker received the message");
+async function processQueue() {
+    if (processing || queue.length === 0) return;
+    processing = true;
 
-    const { rgbaPixels, width, height, customOptions } = e.data;
-
-    if (!rgbaPixels || rgbaPixels.length === 0) {
-        console.error("Web worker received no data");
-        self.postMessage({ error: "Received empty pixel data (Transfer failed)" });
-        return;
-    }
-
-    console.log("Received: ", rgbaPixels.length, " of data");
+    const { data, id } = queue.shift()!;
+    const { rgbaPixels, width, height, customOptions } = data;
 
     try {
-        const avifModule = await modulePromise
+        const avifModule = await modulePromise;
 
         const avifData = avifModule.encode(
             rgbaPixels,
@@ -37,33 +34,41 @@ self.onmessage = async (e) => {
             height,
             4,
             customOptions || defaultOptions,
-            3
+            3,
         );
 
-        if (avifData && 'error' in avifData) {
+        if (avifData && "error" in avifData) {
             throw new Error(avifData.error);
         }
 
         let encodedData: Uint8Array;
 
         if (avifData instanceof Uint8Array) {
-            // .slice() creates a copy, detaching it from the WASM heap
             encodedData = avifData.slice();
         } else if (avifData instanceof ArrayBuffer) {
             encodedData = new Uint8Array(avifData);
         } else {
             console.warn("Unexpected type, attempting conversion");
-            encodedData = new Uint8Array(avifData as unknown as Iterable<number>);
+            encodedData = new Uint8Array(
+                avifData as unknown as Iterable<number>,
+            );
         }
 
-        // FIX: Send 'encodedData' (the copy) and transfer its buffer
-        self.postMessage({ avifData: encodedData }, [encodedData.buffer]);
+        self.postMessage({ id, avifData: encodedData }, [encodedData.buffer]);
 
-        // Clean up WASM memory if the library requires it
-        if (typeof avifModule.free === 'function') {
-            avifModule.free();
-        }
+        // NOTE: Do NOT call avifModule.free() here — it destroys the WASM
+        // module's memory, breaking all subsequent encode() calls. The
+        // module is initialized once and reused for the worker's lifetime.
     } catch (error) {
-        self.postMessage({ error: `${error}` });
+        self.postMessage({ id, error: `${error}` });
+    } finally {
+        processing = false;
+        processQueue();
     }
+}
+
+self.onmessage = (e) => {
+    const id = e.data.id ?? 0;
+    queue.push({ data: e.data, id });
+    processQueue();
 };

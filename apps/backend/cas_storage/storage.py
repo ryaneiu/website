@@ -13,7 +13,7 @@ class ContentAdressableStorage(FileSystemStorage):
     def get_available_name(self, name: str, max_length: int | None = None) -> str:
         return name
     
-    def _save(self, name: str, content: "File"):
+    def save_cas(self, name: str, content: "File"):
         sha256 = hashlib.sha256()
         
         for chunk in content.chunks():
@@ -23,5 +23,5 @@ class ContentAdressableStorage(FileSystemStorage):
 
         if self.exists(filename):
             return filename
-        return super()._save(filename, content) # ignore
+        return super().save(filename, content) # ignore
         

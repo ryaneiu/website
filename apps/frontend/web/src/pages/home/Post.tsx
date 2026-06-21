@@ -1,10 +1,11 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { ReactionButton } from "../../components/ReactionButton";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { timeAgo } from "../../Utils";
 import { useSelectedPostStore } from "../../stores/CurrentSelectedPostStore";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { MarkdownComponents } from "../../MarkdownComponents";
 import clsx from "clsx";
 import { LoadableButton } from "../../components/LoadableButton";
@@ -12,8 +13,14 @@ import { Panel } from "../../components/Panel";
 import type { PostImage } from "../../contentFilter";
 import { BlurredImage } from "../../components/BlurredImage";
 import { getAppLanguageFromPath, localizePath } from "../../i18n";
+import type { PostAttachment } from "../../stores/PostsStore";
+import { API_ENDPOINT } from "../../Config";
+import { ImageGrid } from "../../components/ImageGrid";
+import { useAttachmentViewGoBackStore } from "../../stores/AttachmentViewGoBackStore";
 
 const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/gi;
+const DIRECT_IMAGE_URL_PATTERN =
+    /(https?:\/\/[^\s]+?\.(?:png|jpe?g|gif|webp|avif))/gi;
 
 interface Props {
     title: string;
@@ -28,15 +35,17 @@ interface Props {
     isDeleting?: boolean;
     subforumText?: string;
     subforumControl?: ReactNode;
-    image?: PostImage | null;
     authorUsername?: string;
     authorBio?: string;
 
     isInPostList: boolean;
+    attachments: PostAttachment[];
 }
 
-
-
+type MemoReturn = {
+    imageStrings: string[];
+    imageOriginal: string[];
+};
 
 export function Post(props: Props) {
     const [expanded, setExpanded] = useState(!props.isInPostList);
@@ -74,14 +83,81 @@ export function Post(props: Props) {
 
     const postClasses = clsx(
         "flex flex-col gap-2 w-full",
-        props.isInPostList && props.canDelete && "relative pr-44",
-        props.isInPostList && "cursor-pointer"
+        props.isInPostList && props.canDelete && "relative",
+        props.isInPostList && "cursor-pointer",
     );
 
     const deleteButtons = props.isInPostList && props.canDelete ? [0] : [];
 
+    const imageStrings: MemoReturn = useMemo(() => {
+        const objs: string[] = [];
+        const original: string[] = [];
+
+        // New CAS attachment system
+        for (const attachment of props.attachments) {
+            original.push(attachment.object_id);
+            objs.push(`${API_ENDPOINT}/objects/${attachment.object_id}.bin/`);
+        }
+
+        const seen = new Set(objs);
+        const text = props.description;
+
+        // Old posts: markdown images ![alt](url)
+        let match;
+        while ((match = MARKDOWN_IMAGE_PATTERN.exec(text)) !== null) {
+            const url = match[1].trim();
+            if (url && !seen.has(url)) {
+                objs.push(url);
+                seen.add(url);
+                original.push(url);
+            }
+        }
+
+        // Old posts: direct image URLs (e.g. https://...jpg)
+        while ((match = DIRECT_IMAGE_URL_PATTERN.exec(text)) !== null) {
+            const url = match[1].trim();
+            if (url && !seen.has(url)) {
+                objs.push(url);
+                seen.add(url);
+                original.push(url);
+            }
+        }
+
+        console.log(original, objs);
+
+        return {
+            imageOriginal: original,
+            imageStrings: objs,
+        };
+    }, [props.attachments, props.description]);
+
+    const loc = useLocation();
+
+    const imageClicked = (index: number) => {
+        const target = imageStrings.imageStrings[index];
+        if (
+            !imageStrings.imageOriginal[index].startsWith("http") &&
+            !imageStrings.imageOriginal[index].startsWith("data")
+        ) {
+            useAttachmentViewGoBackStore.setState({ goBackTo: loc.pathname });
+            navigate(`/view/${props.attachments[index].object_id}`);
+        } else {
+            useAttachmentViewGoBackStore.setState({
+                dataUrl: target,
+                goBackTo: loc.pathname,
+            });
+            navigate("/view/data");
+        }
+    };
+
     return (
-        <Panel as="article" aria-label="post" className={postClasses} onClick={onPostClicked} hoverable={props.isInPostList}>
+        <Panel
+            as="article"
+            aria-label="post"
+            className={postClasses}
+            onClick={onPostClicked}
+            hoverable={props.isInPostList}
+        >
             {deleteButtons.map((deleteButtonIndex) => (
                 <div
                     key={deleteButtonIndex}
@@ -127,16 +203,14 @@ export function Post(props: Props) {
                 <ReactMarkdown
                     components={MarkdownComponents}
                     remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeRaw]}
                 >
                     {expanded ? descriptionWithoutImage : truncatedText}
                 </ReactMarkdown>
-                {props.image != null && (
-                    <BlurredImage
-                        src={props.image.url}
-                        alt={props.title}
-                        isBlurred={props.image.isBlurred}
-                    />
-                )}
+                <ImageGrid
+                    images={imageStrings.imageStrings}
+                    onImageClick={imageClicked}
+                ></ImageGrid>
                 {needsExpandButton && props.isInPostList && (
                     <button
                         className="text-blue-600 hover:underline focus:outline-none cursor-pointer"
@@ -255,7 +329,8 @@ export function Post(props: Props) {
                 ></ReactionButton>
             </div>
             <span className="text-black/50 dark:text-white/50 text-sm transition-colors duration-300">
-                {language === "fr" ? "Publié" : "Posted"} {timeAgo(props.created_at)}
+                {language === "fr" ? "Publié" : "Posted"}{" "}
+                {timeAgo(props.created_at)}
             </span>
         </Panel>
     );

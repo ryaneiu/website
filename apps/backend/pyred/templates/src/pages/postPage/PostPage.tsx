@@ -160,6 +160,7 @@ export default function PostPage() {
                 );
 
                 useSelectedPostStore.setState({
+                    ...postPayload,
                     title: postPayload.title,
                     description: renderedDescription,
                     publishedTime: postPayload.created_at,
@@ -187,7 +188,7 @@ export default function PostPage() {
     }, []);
 
     useEffect(() => {
-        fetch(`${API_ENDPOINT}/api/posts/subforums/`, { method: "GET" })
+        fetch(`${API_ENDPOINT}/api/posts/subforums/list`, { method: "GET" })
             .then(async (res) => {
                 if (!res.ok) {
                     throw new Error("Failed to load subforums");
