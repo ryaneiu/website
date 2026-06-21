@@ -22,7 +22,6 @@ import {
     censorText,
     getHiddenPostMessage,
     getStoredContentFilterPreferences,
-    resolvePostImage,
 } from "../../contentFilter";
 import { SubforumSkeletonLoader } from "./SubforumSkeletonLoader";
 import { PostSkeletonLoader } from "../../components/PostSkeletonLoader";
@@ -341,12 +340,12 @@ export default function SubforumDetail() {
                                     sourceText,
                                     filterPreferences.includeSwears,
                                 );
-                                const image = resolvePostImage(
+                                /* const image = resolvePostImage(
                                     post.image,
                                     sourceText,
                                     filterPreferences.includeNsfw,
                                     post.is_nsfw,
-                                );
+                                ); */
 
                                 return (
                                     <Post

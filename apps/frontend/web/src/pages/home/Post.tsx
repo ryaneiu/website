@@ -10,8 +10,6 @@ import { MarkdownComponents } from "../../MarkdownComponents";
 import clsx from "clsx";
 import { LoadableButton } from "../../components/LoadableButton";
 import { Panel } from "../../components/Panel";
-import type { PostImage } from "../../contentFilter";
-import { BlurredImage } from "../../components/BlurredImage";
 import { getAppLanguageFromPath, localizePath } from "../../i18n";
 import type { PostAttachment } from "../../stores/PostsStore";
 import { API_ENDPOINT } from "../../Config";

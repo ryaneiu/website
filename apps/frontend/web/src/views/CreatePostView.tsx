@@ -157,7 +157,7 @@ export default function CreatePostView() {
         return new Blob(byteArrays, { type: mimeType });
     };
 
-    const onImagePaste = async (event: ClipboardEvent<HTMLInputElement>) => {
+    /* const onImagePaste = async (event: ClipboardEvent<HTMLInputElement>) => {
         const pastedImageUrl = await extractImageReferenceFromClipboardData(
             event.clipboardData,
         );
@@ -178,7 +178,7 @@ export default function CreatePostView() {
 
         insertAttachment(newAttachment);
         await processImage(id, pastedImageUrl);
-    };
+    }; */
 
     const onContentPaste = async (
         event: ClipboardEvent<HTMLTextAreaElement>,
@@ -266,7 +266,7 @@ export default function CreatePostView() {
         }
     }, [imageEncodingProgress]);
 
-    const uploadImage = async (dataUrl: string, token: string) => {
+    /* const uploadImage = async (dataUrl: string, token: string) => {
         const blob = dataUrlToBlob(dataUrl);
         const formData = new FormData();
         formData.append("file", blob, "upload.avif");
@@ -291,7 +291,7 @@ export default function CreatePostView() {
         console.log("Download this later at:", result.file_url);
 
         return result.file_url as string;
-    };
+    }; */
 
     const onPublishPost = async () => {
         try {

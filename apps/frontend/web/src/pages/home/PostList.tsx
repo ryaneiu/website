@@ -13,7 +13,6 @@ import {
     censorText,
     getHiddenPostMessage,
     getStoredContentFilterPreferences,
-    resolvePostImage,
     type ContentFilterPreferences,
     type PostLanguage,
 } from "../../contentFilter";
@@ -288,12 +287,12 @@ export function PostList({ language = "en" }: PostListProps) {
                         sourceText,
                         includeSwears,
                     );
-                    const image = resolvePostImage(
+                    /* const image = resolvePostImage(
                         post.image,
                         sourceText,
                         includeNsfw,
                         post.is_nsfw,
-                    );
+                    ); */
 
                     return (
                         <Post

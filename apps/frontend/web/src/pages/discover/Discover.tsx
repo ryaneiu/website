@@ -9,7 +9,6 @@ import {
     censorText,
     getHiddenPostMessage,
     getStoredContentFilterPreferences,
-    resolvePostImage,
 } from "../../contentFilter";
 import { Panel } from "../../components/Panel";
 import { PostSkeletonLoader } from "../../components/PostSkeletonLoader";
@@ -207,12 +206,12 @@ export default function Discover() {
                                 sourceText,
                                 filterPreferences.includeSwears,
                             );
-                            const image = resolvePostImage(
+                            /* const image = resolvePostImage(
                                 post.image,
                                 sourceText,
                                 filterPreferences.includeNsfw,
                                 post.is_nsfw,
-                            );
+                            ); */
 
                             return (
                                 <Post
@@ -223,10 +222,10 @@ export default function Discover() {
                                     votes={post.likes_count ?? post.votes ?? 0}
                                     commentsCount={post.replies_count ?? 0}
                                     id={post.id}
-                                    image={image}
                                     authorUsername={post.author_username}
                                     authorBio={post.author_bio}
                                     isInPostList={true}
+                                    attachments={post.attachments}
                                 />
                             );
                         })}

@@ -2,7 +2,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { API_ENDPOINT } from "../Config";
 import { useState } from "react";
 import { useAttachmentViewGoBackStore } from "../stores/AttachmentViewGoBackStore";
-import { Button } from "../components/Button";
 import { TransparentIconButton } from "../components/TransparentIconButton";
 
 export function ImageView() {

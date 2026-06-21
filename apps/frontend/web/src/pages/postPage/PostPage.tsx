@@ -19,8 +19,6 @@ import {
     censorText,
     getHiddenPostMessage,
     getStoredContentFilterPreferences,
-    resolvePostImage,
-    type PostImage,
 } from "../../contentFilter";
 import { getAppLanguageFromPath, localizePath } from "../../i18n";
 import { PostSkeletonLoader } from "../../components/PostSkeletonLoader";
