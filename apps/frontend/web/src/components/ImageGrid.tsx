@@ -81,7 +81,7 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
     // 1 Image: Full layout, natural aspect ratio but capped height
     if (count === 1) {
         return (
-            <div className="w-full aspect-auto overflow-hidden rounded-2xl border border-black/15 dark:border-white/15">
+            <div className="w-full aspect-auto min-h-0 h-100 overflow-hidden rounded-2xl border border-black/15 dark:border-white/15">
                 <ImageSlot
                     src={images[0].src}
                     alt="Post attachment"
@@ -102,7 +102,7 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
     // 2 Images: 50/50 Split Side-by-Side
     if (count === 2) {
         return (
-            <div className="grid grid-cols-2 gap-1 w-full overflow-hidden rounded-2xl border border-black/15 dark:border-white/15">
+            <div className="grid grid-cols-2 gap-1 w-full h-100 overflow-hidden rounded-2xl border border-black/15 dark:border-white/15">
                 {images.map((src, index) => (
                     <ImageSlot
                         key={index}
@@ -126,7 +126,7 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
     // 3 Images: 1 Large Left (spans 2 rows), 2 Stacked Right
     if (count === 3) {
         return (
-            <div className="grid grid-cols-2 grid-rows-2 gap-1 w-full overflow-hidden rounded-2xl border border-black/15 dark:border-white/15">
+            <div className="grid grid-cols-2 grid-rows-2 gap-1 w-full h-100 overflow-hidden rounded-2xl border border-black/15 dark:border-white/15">
                 <div className="row-span-2 h-full w-full">
                     <ImageSlot
                         src={images[0].src}
@@ -181,7 +181,7 @@ export const ImageGrid: React.FC<ImageGridProps> = ({
     const remainingCount = count - 4;
 
     return (
-        <div className="grid grid-cols-2 grid-rows-2 gap-1 w-full overflow-hidden rounded-2xl border border-black/15 dark:border-white/15">
+        <div className="grid grid-cols-2 grid-rows-2 gap-1 w-full h-100 overflow-hidden rounded-2xl border border-black/15 dark:border-white/15">
             {displayImages.map((src, index) => {
                 const isLast = index === 3;
                 return (
