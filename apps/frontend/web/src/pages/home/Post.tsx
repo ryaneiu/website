@@ -40,11 +40,11 @@ interface Props {
     attachments: PostAttachment[];
 }
 
-type ImageGridImage =  {
+type ImageGridImage = {
     width: number;
     height: number;
     src: string;
-}
+};
 
 type MemoReturn = {
     imageStrings: ImageGridImage[];
@@ -103,7 +103,7 @@ export function Post(props: Props) {
             objs.push({
                 src: `${API_ENDPOINT}/objects/${attachment.object_id}.bin`,
                 width: attachment.width,
-                height: attachment.height
+                height: attachment.height,
             });
         }
 
@@ -116,7 +116,7 @@ export function Post(props: Props) {
         while ((match = MARKDOWN_IMAGE_PATTERN.exec(text)) !== null) {
             const url = match[1].trim();
             if (url && !seen.has(url)) {
-                objs.push({src: url, width: 0, height: 0});
+                objs.push({ src: url, width: 0, height: 0 });
                 seen.add(url);
                 original.push(url);
             }
@@ -126,7 +126,7 @@ export function Post(props: Props) {
         while ((match = DIRECT_IMAGE_URL_PATTERN.exec(text)) !== null) {
             const url = match[1].trim();
             if (url && !seen.has(url)) {
-                objs.push({src: url, width: 0, height: 0});
+                objs.push({ src: url, width: 0, height: 0 });
                 seen.add(url);
                 original.push(url);
             }
@@ -306,8 +306,10 @@ export function Post(props: Props) {
                     interactable={true}
                     text={`${props.votes ?? 0}`}
                     onClick={(e) => {
-                        e.stopPropagation();
-                        props.onLikeClick?.();
+                        if (props.onLikeClick) {
+                            e.stopPropagation();
+                            props.onLikeClick?.();
+                        }
                     }}
                 ></ReactionButton>
                 <ReactionButton
