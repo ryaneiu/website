@@ -101,7 +101,7 @@ export function Post(props: Props) {
         for (const attachment of props.attachments) {
             original.push(attachment.object_id);
             objs.push({
-                src: `${API_ENDPOINT}/objects/${attachment.object_id}.bin/`,
+                src: `${API_ENDPOINT}/objects/${attachment.object_id}.bin`,
                 width: attachment.width,
                 height: attachment.height
             });
