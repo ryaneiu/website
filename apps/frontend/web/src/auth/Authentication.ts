@@ -59,9 +59,11 @@ export function getUserIdFromJwt(token: string): number | null {
 export async function getStoredAccessToken() {
 
     // Allow storing accessToken in localStorage
+    console.log("Query access token");
 
     const token = localStorage.getItem("access_token");
     if (token) {
+        console.log("Got token");
         const newToken = await refreshTokenIfNeeded(token);
         if (newToken) {
             return newToken;
@@ -72,6 +74,13 @@ export async function getStoredAccessToken() {
         }
 
         return token;
+    } else {
+        const newToken = await refreshTokenIfNeeded(token || "");
+        if (newToken) {
+            storeAccessToken(newToken);
+            return newToken;
+        }
+        
     }
     return token;
 }

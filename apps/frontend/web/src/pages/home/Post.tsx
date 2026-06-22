@@ -40,8 +40,14 @@ interface Props {
     attachments: PostAttachment[];
 }
 
+type ImageGridImage =  {
+    width: number;
+    height: number;
+    src: string;
+}
+
 type MemoReturn = {
-    imageStrings: string[];
+    imageStrings: ImageGridImage[];
     imageOriginal: string[];
 };
 
@@ -88,16 +94,21 @@ export function Post(props: Props) {
     const deleteButtons = props.isInPostList && props.canDelete ? [0] : [];
 
     const imageStrings: MemoReturn = useMemo(() => {
-        const objs: string[] = [];
+        const objs: ImageGridImage[] = [];
         const original: string[] = [];
 
         // New CAS attachment system
         for (const attachment of props.attachments) {
             original.push(attachment.object_id);
-            objs.push(`${API_ENDPOINT}/objects/${attachment.object_id}.bin/`);
+            objs.push({
+                src: `${API_ENDPOINT}/objects/${attachment.object_id}.bin/`,
+                width: attachment.width,
+                height: attachment.height
+            });
         }
 
-        const seen = new Set(objs);
+        const seen: Set<string> = new Set();
+        objs.forEach((v) => seen.add(v.src));
         const text = props.description;
 
         // Old posts: markdown images ![alt](url)
@@ -105,7 +116,7 @@ export function Post(props: Props) {
         while ((match = MARKDOWN_IMAGE_PATTERN.exec(text)) !== null) {
             const url = match[1].trim();
             if (url && !seen.has(url)) {
-                objs.push(url);
+                objs.push({src: url, width: 0, height: 0});
                 seen.add(url);
                 original.push(url);
             }
@@ -115,7 +126,7 @@ export function Post(props: Props) {
         while ((match = DIRECT_IMAGE_URL_PATTERN.exec(text)) !== null) {
             const url = match[1].trim();
             if (url && !seen.has(url)) {
-                objs.push(url);
+                objs.push({src: url, width: 0, height: 0});
                 seen.add(url);
                 original.push(url);
             }
@@ -141,7 +152,7 @@ export function Post(props: Props) {
             navigate(`/view/${props.attachments[index].object_id}`);
         } else {
             useAttachmentViewGoBackStore.setState({
-                dataUrl: target,
+                dataUrl: target.src,
                 goBackTo: loc.pathname,
             });
             navigate("/view/data");

@@ -11,7 +11,6 @@ import {
 import { NotificationList } from "./components/Notify";
 import { LoadingPageFallbackFS } from "./components/LoadingPageFallback";
 import { useDarkModeStore } from "./stores/DarkModeStore";
-import { ImageView } from "./views/ImageView";
 
 function hasShownDebugTip() {
     if (!isDevelopmentMode()) return true;
@@ -21,6 +20,7 @@ function hasShownDebugTip() {
 const PrimaryView = React.lazy(() => import("./views/PrimaryView"));
 const CreatePostView = React.lazy(() => import("./views/CreatePostView"));
 const AuthView = React.lazy(() => import("./views/AuthView"));
+const ImageView = React.lazy(() => import("./views/ImageView"));
 
 function getRootRoute(pathname: string) {
     if (pathname.startsWith("/auth")) return "auth";

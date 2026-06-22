@@ -3,11 +3,14 @@ import { API_ENDPOINT } from "../Config";
 import { useState } from "react";
 import { useAttachmentViewGoBackStore } from "../stores/AttachmentViewGoBackStore";
 import { TransparentIconButton } from "../components/TransparentIconButton";
+import { Spinner } from "../components/SimpleSpinner";
+import clsx from "clsx";
 
-export function ImageView() {
+export default function ImageView() {
     const { id } = useParams<{ id: string }>();
 
     const [failed, setFailed] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(true);
 
     const goBackTo = useAttachmentViewGoBackStore((state) => state.goBackTo);
     const navigate = useNavigate();
@@ -20,6 +23,10 @@ export function ImageView() {
         src = `${API_ENDPOINT}/objects/${id}.bin`;
     }
 
+    const imageClasses = clsx(
+        "w-full h-auto max-h-full object-contain p-4 rounded-md",
+        (loading || failed) && "hidden"
+    )
 
 
     return (
@@ -47,13 +54,19 @@ export function ImageView() {
                 <img
                     src={src}
                     alt="Image"
-                    className="w-full h-auto max-h-full object-contain"
+                    className={imageClasses}
                     onError={() => setFailed(true)}
+                    onLoad={() => setLoading(false)}
                 />
             ) : (
                 <p className="text-black dark:text-white">
                     Failed to load image
                 </p>
+            )}
+            {(loading && !failed) && (
+                <div>
+                    <Spinner></Spinner>
+                </div>
             )}
         </div>
     );

@@ -1,8 +1,11 @@
 import {
     useEffect,
     useMemo,
+    useRef,
     useState,
+    type ChangeEvent,
     type ClipboardEvent,
+    type Ref,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { TransparentIconButton } from "../components/TransparentIconButton";
@@ -36,6 +39,29 @@ function nextAttachmentId(): number {
     return ++nextId;
 }
 
+function convertFileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        // Triggered when the file reading is successfully completed
+        reader.onload = () => {
+            if (typeof reader.result === "string") {
+                resolve(reader.result);
+            } else {
+                reject(new Error("Failed to convert file to string."));
+            }
+        };
+
+        // Triggered if there is an error reading the file
+        reader.onerror = (error) => {
+            reject(error);
+        };
+
+        // Read the file as a Data URL (Base64 encoded)
+        reader.readAsDataURL(file);
+    });
+}
+
 type Attachment = {
     id: number;
     previewUrl: string;
@@ -60,7 +86,10 @@ export default function CreatePostView() {
     const [content, setContent] = useState("");
     const [attachments, setAttachments] = useState<Attachment[]>([]);
 
-    const updateAttachment = (id: number, updater: (prev: Attachment) => Attachment) => {
+    const updateAttachment = (
+        id: number,
+        updater: (prev: Attachment) => Attachment,
+    ) => {
         setAttachments((prev) =>
             prev.map((a) => (a.id === id ? updater(a) : a)),
         );
@@ -77,7 +106,38 @@ export default function CreatePostView() {
     };
 
     const insertAttachment = (attachment: Attachment) => {
+        if (attachments.length >= 4) {
+            notifyErrorDefault("You can only have up to 4 attachments");
+            throw new Error("Reached maximum attachment count");
+        }
         setAttachments((prev) => [...prev, attachment]);
+    };
+
+    const onSelectFile = async (event: ChangeEvent<HTMLInputElement>) => {
+        const target = event.target as HTMLInputElement;
+        if (!target.files || target.files.length == 0) return;
+        const file = target.files[0];
+
+        try {
+            const base64string = await convertFileToBase64(file);
+            const id = nextAttachmentId();
+            insertAttachment({
+                attachmentType: "image",
+                encodedData: null,
+                id: id,
+                previewUrl: base64string,
+                processingComplete: false,
+            });
+            await processImage(id, base64string);
+        } catch (e) {
+            console.error(
+                "Processing failed cannot convert to base64 from file: ",
+                e,
+            );
+            notifyErrorDefault(
+                "Failed to attach file. Try attaching another file.",
+            );
+        }
     };
 
     const [loading, setLoading] = useState(false);
@@ -87,12 +147,13 @@ export default function CreatePostView() {
     const [selectedSubforum, setSelectedSubforum] = useState("general");
     // const imagePreviewUrl = normalizeAttachedImageUrl(imageUrl);
 
+    const fileInputRef: Ref<HTMLInputElement | null> = useRef(null);
+
     const [plublishingText, setPublishingText] =
         useState<string>("Publishing...");
 
     const processImage = async (attachmentId: number, previewUrl: string) => {
-        const ownImagePreviewUrl =
-            normalizeAttachedImageUrl(previewUrl) ?? "";
+        const ownImagePreviewUrl = normalizeAttachedImageUrl(previewUrl) ?? "";
 
         // Not a data URL — nothing to encode
         if (!ownImagePreviewUrl.startsWith("data:image/")) {
@@ -354,6 +415,7 @@ export default function CreatePostView() {
             try {
                 const token = await getStoredAccessToken();
                 if (!token) {
+                    console.log("No token");
                     throw new Error("No access token");
                 }
 
@@ -601,6 +663,14 @@ export default function CreatePostView() {
     return (
         <FadeUp className="w-full h-[100vh] flex justify-center items-center dark:bg-zinc-900 text-black dark:text-white transition-colors duration-300">
             <Panel className="flex flex-col gap-3 items-center relative shadow-lg max-h-[95vh] overflow-y-auto bg-white dark:bg-zinc-800 h-fit transition-colors duration-300">
+                <input
+                    className="hidden"
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={onSelectFile}
+                ></input>
+
                 {/* Close button */}
                 <div className="absolute top-0 right-0 m-1">
                     <TransparentIconButton
@@ -623,19 +693,36 @@ export default function CreatePostView() {
                     Create Post
                 </h1>
 
-                <div className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] flex justify-between items-center gap-2">
-                    <select
-                        className="px-2 py-2 border border-black/15 dark:border-white/15 rounded-md w-full transition-colors duration-300"
-                        value={selectedSubforum}
-                        onChange={(e) => setSelectedSubforum(e.target.value)}
-                        disabled={loading}
-                    >
-                        {subforums.map((subforum) => (
-                            <option key={subforum.slug} value={subforum.slug}>
-                                {subforum.title}
-                            </option>
-                        ))}
-                    </select>
+                <div className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] flex flex-col gap-1">
+                    <span className=" text-black/50 dark:text-white/50">
+                        This post will be published in:
+                    </span>
+                    <div className="flex items-center gap-2">
+                        <select
+                            className="px-2 py-2 border border-black/15 dark:border-white/15 rounded-md w-full transition-colors duration-300 flex-grow-1"
+                            value={selectedSubforum}
+                            onChange={(e) =>
+                                setSelectedSubforum(e.target.value)
+                            }
+                            disabled={loading}
+                        >
+                            {subforums.map((subforum) => (
+                                <option
+                                    key={subforum.slug}
+                                    value={subforum.slug}
+                                >
+                                    {subforum.title}
+                                </option>
+                            ))}
+                        </select>
+                        <button
+                            onClick={onCreateSubforum}
+                            disabled={loading}
+                            className="text-nowrap h-full p-2 rounded-md border border-black/15 dark:border-white/15 font-semibold cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                        >
+                            Create Subforum
+                        </button>
+                    </div>
                 </div>
 
                 {/* Title input */}
@@ -650,7 +737,10 @@ export default function CreatePostView() {
                 <div className="flex flex-col gap-3 w-full h-fit">
                     {attachments.map((attachment) => {
                         return (
-                            <div key={attachment.id} className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] relative">
+                            <div
+                                key={attachment.id}
+                                className="w-[90vw] sm:w-[80vw] md:w-[60vw] lg:w-[40vw] relative"
+                            >
                                 <div className="flex flex-col items-center">
                                     <div className="w-fit h-fit overflow-hidden rounded-md flex">
                                         <img
@@ -695,10 +785,25 @@ export default function CreatePostView() {
                                                     <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z" />
                                                 </svg>
                                             }
-                                            filledIcon={<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm80-160h80v-360h-80v360Zm160 0h80v-360h-80v360Z"/></svg>}                                            onClick={() => {
-                                                console.log("Delete! ", attachment.id);
+                                            filledIcon={
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    height="24px"
+                                                    viewBox="0 -960 960 960"
+                                                    width="24px"
+                                                    fill="#e3e3e3"
+                                                >
+                                                    <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm80-160h80v-360h-80v360Zm160 0h80v-360h-80v360Z" />
+                                                </svg>
+                                            }
+                                            onClick={() => {
+                                                console.log(
+                                                    "Delete! ",
+                                                    attachment.id,
+                                                );
                                                 deleteAttachment(attachment.id);
-                                        }}></TransparentIconButton>
+                                            }}
+                                        ></TransparentIconButton>
                                     </div>
                                 )}
                             </div>
@@ -718,9 +823,24 @@ export default function CreatePostView() {
 
                 <div className="w-full flex justify-between">
                     <Button
-                        onClick={onCreateSubforum}
-                        disabled={loading}
-                        text={"Create Subforum"}
+                        text="Add Image"
+                        icon={
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                height="24px"
+                                viewBox="0 -960 960 960"
+                                width="24px"
+                                fill="#e3e3e3"
+                            >
+                                <path d="M720-330q0 104-73 177T470-80q-104 0-177-73t-73-177v-370q0-75 52.5-127.5T400-880q75 0 127.5 52.5T580-700v350q0 46-32 78t-78 32q-46 0-78-32t-32-78v-370h80v370q0 13 8.5 21.5T470-320q13 0 21.5-8.5T500-350v-350q-1-42-29.5-71T400-800q-42 0-71 29t-29 71v370q-1 71 49 120.5T470-160q70 0 119-49.5T640-330v-390h80v390Z" />
+                            </svg>
+                        }
+                        onClick={() => {
+                            if (fileInputRef.current) {
+                                fileInputRef.current.click();
+                            }
+                        }}
+                        disabled={loading || attachments.length >= 4}
                     ></Button>
                     <LoadableButton
                         text={loading ? plublishingText : "Publish"}
