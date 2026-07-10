@@ -95,6 +95,26 @@ class SubforumListSerializer(serializers.ModelSerializer):
 
 class ReplySerializer(serializers.ModelSerializer):
     author_username = serializers.CharField(source="author.username", read_only=True)
+    author_display_name = serializers.SerializerMethodField()
+    author_profile_image = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
+    user_has_liked = serializers.BooleanField(read_only=True, default=False)
+
+    def get_author_display_name(self, obj):
+        profile = getattr(obj.author, "profile", None)
+        return profile.display_name if profile else ""
+
+    def get_author_profile_image(self, obj):
+        profile = getattr(obj.author, "profile", None)
+        if profile and profile.image_url:
+            raw = profile.image_url
+            if raw.startswith(("http://", "https://", "data:")):
+                return raw
+            return f"/objects/{raw}.bin"
+        return None
+
+    def get_likes_count(self, obj):
+        return getattr(obj, "likes_count", obj.likes.count())
 
     class Meta:
         model = Reply
@@ -104,9 +124,13 @@ class ReplySerializer(serializers.ModelSerializer):
             "parent_reply",
             "author",
             "author_username",
+            "author_display_name",
+            "author_profile_image",
             "content",
             "content_markdown",
             "created_at",
+            "likes_count",
+            "user_has_liked",
         ]
         read_only_fields = ["post", "author", "created_at"]
 
@@ -129,12 +153,15 @@ class PostSerializer(serializers.ModelSerializer):
     
     likes_count = serializers.SerializerMethodField()
     replies_count = serializers.SerializerMethodField()
+    user_has_liked = serializers.BooleanField(read_only=True, default=False)
     body = serializers.SerializerMethodField()
     votes = serializers.SerializerMethodField()
     can_delete = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
     author_username = serializers.CharField(source="author.username", read_only=True)
     author_bio = serializers.CharField(source="author.last_name", read_only=True)
+    author_display_name = serializers.SerializerMethodField()
+    author_profile_image = serializers.SerializerMethodField()
     subforum = serializers.SlugRelatedField(
         slug_field="slug",
         queryset=Subforum.objects.all(),
@@ -177,6 +204,19 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_votes(self, obj):
         return self.get_likes_count(obj)
+
+    def get_author_display_name(self, obj):
+        profile = getattr(obj.author, "profile", None)
+        return profile.display_name if profile else ""
+
+    def get_author_profile_image(self, obj):
+        profile = getattr(obj.author, "profile", None)
+        if profile and profile.image_url:
+            raw = profile.image_url
+            if raw.startswith(("http://", "https://", "data:")):
+                return raw
+            return f"/objects/{raw}.bin"
+        return None
 
     def get_can_delete(self, obj):
         request = self.context.get("request")
@@ -238,6 +278,8 @@ class PostSerializer(serializers.ModelSerializer):
             "author",
             "author_username",
             "author_bio",
+            "author_display_name",
+            "author_profile_image",
             "published",
             "attachments",
             "created_at",
@@ -245,6 +287,7 @@ class PostSerializer(serializers.ModelSerializer):
             "votes",
             "likes_count",
             "replies_count",
+            "user_has_liked",
             "can_delete",
             "image",
             "is_nsfw",

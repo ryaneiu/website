@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     "pyreddit",
     "corsheaders",
     "rest_framework",
@@ -86,12 +87,43 @@ INSTALLED_APPS = [
     "cas_storage"
 ]
 INSTALLED_APPS += [
+    # OAuth 2
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     "django_vite",
 ]
 
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher',
 ]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+    }
+}
+
+# Skip allauth's confirmation page when connecting social accounts
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+SOCIALACCOUNT_ADAPTER = "pyreddit.adapters.SocialAccountAdapter"
+
+SITE_ID = 1
+
+LOGIN_REDIRECT_URL = "/api/auth/oauth-complete/"
+SPA_URL = "http://localhost:5173/"
+
+ACCOUNT_EMAIL_VERIFICATION = "none"        # skip email verification for OAuth
+ACCOUNT_LOGIN_METHODS = {"username", "email"}
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "http" if DEBUG else "https"
 
 REST_FRAMEWORK = {
     # How DRF authenticates users
@@ -153,6 +185,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',   
+    
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'pyred.urls'

@@ -8,6 +8,7 @@ interface AuthenticationStore {
     username: string;
     bio: string;
     profileImage: string;
+    displayName: string;
     setLoggedIn: (v: boolean) => void;
     setProfile: (username: string, bio: string, profileImage: string) => void;
 }
@@ -17,6 +18,7 @@ export const useAuthenticationStore = create<AuthenticationStore>((set) => {
         isLoggedIn: false,
         username: "",
         bio: "",
+        displayName: "",
         profileImage: "",
         setLoggedIn: (v: boolean) => set({ isLoggedIn: v }),
         setProfile: (username: string, bio: string, profileImage: string) =>
@@ -65,6 +67,7 @@ export async function verifyIsLoggedIn() {
 
     try {
         const refreshToken = getStoredRefreshToken();
+        console.log('[verifyIsLoggedIn] refreshToken from storage:', refreshToken ? `present (length ${refreshToken.length})` : 'null');
 
         const response = await fetch(`${API_ENDPOINT}/token/refresh/`, {
             method: "POST",
@@ -83,19 +86,31 @@ export async function verifyIsLoggedIn() {
                     : {},
         });
 
+        console.log('[verifyIsLoggedIn] response status:', response.status, 'ok:', response.ok);
+
         if (response.status === 401 || response.status === 403) {
             try {
                 const body = await response.json();
                 const detail =
                     typeof body?.detail === "string" ? body.detail : "";
+                console.log('[verifyIsLoggedIn] 401/403 body:', body);
                 if (detail.toLowerCase().includes("email")) {
                     notifyErrorDefault(detail);
                 }
             } catch {
-                // ignore parsing errors
+                console.log('[verifyIsLoggedIn] could not parse 401/403 body');
             }
 
             return false;
+        }
+
+        if (!response.ok) {
+            try {
+                const body = await response.json();
+                console.log('[verifyIsLoggedIn] non-200 response body:', body);
+            } catch {
+                console.log('[verifyIsLoggedIn] non-200 response (could not parse body)');
+            }
         }
 
         return response.ok;

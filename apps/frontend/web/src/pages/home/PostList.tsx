@@ -95,6 +95,43 @@ export function PostList({ language = "en" }: PostListProps) {
         }
     };
 
+    const onLikePost = async (postId: number) => {
+        const token = await getStoredAccessToken();
+        if (!token) {
+            notifyErrorDefault("You need to be logged in to like");
+            return;
+        }
+
+        const response = await fetch(
+            `${API_ENDPOINT}/api/posts/${postId}/like/`,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                credentials: "omit",
+            },
+        );
+
+        if (!response.ok) {
+            notifyErrorDefault("Failed to update like");
+            return;
+        }
+
+        const payload = await response.json();
+        const likesCount: number = payload.likes_count ?? 0;
+        const liked: boolean = payload.liked ?? false;
+
+        postsStore.setState((prev) => ({
+            ...prev,
+            posts: prev.posts.map((p) =>
+                p.id === postId
+                    ? { ...p, likes_count: likesCount, votes: likesCount, user_has_liked: liked }
+                    : p,
+            ),
+        }));
+    };
+
     // prevent useEffect() from reloading posts when nothing actually changed
     // this is a temporary fix
     const lastFetchKey = useRef<string | null>(null);
@@ -313,10 +350,14 @@ export function PostList({ language = "en" }: PostListProps) {
                                 id={post.id}
                                 authorUsername={post.author_username}
                                 authorBio={post.author_bio}
+                                authorDisplayName={post.author_display_name}
+                                authorProfileImage={post.author_profile_image}
+                                hasLiked={post.user_has_liked}
                                 isInPostList={true}
                                 canDelete={post.can_delete !== false}
                                 isDeleting={deletingPostId === post.id}
                                 onDeleteClick={() => onDeletePost(post.id)}
+                                onLikeClick={() => onLikePost(post.id)}
                                 attachments={post.attachments}
                             ></Post>
                         );

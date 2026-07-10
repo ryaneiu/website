@@ -32,9 +32,12 @@ type PostResponse = {
     author: number;
     author_username?: string;
     author_bio?: string;
+    author_display_name?: string;
+    author_profile_image?: string | null;
     likes_count?: number;
     votes?: number;
     replies_count?: number;
+    user_has_liked?: boolean;
     created_at: string;
     can_delete?: boolean;
     subforum?: string | null;
@@ -48,8 +51,11 @@ type ReplyResponse = {
     post: number;
     parent_reply: number | null;
     author_username: string;
+    author_profile_image?: string | null;
     content: string;
     content_markdown: string;
+    likes_count?: number;
+    user_has_liked?: boolean;
 };
 
 export default function PostPage() {
@@ -91,8 +97,11 @@ export default function PostPage() {
                     postId: reply.post,
                     parentReplyId: reply.parent_reply,
                     author: reply.author_username,
+                    authorProfileImage: reply.author_profile_image,
                     description: reply.content_markdown || reply.content,
                     subcomments: [],
+                    likesCount: reply.likes_count,
+                    userHasLiked: reply.user_has_liked,
                 });
             });
 
@@ -313,6 +322,50 @@ export default function PostPage() {
         });
     };
 
+    const onCommentLikeClick = async (commentId: number) => {
+        if (!canDisplay) return;
+
+        const token = await getStoredAccessToken();
+        if (!token) {
+            notifyErrorDefault("You need to be logged in to like");
+            return;
+        }
+
+        const response = await fetch(
+            `${API_ENDPOINT}/api/posts/replies/${commentId}/like/`,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                credentials: "omit",
+            },
+        );
+
+        if (!response.ok) {
+            notifyErrorDefault("Failed to update like");
+            return;
+        }
+
+        const payload = await response.json();
+        const likesCount: number = payload.likes_count ?? 0;
+        const liked: boolean = payload.liked ?? false;
+
+        // Update the comment tree in place
+        const updateComment = (list: CommentType[]): CommentType[] =>
+            list.map((c) => {
+                if (c.id === commentId) {
+                    return { ...c, likesCount, userHasLiked: liked };
+                }
+                if (c.subcomments.length > 0) {
+                    return { ...c, subcomments: updateComment(c.subcomments) };
+                }
+                return c;
+            });
+
+        setComments((prev) => updateComment(prev));
+    };
+
     const onPostLikeClick = async () => {
         if (!canDisplay) return;
 
@@ -340,6 +393,7 @@ export default function PostPage() {
 
         const payload = await response.json();
         const likesCount = payload.likes_count ?? 0;
+        const liked: boolean = payload.liked ?? false;
 
         setPostData((prev) => {
             if (!prev) return prev;
@@ -347,10 +401,21 @@ export default function PostPage() {
                 ...prev,
                 likes_count: likesCount,
                 votes: likesCount,
+                user_has_liked: liked,
             };
         });
 
         useSelectedPostStore.setState({ likes: likesCount });
+
+        // Also update the post in the main post list
+        postsStore.setState((prev) => ({
+            ...prev,
+            posts: prev.posts.map((p) =>
+                p.id === postId
+                    ? { ...p, likes_count: likesCount, votes: likesCount, user_has_liked: liked }
+                    : p,
+            ),
+        }));
     };
 
     const onDeletePostClicked = async () => {
@@ -497,16 +562,22 @@ export default function PostPage() {
                                 <Post
                                     title={postData.title}
                                     description={renderedPostDescription}
-                                    created_at={postData.created_at}
-                                    votes={
-                                        postData.likes_count ??
-                                        postData.votes ??
-                                        0
-                                    }
+                                    created_at={postData.created_at}                    votes={
+                        postData.likes_count ??
+                        postData.votes ??
+                        0
+                    }
+                                    hasLiked={postData.user_has_liked}
                                     commentsCount={postData.replies_count ?? 0}
                                     id={postData.id}
                                     authorUsername={postData.author_username}
                                     authorBio={postData.author_bio}
+                                    authorDisplayName={
+                                        postData.author_display_name
+                                    }
+                                    authorProfileImage={
+                                        postData.author_profile_image
+                                    }
                                     onLikeClick={onPostLikeClick}
                                     subforumText={`Subforum: ${postData.subforum || "general"}`}
                                     subforumControl={
@@ -611,26 +682,30 @@ export default function PostPage() {
                         <div className="flex flex-col gap-2">
                             {!replyingToPost && (
                                 <div className="w-full">
-                                    <Button
-                                        icon={
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                height="24px"
-                                                viewBox="0 -960 960 960"
-                                                width="24px"
-                                                fill="currentColor"
-                                            >
-                                                <path d="M440-400h80v-120h120v-80H520v-120h-80v120H320v80h120v120ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z" />
-                                            </svg>
-                                        }
-                                        text={
-                                            language === "fr"
-                                                ? "Répondre"
-                                                : "Reply"
-                                        }
-                                        onClick={() => setReplyingToPost(true)}
-                                        isPrimary={true}
-                                    ></Button>
+                                    {comments.length != 0 && (
+                                        <Button
+                                            icon={
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    height="24px"
+                                                    viewBox="0 -960 960 960"
+                                                    width="24px"
+                                                    fill="currentColor"
+                                                >
+                                                    <path d="M440-400h80v-120h120v-80H520v-120h-80v120H320v80h120v120ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z" />
+                                                </svg>
+                                            }
+                                            text={
+                                                language === "fr"
+                                                    ? "Répondre"
+                                                    : "Reply"
+                                            }
+                                            onClick={() =>
+                                                setReplyingToPost(true)
+                                            }
+                                            isPrimary={true}
+                                        ></Button>
+                                    )}
                                 </div>
                             )}
 
@@ -642,14 +717,47 @@ export default function PostPage() {
                                         onReplyCreate={(parentId, text) =>
                                             onCreateReply(parentId, text)
                                         }
+                                        onLikeClick={onCommentLikeClick}
                                     ></Comment>
                                 );
                             })}
 
-                            {comments.length === 0 && (
-                                <span className="text-black/50">
-                                    No replies yet.
-                                </span>
+                            {comments.length === 0 && !replyingToPost && (
+                                <div className="w-full h-full flex justify-center items-center text-center mb-4">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-2xl font-bold">
+                                            No replies yet
+                                        </span>
+                                        <span className="text-black/50 dark:text-white/50">
+                                            Be the first to start a discussion!
+                                        </span>
+
+                                        <div className="mt-4 flex justify-center">
+                                            <Button
+                                                icon={
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        height="24px"
+                                                        viewBox="0 -960 960 960"
+                                                        width="24px"
+                                                        fill="currentColor"
+                                                    >
+                                                        <path d="M440-400h80v-120h120v-80H520v-120h-80v120H320v80h120v120ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z" />
+                                                    </svg>
+                                                }
+                                                text={
+                                                    language === "fr"
+                                                        ? "Répondre"
+                                                        : "Reply"
+                                                }
+                                                onClick={() =>
+                                                    setReplyingToPost(true)
+                                                }
+                                                isPrimary={true}
+                                            ></Button>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     )}
@@ -659,7 +767,7 @@ export default function PostPage() {
                             {skeletonLoaderComments.map((v) => {
                                 return (
                                     <SkeletonLoaderComment
-                                    key={v.id}
+                                        key={v.id}
                                         comment={v}
                                     ></SkeletonLoaderComment>
                                 );

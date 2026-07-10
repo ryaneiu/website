@@ -3,14 +3,15 @@ Views for the posts app.
 
 Contains API views to list, create, and publish posts for the Reddit-like site.
 """
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q, Value
+from django.db.models.fields import BooleanField
 from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import ValidationError, PermissionDenied, AuthenticationFailed
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Post, Like, Reply, Subforum
+from .models import Post, Like, Reply, ReplyLike, Subforum
 from .serializers import PostSerializer, ReplySerializer, SubforumSerializer, SubforumListSerializer, PostAttachmentSerializer
 from .utils.validators import validate_query
 from .permissions import IsAuthor
@@ -106,6 +107,7 @@ class PostTemplateListView(APIView):
         ), self.request).annotate(
             likes_count=Count("likes", distinct=True),
             replies_count=Count("replies", distinct=True),
+            user_has_liked=Value(False, output_field=BooleanField()),
         ).order_by("-created_at")
 
         serializer = PostSerializer(
@@ -135,13 +137,26 @@ class PostListCreateAPIView(FilterPreferencesMixin, generics.ListCreateAPIView):
         search_query = str(filter_preferences.get("q", "")).strip()
         language = str(filter_preferences.get("language", "en")).strip()
 
-        return apply_published_filter(apply_post_language(
-            apply_post_search(Post.objects.all(), search_query),
+        qs = apply_published_filter(apply_post_language(
+            apply_post_search(Post.objects.select_related('author__profile').all(), search_query),
             language,
         ), self.request).annotate(
             likes_count=Count("likes", distinct=True),
             replies_count=Count("replies", distinct=True),
-        ).order_by("-created_at")
+        )
+
+        if self.request.user.is_authenticated:
+            qs = qs.annotate(
+                user_has_liked=Exists(
+                    Like.objects.filter(user=self.request.user, post=OuterRef("pk"))
+                )
+            )
+        else:
+            qs = qs.annotate(
+                user_has_liked=Value(False, output_field=BooleanField())
+            )
+
+        return qs.order_by("-created_at")
 
     def get_permissions(self):
         if self.request.method == 'POST':
@@ -162,7 +177,7 @@ class PostListCreateAPIView(FilterPreferencesMixin, generics.ListCreateAPIView):
 
 
 class PostRetrieveAPIView(FilterPreferencesMixin, generics.RetrieveDestroyAPIView):
-    queryset = Post.objects.annotate(
+    queryset = Post.objects.select_related('author__profile').annotate(
         likes_count=Count("likes", distinct=True),
         replies_count=Count("replies", distinct=True),
     )
@@ -171,7 +186,18 @@ class PostRetrieveAPIView(FilterPreferencesMixin, generics.RetrieveDestroyAPIVie
     lookup_field = "id"
 
     def get_queryset(self):
-        return apply_published_filter(super().get_queryset(), self.request)
+        qs = apply_published_filter(super().get_queryset(), self.request)
+        if self.request.user.is_authenticated:
+            qs = qs.annotate(
+                user_has_liked=Exists(
+                    Like.objects.filter(user=self.request.user, post=OuterRef("pk"))
+                )
+            )
+        else:
+            qs = qs.annotate(
+                user_has_liked=Value(False, output_field=BooleanField())
+            )
+        return qs
 
 
 
@@ -355,6 +381,20 @@ class ToggleLikeAPIView(APIView):
         return Response({"liked": True, "likes_count": likes_count}, status=status.HTTP_201_CREATED)
 
 
+class ToggleReplyLikeAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        reply = get_object_or_404(Reply, id=id)
+        like, created = ReplyLike.objects.get_or_create(user=request.user, reply=reply)
+        likes_count = reply.likes.count()
+        if not created:
+            like.delete()
+            likes_count = max(likes_count - 1, 0)
+            return Response({"liked": False, "likes_count": likes_count}, status=status.HTTP_200_OK)
+        return Response({"liked": True, "likes_count": likes_count}, status=status.HTTP_201_CREATED)
+
+
 class ReplyListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = ReplySerializer
 
@@ -364,7 +404,20 @@ class ReplyListCreateAPIView(generics.ListCreateAPIView):
         return [permissions.AllowAny()]
 
     def get_queryset(self):
-        return Reply.objects.filter(post_id=self.kwargs["id"]).select_related("author").order_by("created_at")
+        qs = Reply.objects.filter(post_id=self.kwargs["id"]).select_related("author__profile").order_by("created_at")
+        if self.request.user.is_authenticated:
+            qs = qs.annotate(
+                likes_count=Count("likes", distinct=True),
+                user_has_liked=Exists(
+                    ReplyLike.objects.filter(user=self.request.user, reply=OuterRef("pk"))
+                ),
+            )
+        else:
+            qs = qs.annotate(
+                likes_count=Count("likes", distinct=True),
+                user_has_liked=Value(False, output_field=BooleanField()),
+            )
+        return qs
 
     def perform_create(self, serializer):
         post_id = int(self.kwargs["id"])

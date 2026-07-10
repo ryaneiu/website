@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "../../components/Button";
 import { FullWidthInputWithLabel } from "../../components/FullWidthInput";
 import { SectionSeparator } from "../../components/SectionSeparator";
@@ -11,6 +11,9 @@ import { FadeUpLeaveUp } from "../../components/AnimatedPresenceDiv";
 import { AnimatePresence } from "framer-motion";
 import { OauthAvailable } from "./OAuthFeatureReady";
 import { TransparentIconButton } from "../../components/TransparentIconButton";
+import { useAuthUIStore } from "./AuthUIStore";
+import { getUsernameError, isValidUsername } from "./UsernameChecker";
+
 
 export function SignUpStage0() {
     const updateErrors = useSignUpStore((state) => state.updateErrors);
@@ -20,42 +23,16 @@ export function SignUpStage0() {
     const updateValue = useSignUpStore((state) => state.updateValue);
     const values = useSignUpStore((state) => state.values);
 
+    const authLoading = useAuthUIStore(state => state.loading);
+
     const setScreenStage = useSignUpStore((state) => state.setScreenStage);
+
+
 
     // -- stage 0
     const emailInputRef = useRef<HTMLInputElement | null>(null);
 
-    const isValidUsername = (value: string): boolean => {
-        return /^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*( [A-Za-z0-9_.]+)*$/.test(
-            value,
-        );
-    };
 
-    const getUsernameError = (value: string): string => {
-        if (!value) return "";
-
-        if (/^\s|\s$/.test(value)) {
-            return "No leading or trailing spaces.";
-        }
-
-        if (/\s{2,}/.test(value)) {
-            return "Only single spaces allowed.";
-        }
-
-        if (/\.{2,}/.test(value)) {
-            return "Periods cannot be repeated.";
-        }
-
-        if (/^\.|\.$/.test(value)) {
-            return "Periods must be in the middle.";
-        }
-
-        if (!/^[A-Za-z0-9_. ]+$/.test(value)) {
-            return "Only letters, numbers, _, ., and spaces allowed.";
-        }
-
-        return "";
-    };
 
     const continueClicked = () => {
         if (!emailInputRef.current) return;
@@ -142,6 +119,7 @@ export function SignUpStage0() {
                     additionalClasses="w-full"
                     absoluteCentering={true}
                     alignText={true}
+                    disabled={authLoading}
                 ></Button>
             </div>
             {OauthAvailable && (
@@ -183,6 +161,13 @@ export function SignUpStage1() {
     const confirmPasswordRef = useRef<HTMLInputElement | null>(null);
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
+
+    const authLoading = useAuthUIStore(state => state.loading);
+    const setLoading = useAuthUIStore(state => state.setLoading);
+
+    useEffect(() => {
+        setLoading(isLoading);
+    }, [setLoading, isLoading]);
 
     const onSignUpClicked = async () => {
         // check each valid
@@ -344,7 +329,7 @@ export function SignUpStage1() {
             <div className="flex flex-col gap-2">
                 <LoadableButton
                     text="Create Account"
-                    isLoading={isLoading}
+                    isLoading={isLoading || authLoading}
                     isPrimary={true}
                     alignText={true}
                     absoluteCentering={true}

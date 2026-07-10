@@ -178,6 +178,17 @@ class Reply(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
+class ReplyLike(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reply_likes")
+    reply = models.ForeignKey(Reply, on_delete=models.CASCADE, related_name="likes")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "reply"], name="unique_user_reply_like")
+        ]
+
+
 class DeploymentResetMarker(models.Model):
     name = models.CharField(max_length=64, unique=True)
     value = models.CharField(max_length=255, blank=True, default="")

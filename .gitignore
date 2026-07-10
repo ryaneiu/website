@@ -5,3 +5,4 @@ apps/db.sqlite3
 
 # ignore objects
 apps/objects
+.env

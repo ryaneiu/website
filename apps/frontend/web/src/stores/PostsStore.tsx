@@ -19,9 +19,12 @@ export type Post = {
     author: number;
     author_username?: string;
     author_bio?: string;
+    author_display_name?: string;
+    author_profile_image?: string | null;
     created_at: string;
     votes?: number;
     likes_count?: number;
+    user_has_liked?: boolean;
     replies_count?: number;
     can_delete?: boolean;
     subforum?: string | null;

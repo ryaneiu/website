@@ -12,16 +12,20 @@ export interface ButtonProps {
     alignText?: boolean;
     absoluteCentering?: boolean;
     content?: ReactNode;
+    smaller?: boolean;
+    nowrap?: boolean;
 }
 
 export function Button(props: ButtonProps) {
     const buttonClasses = clsx(
-        "px-4 py-2 font-bold rounded-full border transition-colors relative",
+        "rounded-full border transition-colors relative",
+        props.smaller ? "px-2 py-1 text-sm font-semibold" : "px-4 py-2 font-bold",
         "flex items-center gap-2",
         props.isPrimary
             ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black hover:bg-black/80 dark:hover:bg-white/80"
             : "border-black/15 dark:border-white/15 text-black dark:text-white bg-transparent hover:bg-black/15 dark:hover:bg-white/15",
         props.disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+        props.nowrap && "whitespace-nowrap",
         props.additionalClasses
     );
 

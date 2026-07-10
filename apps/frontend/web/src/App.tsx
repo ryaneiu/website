@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
-import React, { Suspense, useEffect, useLayoutEffect, useMemo } from "react";
+import React, { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useScreenSizeState } from "./stores/ScreenSizeState";
-import { clearStoredTokens, isDevelopmentMode } from "./auth/Authentication";
+import { clearStoredTokens, isDevelopmentMode, storeAccessToken, storeRefreshToken } from "./auth/Authentication";
 import { notifyInfoDefault } from "./stores/NotificationsStore";
 import {
     fetchCurrentProfile,
@@ -141,6 +141,32 @@ function App() {
             document.documentElement.classList.remove("dark");
         }
     }, [darkMode]);
+
+    // Extract OAuth tokens from URL hash synchronously on mount (before any effects).
+    // This must run before the auth-checker useEffect to avoid race conditions
+    // (especially under React StrictMode's double-invocation).
+    const oauthHashProcessed = useRef(false);
+    if (!oauthHashProcessed.current) {
+        const hash = window.location.hash;
+        if (hash && hash.includes('access_token=')) {
+            try {
+                const params = new URLSearchParams(hash.replace('#', ''));
+                const accessToken = params.get('access_token');
+                const refreshToken = params.get('refresh_token');
+                if (accessToken) {
+                    storeAccessToken(accessToken);
+                }
+                if (refreshToken) {
+                    storeRefreshToken(refreshToken);
+                }
+                // Clean the hash from URL without triggering a page reload
+                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            } catch (e) {
+                console.error('Failed to parse OAuth tokens from URL hash', e);
+            }
+        }
+        oauthHashProcessed.current = true;
+    }
 
     useEffect(() => {
         const f = async () => {

@@ -4,30 +4,167 @@ Views
 
 # Create your views here
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 from typing import cast
+from io import BytesIO
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.views.generic import TemplateView
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login
 from django.conf import settings
+from django.http import HttpResponse, HttpResponseRedirect
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework.authentication import SessionAuthentication
+from PIL import Image
 
 from .models import Post, Comment, UserProfile
 from .serializers import PostSerializer, CommentSerializer
 from .email_validation import normalize_and_validate_email, is_user_email_valid
+from .adapters import SENTINEL_USERNAME
+from allauth.socialaccount.models import SocialAccount
+from django.core.files.base import ContentFile
+from cas_storage.storage import ContentAdressableStorage
+
+
+# ── Username validation (mirrors frontend UsernameChecker.ts) ────────────
+
+USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*( [A-Za-z0-9_.]+)*$")
+ALLOWED_CHARS_PATTERN = re.compile(r"^[A-Za-z0-9_. ]+$")
+
+
+def _validate_username(value: str) -> str | None:
+    """Return an error message if the username is invalid, or None if valid."""
+    if not value:
+        return "Username is required."
+    if re.search(r"\s{2,}", value):
+        return "Only single spaces allowed."
+    if re.search(r"\.{2,}", value):
+        return "Periods cannot be repeated."
+    if value.startswith(".") or value.endswith("."):
+        return "Periods must be in the middle."
+    if not ALLOWED_CHARS_PATTERN.match(value):
+        return "Only letters, numbers, _, ., and spaces allowed."
+    if not USERNAME_PATTERN.match(value):
+        return "Invalid username format."
+    return None
+
+
+# ── Social signup completion view ──────────────────────────────────────────
+
+class SocialSignupCompleteView(APIView):
+    """
+    Creates the real User + SocialAccount after the user picks a username.
+
+    At this point NO user exists — the google_callback_interceptor (or
+    OAuthCompleteView as fallback) deleted the auto-created account and
+    stored the Google data in the session. This view creates the final
+    account and returns JWT tokens.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        username = str(request.data.get("username", "")).strip()
+
+        username_error = _validate_username(username)
+        if username_error:
+            return Response(
+                {"detail": username_error},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if User.objects.filter(username=username).exists():
+            return Response(
+                {"detail": "Username is already taken."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        # Retrieve stored Google data from the session
+        oauth_data = request.session.get('pending_oauth')
+        if not oauth_data:
+            return Response(
+                {"detail": "No pending OAuth signup. Please start over."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        email = oauth_data['email']
+
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {"detail": "Email already registered."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        # Create the real user
+        user = User.objects.create_user(username=username, email=email)
+        user.first_name = oauth_data.get('first_name', '')
+        user.save()
+
+        # Create the SocialAccount link
+        SocialAccount.objects.create(
+            user=user,
+            provider=oauth_data['provider'],
+            uid=oauth_data['uid'],
+            extra_data=oauth_data.get('extra_data', {}),
+        )
+
+        # Clean up session
+        del request.session['pending_oauth']
+
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        access = str(refresh.access_token)
+        refresh_token_str = str(refresh)
+
+        # NOTE: JWT tokens are returned in the body for localStorage (needed by
+        # the SPA's Authorization header flow). HttpOnly cookies are also set as
+        # defense-in-depth. A full fix requires frontend refactoring to rely
+        # solely on cookies.
+        response = Response({
+            "detail": "Signup complete",
+            "access": access,
+            "refresh": refresh_token_str,
+        })
+        set_jwt_cookies(
+            response,
+            access_token=access,
+            refresh_token=refresh_token_str,
+        )
+        response.delete_cookie(settings.SESSION_COOKIE_NAME, path="/")
+
+        return response
 
 
 MARKDOWN_IMAGE_PATTERN = re.compile(r"!\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 IMAGE_DATA_URL_PATTERN = re.compile(r"^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=\s]+$", re.IGNORECASE)
+CAS_OBJECT_ID_PATTERN = re.compile(r"^[a-f0-9]{64}$")
+CAS_OBJECT_URL_PATTERN = re.compile(r"^/objects/([a-f0-9]{64})\.bin$")
+
+PROFILE_IMAGE_MAX_SIZE = 256
+
+
+def _make_cas_profile_url(object_id: str) -> str:
+    """Build the URL for a CAS-stored profile image."""
+    if not object_id:
+        return ""
+    # If it's already a full URL or data URL, return as-is (legacy / external)
+    if object_id.startswith(("http://", "https://", "data:")):
+        return object_id
+    return f"/objects/{object_id}.bin"
+
+
+def _is_cas_object_id(value: str) -> bool:
+    """Check if a string looks like a CAS object ID (64-char hex)."""
+    return bool(CAS_OBJECT_ID_PATTERN.match(value))
 
 
 def _is_safe_http_url(url: str) -> bool:
@@ -39,6 +176,15 @@ def _normalize_profile_image(value: str) -> str | None:
     trimmed = value.strip()
     if not trimmed:
         return None
+
+    # CAS object ID (64-char hex from upload endpoint)
+    if _is_cas_object_id(trimmed):
+        return trimmed
+
+    # CAS object URL /objects/{hash}.bin (sent back from frontend after upload)
+    cas_url_match = CAS_OBJECT_URL_PATTERN.match(trimmed)
+    if cas_url_match:
+        return cas_url_match.group(1)
 
     markdown_match = MARKDOWN_IMAGE_PATTERN.search(trimmed)
     candidate = markdown_match.group(1).strip() if markdown_match else trimmed
@@ -126,6 +272,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
     """Issue JWTs in response body and secure HttpOnly cookies."""
 
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -159,6 +306,7 @@ class CookieTokenRefreshView(TokenRefreshView):
     """Refresh access JWT using refresh token from body or cookie."""
 
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request, *args, **kwargs):
         data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
@@ -217,6 +365,13 @@ class SignupView(APIView):
 
         if not email or not username or not password:
             return Response({"detail": "Missing fields"}, status=status.HTTP_400_BAD_REQUEST)
+
+        username_error = _validate_username(username)
+        if username_error:
+            return Response(
+                {"detail": username_error},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         normalized_email, email_error = normalize_and_validate_email(str(email))
         if email_error is not None or normalized_email is None:
@@ -313,14 +468,21 @@ class CurrentUserProfileAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     @staticmethod
-    def _serialize_profile(user: User) -> dict[str, str | None]:
+    def _serialize_profile(user: User) -> dict:
         profile = UserProfile.objects.filter(user=user).first()
-        profile_image = profile.image_url if profile and profile.image_url else None
+        raw_image = profile.image_url if profile and profile.image_url else None
+        profile_image = _make_cas_profile_url(raw_image) if raw_image else None
+        display_name = profile.display_name if profile else ""
+        linked_providers = list(
+            SocialAccount.objects.filter(user=user).values_list("provider", flat=True)
+        )
         return {
             "username": user.username,
             "email": user.email,
             "bio": user.last_name or "",
             "profile_image": profile_image,
+            "display_name": display_name,
+            "linked_providers": linked_providers,
         }
 
     def get(self, request):
@@ -333,12 +495,14 @@ class CurrentUserProfileAPIView(APIView):
         email = request.data.get("email")
         bio = request.data.get("bio")
         profile_image = request.data.get("profile_image")
+        display_name = request.data.get("display_name")
 
         if username is not None:
             normalized_username = str(username).strip()
-            if not normalized_username:
+            username_error = _validate_username(normalized_username)
+            if username_error:
                 return Response(
-                    {"detail": "Username is required."},
+                    {"detail": username_error},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             if User.objects.filter(username=normalized_username).exclude(id=user.id).exists():
@@ -373,6 +537,17 @@ class CurrentUserProfileAPIView(APIView):
                 )
             user.last_name = normalized_bio
 
+        if display_name is not None:
+            normalized_display_name = str(display_name).strip()
+            if len(normalized_display_name) > 32:
+                return Response(
+                    {"detail": "Display name cannot exceed 32 characters."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            profile_obj, _ = UserProfile.objects.get_or_create(user=user)
+            profile_obj.display_name = normalized_display_name
+            profile_obj.save(update_fields=["display_name"])
+
         if profile_image is not None:
             normalized_profile_image = str(profile_image).strip()
             parsed_profile_image = _normalize_profile_image(normalized_profile_image)
@@ -396,6 +571,152 @@ class CurrentUserProfileAPIView(APIView):
 
 
 
+class ProfileImageUploadView(APIView):
+    """
+    Upload a profile image. Accepts multipart image, downscales to 256x256,
+    stores via CAS, and updates the user's profile.
+    """
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        uploaded_file = request.FILES.get("file")
+        if not uploaded_file:
+            return Response(
+                {"detail": "No file provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if uploaded_file.size > 5 * 1024 * 1024:
+            return Response(
+                {"detail": "File too large. Maximum 5 MB."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            image_bytes = uploaded_file.read()
+            image_stream = BytesIO(image_bytes)
+            with Image.open(image_stream) as img:
+                if img.mode in ("RGBA", "P"):
+                    img = img.convert("RGBA")
+                    background = Image.new("RGBA", img.size, (255, 255, 255, 255))
+                    img = Image.alpha_composite(background, img).convert("RGB")
+                elif img.mode != "RGB":
+                    img = img.convert("RGB")
+
+                w, h = img.size
+                if w > PROFILE_IMAGE_MAX_SIZE or h > PROFILE_IMAGE_MAX_SIZE:
+                    ratio = min(PROFILE_IMAGE_MAX_SIZE / w, PROFILE_IMAGE_MAX_SIZE / h)
+                    img = img.resize((int(w * ratio), int(h * ratio)), Image.LANCZOS)
+
+                output = BytesIO()
+                img.save(output, format="AVIF")
+                output.seek(0)
+                processed_bytes = output.read()
+        except Exception as e:
+            return Response(
+                {"detail": f"Invalid image: {e}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        cas = ContentAdressableStorage()
+        cas_file = ContentFile(processed_bytes, name="profile.avif")
+        filename = cas.save_cas("profile.avif", cas_file)
+        object_id = filename.removesuffix(".bin")
+
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        profile.image_url = object_id
+        profile.save(update_fields=["image_url"])
+
+        return Response(
+            {"object_id": object_id, "profile_image": _make_cas_profile_url(object_id)},
+            status=status.HTTP_200_OK,
+        )
+
+
+
+# ── Google OAuth linking (connect to existing account) ──────────────────
+
+class LinkGoogleInitiateView(APIView):
+    """
+    Logs the JWT-authenticated user into a Django session and redirects
+    to Google OAuth with process=connect so allauth links the Google
+    account to the existing user.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Log the JWT user into the Django session so allauth knows who to link to
+        login(request, request.user, backend="django.contrib.auth.backends.ModelBackend")
+
+        next_url = "/api/auth/oauth-connect-complete/"
+        redirect_url = f"/accounts/google/login/?process=connect&next={next_url}"
+        return HttpResponseRedirect(redirect_url)
+
+
+class OAuthConnectCompleteView(APIView):
+    """
+    Called after Google OAuth connect flow completes.
+    Allauth has already created the SocialAccount for the session user.
+    Redirects back to the profile page with a status parameter.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = [SessionAuthentication]
+
+    def get(self, request):
+        spa_url = getattr(settings, "SPA_URL", "/")
+
+        if not request.user.is_authenticated:
+            return HttpResponseRedirect(
+                f"{spa_url.rstrip('/')}/profile?link=error"
+            )
+
+        # Verify the SocialAccount was actually created
+        has_google = SocialAccount.objects.filter(
+            user=request.user, provider="google"
+        ).exists()
+
+        status_param = "success" if has_google else "error"
+        response = HttpResponseRedirect(
+            f"{spa_url.rstrip('/')}/profile?link={status_param}"
+        )
+        # Clear the session cookie — user should use JWT tokens going forward
+        response.delete_cookie(settings.SESSION_COOKIE_NAME, path="/")
+        return response
+
+
+class UnlinkGoogleView(APIView):
+    """
+    Removes the Google SocialAccount link for the authenticated user.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        if not request.user.has_usable_password():
+            return Response(
+                {
+                    "detail": (
+                        "You must set a password before unlinking your Google account. "
+                        "Otherwise you will not be able to log in."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        deleted_count, _ = SocialAccount.objects.filter(
+            user=request.user, provider="google"
+        ).delete()
+
+        if deleted_count == 0:
+            return Response(
+                {"detail": "No Google account linked."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(
+            {"detail": "Google account unlinked successfully."},
+            status=status.HTTP_200_OK,
+        )
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -472,6 +793,165 @@ class CommentViewSet(viewsets.ModelViewSet):
         comment.votes -= 1
         comment.save()
         return Response({'id': comment.id, 'votes': comment.votes})
+
+
+class OAuthCompleteView(APIView):
+    """
+    Called by allauth after a successful Google OAuth login.
+
+    Primary interception is done by google_callback_interceptor which catches
+    new users BEFORE allauth creates them. This view handles two fallback cases:
+
+    1. The interceptor worked → only returning users reach here → issue JWTs.
+    2. The interceptor failed but the adapter's save_user set the sentinel
+       username → delete auto-created user, redirect to username page.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = [SessionAuthentication]
+
+    def get(self, request):
+        print(f"[OAuthCompleteView] CALLED: is_authenticated={request.user.is_authenticated}",
+              flush=True)
+
+        if not request.user.is_authenticated:
+            spa_url = getattr(settings, "SPA_URL", "/")
+            return HttpResponseRedirect(
+                f"{spa_url.rstrip('/')}/auth?action=signup&error=oauth_session_lost"
+            )
+
+        # Fallback: detect auto-created users via the sentinel username
+        # (set by SocialAccountAdapter.save_user if pre_social_login didn't fire)
+        if request.user.username == SENTINEL_USERNAME:
+            return self._handle_new_oauth_user(request)
+
+        # Returning user — issue JWT tokens and redirect home
+        return self._returning_user_redirect(request)
+
+    def _handle_new_oauth_user(self, request):
+        """Delete the auto-created user and redirect to the username picker."""
+        email = request.user.email or ""
+        suggested = email.split('@')[0].lower() if email else ""
+        social = SocialAccount.objects.filter(user=request.user).first()
+
+        # Fallback uid: Google's unique user ID is stored in extra_data.sub
+        fallback_uid = (
+            social.extra_data.get('sub', '') if social and social.extra_data else ''
+        )
+
+        oauth_data = {
+            'email': email,
+            'provider': social.provider if social else 'google',
+            'uid': social.uid if social else fallback_uid,
+            'extra_data': social.extra_data if social else {},
+            'first_name': request.user.first_name or '',
+        }
+
+        # Delete auto-created user (cascades to SocialAccount)
+        request.user.delete()
+
+        # Store Google data for the completion endpoint
+        request.session['pending_oauth'] = oauth_data
+
+        spa_url = getattr(settings, "SPA_URL", "/")
+        params = {"action": "social_signup"}
+        if suggested:
+            params["suggested_username"] = suggested
+        redirect_url = f"{spa_url.rstrip('/')}/auth?{urlencode(params)}"
+        print("[OAuthCompleteView] Sentinel user detected — deleted, redirecting to username page",
+              flush=True)
+        return HttpResponseRedirect(redirect_url)
+
+    def _returning_user_redirect(self, request):
+        refresh = RefreshToken.for_user(request.user)
+        access = str(refresh.access_token)
+        refresh_token_str = str(refresh)
+
+        spa_url = getattr(settings, "SPA_URL", "/")
+        fragment = urlencode({"access_token": access, "refresh_token": refresh_token_str})
+        redirect_url = f"{spa_url.rstrip('/')}/#{fragment}"
+        print(f"[OAuthCompleteView] Returning user={request.user.username}, JWT tokens set",
+              flush=True)
+
+        response = HttpResponseRedirect(redirect_url)
+        set_jwt_cookies(response, access_token=access, refresh_token=refresh_token_str)
+        response.delete_cookie(settings.SESSION_COOKIE_NAME, path="/")
+        return response
+
+
+# ── Google callback interceptor ────────────────────────────────────────
+# Intercepts the Google OAuth callback URL BEFORE allauth processes it.
+# This is the most reliable approach — no adapter hooks needed.
+#
+# For NEW users (just created by allauth):
+#   → deletes auto-created user, stores Google data in session,
+#     redirects to username selection page
+#
+# For RETURNING users:
+#   → lets allauth's response pass through (goes to OAuthCompleteView
+#     for JWT token issuance, then redirects home)
+
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.views import OAuth2CallbackView
+
+_allauth_google_callback = OAuth2CallbackView.adapter_view(GoogleOAuth2Adapter)
+
+
+def google_callback_interceptor(request):
+    """Wrap allauth's Google callback: detect new users, delete them, redirect."""
+    print("[Interceptor] Google callback received", flush=True)
+
+    # Let allauth process the callback (creates user + SocialAccount + session)
+    response = _allauth_google_callback(request)
+
+    if not request.user.is_authenticated:
+        print("[Interceptor] NOT authenticated — passing through", flush=True)
+        return response
+
+    user = request.user
+    social = SocialAccount.objects.filter(user=user).first()
+
+    if not social:
+        print("[Interceptor] No SocialAccount — passing through", flush=True)
+        return response
+
+    # Detect NEW users via the sentinel username set by our adapter's save_user.
+    # This is 100% reliable — the sentinel is ONLY set for auto-created users.
+    is_new = user.username == SENTINEL_USERNAME
+
+    print(f"[Interceptor] user={user.username} is_new={is_new}", flush=True)
+
+    if not is_new:
+        print("[Interceptor] Returning user — passing through to OAuthCompleteView", flush=True)
+        return response
+
+    # ── New user: delete auto-created account, store data, redirect ────
+    email = user.email or social.extra_data.get('email', '')
+    suggested = email.split('@')[0].lower() if email else ''
+
+    print(f"[Interceptor] NEW user (email={email}) — deleting and redirecting to username page",
+          flush=True)
+
+    oauth_data = {
+        'email': email,
+        'provider': social.provider,
+        'uid': social.uid,
+        'extra_data': social.extra_data,
+        'first_name': user.first_name or social.extra_data.get('given_name', ''),
+    }
+
+    # Delete auto-created user (cascades SocialAccount)
+    user.delete()
+
+    # Store in session for SocialSignupCompleteView
+    request.session['pending_oauth'] = oauth_data
+
+    spa_url = getattr(settings, "SPA_URL", "/")
+    params = {"action": "social_signup"}
+    if suggested:
+        params["suggested_username"] = suggested
+    redirect_url = f"{spa_url.rstrip('/')}/auth?{urlencode(params)}"
+
+    return HttpResponseRedirect(redirect_url)
 
 
 # Main website frontend

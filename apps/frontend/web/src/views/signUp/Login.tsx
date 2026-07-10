@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "../../components/Button";
 import { FullWidthInputWithLabel } from "../../components/FullWidthInput";
 import { SectionSeparator } from "../../components/SectionSeparator";
@@ -8,6 +8,9 @@ import { login } from "./AuthHandlers";
 import { LoadableButton } from "../../components/LoadableButton";
 import { FadeUpLeaveUp } from "../../components/AnimatedPresenceDiv";
 import { OauthAvailable } from "./OAuthFeatureReady";
+import { useAuthUIStore } from "./AuthUIStore";
+
+
 
 export function Login() {
     const formErrors = useSignUpStore((state) => state.formErrors);
@@ -16,11 +19,18 @@ export function Login() {
     const values = useSignUpStore((state) => state.values);
     const setValue = useSignUpStore((state) => state.updateValue);
 
+    const authLoading = useAuthUIStore(state => state.loading);
+    const setLoading = useAuthUIStore(state => state.setLoading);
+
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
     // input elements
     const usernameRef = useRef<HTMLInputElement | null>(null);
     const passwordRef = useRef<HTMLInputElement | null>(null);
+
+    useEffect(() => {
+        setLoading(isLoading);
+    }, [isLoading, setLoading]); // remove if this doesn't work
 
     const onLoginClicked = async () => {
         if (!usernameRef.current || !passwordRef.current) return;
@@ -116,7 +126,7 @@ export function Login() {
                     absoluteCentering={true}
                     isPrimary={true}
                     additionalClasses="w-full"
-                    isLoading={isLoading}
+                    isLoading={isLoading || authLoading}
                     onClick={onLoginClicked}
                 ></LoadableButton>
             </div>

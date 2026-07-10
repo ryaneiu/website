@@ -5,10 +5,12 @@ import { ReactionButton } from "../../components/ReactionButton";
 import type { CommentType } from "./CommentType";
 import { useRef, useState } from "react";
 import { CommentReplySection } from "./CommentReplySection";
+import { resolveProfileImageInput } from "../../Utils";
 
 interface Props {
     comment: CommentType;
     onReplyCreate: (parentReplyId: number, textContent: string) => Promise<void>;
+    onLikeClick?: (commentId: number) => void;
 }
 
 export function Comment(props: Props) {
@@ -25,17 +27,30 @@ export function Comment(props: Props) {
         <div className="w-full flex flex-col gap-2 px-2 py-2">
             <details open>
                 <summary className="flex items-center gap-2">
-                    <div>
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            height="24px"
-                            viewBox="0 -960 960 960"
-                            width="24px"
-                            fill="currentColor"
-                        >
-                            <path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 59 19.5 111t54.5 93Zm146.5-204.5Q340-521 340-580t40.5-99.5Q421-720 480-720t99.5 40.5Q620-639 620-580t-40.5 99.5Q539-440 480-440t-99.5-40.5ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm100-95.5q47-15.5 86-44.5-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160q53 0 100-15.5ZM523-537q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm-43-43Zm0 360Z" />
-                        </svg>
-                    </div>
+                    {(() => {
+                        const avatarUrl = props.comment.authorProfileImage
+                            ? resolveProfileImageInput(props.comment.authorProfileImage)
+                            : null;
+                        return avatarUrl ? (
+                            <img
+                                src={avatarUrl}
+                                alt=""
+                                className="w-6 h-6 rounded-full object-cover border border-black/15 dark:border-white/15"
+                            />
+                        ) : (
+                            <div>
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    height="24px"
+                                    viewBox="0 -960 960 960"
+                                    width="24px"
+                                    fill="currentColor"
+                                >
+                                    <path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 59 19.5 111t54.5 93Zm146.5-204.5Q340-521 340-580t40.5-99.5Q421-720 480-720t99.5 40.5Q620-639 620-580t-40.5 99.5Q539-440 480-440t-99.5-40.5ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm100-95.5q47-15.5 86-44.5-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160q53 0 100-15.5ZM523-537q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm-43-43Zm0 360Z" />
+                                </svg>
+                            </div>
+                        );
+                    })()}
                     <span className="font-bold text-black dark:text-white transition-colors duration-300">
                         {props.comment.author}
                     </span>
@@ -77,10 +92,17 @@ export function Comment(props: Props) {
                                     </svg>
                                 }
                                 interactable={true}
-                                text={"0"}
+                                isActive={props.comment.userHasLiked}
+                                text={`${props.comment.likesCount ?? 0}`}
+                                onClick={() => props.onLikeClick?.(props.comment.id)}
+                                fillColorBg="bg-red-400"
+                                fillColorText="text-red-400"
+                                heartButton={true}
                             ></ReactionButton>
 
                             <ReactionButton
+                            fillColorBg="bg-blue-400"
+                            fillColorText="text-blue-400"
                                 icon={
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
@@ -126,6 +148,7 @@ export function Comment(props: Props) {
                                         key={v.id}
                                         comment={v}
                                         onReplyCreate={props.onReplyCreate}
+                                        onLikeClick={props.onLikeClick}
                                     ></Comment>
                                 );
                             })}

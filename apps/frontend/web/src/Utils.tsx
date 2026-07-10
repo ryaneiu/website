@@ -1,4 +1,5 @@
 import { extractFirstImageUrl, normalizeAttachedImageUrl } from "./contentFilter";
+import { API_ENDPOINT } from "./Config";
 
 export async function extractDetailFromErrorResponse(res: Response) {
     const extractFirstReadableMessage = (value: unknown): string | null => {
@@ -72,10 +73,22 @@ export function timeAgo(isoDate: string): string {
     return `${years} year${years > 1 ? "s" : ""} ago`;
 }
 
+const CAS_OBJECT_URL_PATTERN = /^\/objects\/([a-f0-9]{64})\.bin$/;
+
 export function resolveProfileImageInput(value: string): string | null {
     const trimmed = value.trim();
     if (trimmed.length === 0) {
         return null;
+    }
+
+    // CAS object URL: /objects/{hash}.bin
+    if (CAS_OBJECT_URL_PATTERN.test(trimmed)) {
+        return `${API_ENDPOINT}${trimmed}`;
+    }
+
+    // Already a full URL starting with the API endpoint + /objects/
+    if (trimmed.startsWith(API_ENDPOINT + "/objects/")) {
+        return trimmed;
     }
 
     const markdownImage = extractFirstImageUrl(trimmed);
