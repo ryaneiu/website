@@ -119,7 +119,7 @@ SOCIALACCOUNT_ADAPTER = "pyreddit.adapters.SocialAccountAdapter"
 SITE_ID = 1
 
 LOGIN_REDIRECT_URL = "/api/auth/oauth-complete/"
-SPA_URL = "http://localhost:5173/"
+SPA_URL = os.getenv("SPA_URL", "http://localhost:5173/")
 
 ACCOUNT_EMAIL_VERIFICATION = "none"        # skip email verification for OAuth
 ACCOUNT_LOGIN_METHODS = {"username", "email"}
